@@ -1,0 +1,18 @@
+smart-publish-backend  | 
+smart-publish-backend  | > smart-publish-backend@1.0.0 start
+smart-publish-backend  | > node dist/app.js
+smart-publish-backend  | 
+smart-publish-backend  | ✅ Conectado a Redis exitosamente.
+smart-publish-backend  | ✅ Conexión a la base de datos MySQL establecida correctamente.
+smart-publish-backend  | 🚀 API Server (Clean Architecture) running on port 3000
+smart-publish-backend  | [ImageService] Optimizando imagen: img01 (2).png
+smart-publish-backend  | [ImageService] Optimización completa: 2.30MB -> 0.32MB
+smart-publish-backend  | Error scheduling: Error: ENOENT: no such file or directory, open '/uploads/1785791652667-opt.jpg'
+smart-publish-backend  |     at Object.openSync (node:fs:573:18)
+smart-publish-backend  |     at Object.writeFileSync (node:fs:2393:35)
+smart-publish-backend  |     at schedulePost (/app/dist/controllers/automation.controller.js:51:30) {
+smart-publish-backend  |   errno: -2,
+smart-publish-backend  |   code: 'ENOENT',
+smart-publish-backend  |   syscall: 'open',
+smart-publish-backend  |   path: '/uploads/1785791652667-opt.jpg'
+smart-publish-backend  | }

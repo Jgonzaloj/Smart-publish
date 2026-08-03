@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: smart-publish-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: smart_publish
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./backend/src/config/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - smart_net
+
+  redis-cache:
+    image: redis:alpine
+    container_name: smart-publish-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - smart_net
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smart-publish-backend
+    restart: on-failure
+    depends_on:
+      - mysql-db
+      - redis-cache
+    environment:
+      - PORT=3000
+      - DB_HOST=mysql-db
+      - DB_USER=root
+      - DB_PASSWORD=${DB_PASSWORD:-root}
+      - DB_NAME=smart_publish
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-secret_inseguro_para_pruebas}
+      - GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE
+      - FB_APP_ID=1002760696100478
+      - FB_APP_SECRET=4518ef681045f6fff451d398b9b2627e
+      - FRONTEND_URL=https://redes.inversionesvawi.com
+    ports:
+      - "3000:3000"
+    networks:
+      - smart_net
+
+volumes:
+  mysql-data:
+  redis-data:
+
+networks:
+  smart_net:
+    driver: bridge
