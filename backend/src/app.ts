@@ -5,9 +5,12 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { authRoutes } from './routes/auth.routes';
 import { facebookRoutes } from './routes/facebook.routes';
+import { tiktokRoutes } from './routes/tiktok.routes';
+import { linkedinRoutes } from './routes/linkedin.routes';
 import { aiRoutes } from './routes/ai.routes';
 import { automationRoutes } from './routes/automation.routes';
 import { systemRoutes } from './routes/system.routes';
+import { analyticsRoutes } from './routes/analytics.routes';
 import { errorHandler } from './middlewares/error.middleware';
 
 import path from 'path';
@@ -54,9 +57,12 @@ app.get('/health', (req, res) => {
 // Rutas API
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/social/facebook', facebookRoutes);
+app.use('/api/social/tiktok', tiktokRoutes);
+app.use('/api/social/linkedin', linkedinRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/automation', automationRoutes);
 app.use('/api/system', systemRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Manejo seguro de Errores al final de todas las rutas
 app.use(errorHandler);

@@ -186,4 +186,18 @@ export class FacebookService {
             throw new Error('Fallo al publicar el contenido en Instagram');
         }
     }
+
+    /**
+     * Obtiene insights de la pagina (Analíticas Fase 4)
+     */
+    public async getPageInsights(pageId: string, pageAccessToken: string): Promise<any> {
+        try {
+            const url = `${this.GRAPH_API_URL}/${pageId}/insights?metric=page_impressions,page_post_engagements&period=day&access_token=${pageAccessToken}`;
+            const response = await axios.get(url);
+            return response.data.data;
+        } catch (error: any) {
+            console.error('Error al obtener insights:', error.response?.data || error.message);
+            throw new Error('Fallo al obtener insights de Facebook');
+        }
+    }
 }

@@ -8,6 +8,8 @@ const Dashboard = lazy(() => import('./pages/Dashboard').then(module => ({ defau
 const Composer = lazy(() => import('./pages/Composer').then(module => ({ default: module.Composer })));
 const Settings = lazy(() => import('./pages/Settings').then(module => ({ default: module.Settings })));
 const FacebookCallback = lazy(() => import('./pages/FacebookCallback').then(module => ({ default: module.FacebookCallback })));
+const LinkedInCallback = lazy(() => import('./pages/LinkedInCallback').then(module => ({ default: module.LinkedInCallback })));
+const TikTokCallback = lazy(() => import('./pages/TikTokCallback').then(module => ({ default: module.TikTokCallback })));
 const Campaigns = lazy(() => import('./pages/Campaigns').then(module => ({ default: module.Campaigns })));
 const Calendar = lazy(() => import('./pages/Calendar').then(module => ({ default: module.Calendar })));
 
@@ -50,6 +52,16 @@ function App() {
           <Route path="callback/facebook" element={
             <Suspense fallback={<LoadingFallback />}>
               <FacebookCallback />
+            </Suspense>
+          } />
+          <Route path="callback/linkedin" element={
+            <Suspense fallback={<LoadingFallback />}>
+              <LinkedInCallback />
+            </Suspense>
+          } />
+          <Route path="callback/tiktok" element={
+            <Suspense fallback={<LoadingFallback />}>
+              <TikTokCallback />
             </Suspense>
           } />
         </Route>
