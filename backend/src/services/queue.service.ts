@@ -62,3 +62,25 @@ export class QueueService {
         console.log(`[QueueService] Cola de publicaciones REANUDADA.`);
     }
 }
+
+// Cola para campañas recurrentes
+export const campaignQueue = new Queue('campaignQueue', { connection: redisConnection });
+
+export class CampaignQueueService {
+    static async scheduleCampaign(campaignId: string, cron: string): Promise<void> {
+        await campaignQueue.add('run-campaign', { campaignId }, {
+            repeat: { pattern: cron },
+            jobId: `campaign-${campaignId}` // ID único para evitar duplicados y facilitar eliminación
+        });
+        console.log(`[CampaignQueueService] Campaña ${campaignId} programada con cron: ${cron}`);
+    }
+
+    static async removeCampaign(campaignId: string): Promise<void> {
+        const repeatableJobs = await campaignQueue.getRepeatableJobs();
+        const job = repeatableJobs.find(j => j.id === `campaign-${campaignId}`);
+        if (job) {
+            await campaignQueue.removeRepeatableByKey(job.key);
+            console.log(`[CampaignQueueService] Campaña ${campaignId} eliminada del programador.`);
+        }
+    }
+}

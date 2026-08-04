@@ -8,6 +8,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard').then(module => ({ defau
 const Composer = lazy(() => import('./pages/Composer').then(module => ({ default: module.Composer })));
 const Settings = lazy(() => import('./pages/Settings').then(module => ({ default: module.Settings })));
 const FacebookCallback = lazy(() => import('./pages/FacebookCallback').then(module => ({ default: module.FacebookCallback })));
+const Campaigns = lazy(() => import('./pages/Campaigns').then(module => ({ default: module.Campaigns })));
 const Calendar = lazy(() => import('./pages/Calendar').then(module => ({ default: module.Calendar })));
 
 const LoadingFallback = () => (
@@ -34,6 +35,11 @@ function App() {
           <Route path="compose" element={
             <Suspense fallback={<LoadingFallback />}>
               <Composer />
+            </Suspense>
+          } />
+          <Route path="campaigns" element={
+            <Suspense fallback={<LoadingFallback />}>
+              <Campaigns />
             </Suspense>
           } />
           <Route path="settings" element={

@@ -61,6 +61,10 @@ app.use('/api/system', systemRoutes);
 // Manejo seguro de Errores al final de todas las rutas
 app.use(errorHandler);
 
+// Inicializar Workers (BullMQ)
+import './workers/publish.worker';
+import './workers/campaign.worker';
+
 import { testDatabaseConnection } from './config/database';
 
 // Inicialización del Servidor
