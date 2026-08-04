@@ -11,6 +11,7 @@ export interface PublishJobData {
     platform: 'FACEBOOK' | 'INSTAGRAM' | 'TIKTOK';
     message: string;
     mediaUrl?: string;
+    accountId?: string;
 }
 
 export class QueueService {

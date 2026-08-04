@@ -8,10 +8,24 @@ export const Composer = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [platform, setPlatform] = useState<'FACEBOOK' | 'INSTAGRAM'>('FACEBOOK');
+  const [isScheduled, setIsScheduled] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('');
   
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>('');
+
+  React.useEffect(() => {
+    api.get('/system/metrics').then(res => {
+      if (res.data.success && res.data.data.accounts) {
+        setAccounts(res.data.data.accounts);
+      }
+    }).catch(console.error);
+  }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -50,8 +64,21 @@ export const Composer = () => {
       formData.append('platform', platform);
       formData.append('message', content);
       
+      if (selectedAccountId) {
+          formData.append('accountId', selectedAccountId);
+      }
+      
       if (imageFile) {
           formData.append('image', imageFile);
+      }
+
+      if (isScheduled) {
+          if (!scheduleDate || !scheduleTime) {
+              setIsPublishing(false);
+              return alert('Por favor selecciona una fecha y hora para programar.');
+          }
+          const scheduledAt = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+          formData.append('scheduledAt', scheduledAt);
       }
 
       const response = await api.post('/automation/schedule', formData, {
@@ -92,6 +119,22 @@ export const Composer = () => {
             </button>
         </div>
 
+        {accounts.filter(a => a.platform === platform).length > 0 && (
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Selecciona la Cuenta Destino</label>
+            <select 
+              className="input-field"
+              value={selectedAccountId}
+              onChange={(e) => setSelectedAccountId(e.target.value)}
+            >
+              <option value="">-- Usar cuenta por defecto --</option>
+              {accounts.filter(a => a.platform === platform).map(acc => (
+                <option key={acc.id} value={acc.id}>{acc.account_name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="glass-panel p-6 flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Asistente IA (Gemini)</label>
@@ -124,6 +167,39 @@ export const Composer = () => {
             />
           </div>
 
+          <div className="flex flex-col gap-4 border-t border-slate-100 dark:border-slate-800 pt-4 mt-2">
+            <div className="flex items-center gap-2">
+              <input 
+                type="checkbox" 
+                id="scheduleToggle"
+                checked={isScheduled}
+                onChange={(e) => setIsScheduled(e.target.checked)}
+                className="w-4 h-4 text-brand-500 rounded border-slate-300 focus:ring-brand-500"
+              />
+              <label htmlFor="scheduleToggle" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                Programar publicación para más tarde
+              </label>
+            </div>
+            
+            {isScheduled && (
+              <div className="flex gap-4 animate-in fade-in slide-in-from-top-2">
+                <input 
+                  type="date" 
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  className="input-field max-w-[200px]"
+                  min={new Date().toISOString().split('T')[0]}
+                />
+                <input 
+                  type="time" 
+                  value={scheduleTime}
+                  onChange={(e) => setScheduleTime(e.target.value)}
+                  className="input-field max-w-[150px]"
+                />
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center gap-4 py-2">
             <input 
               type="file" 
@@ -145,7 +221,7 @@ export const Composer = () => {
               className="btn-primary"
             >
               {isPublishing ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
-              Publicar Ahora
+              {isScheduled ? 'Programar' : 'Publicar Ahora'}
             </button>
           </div>
         </div>

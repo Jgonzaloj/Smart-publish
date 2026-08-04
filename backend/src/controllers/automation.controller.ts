@@ -80,52 +80,14 @@ export class AutomationController {
                 if (delayMs < 0) return res.status(400).json({ success: false, message: 'La fecha debe ser a futuro' });
             }
 
-            // 3. Si no hay delay, publicar directo sin BullMQ (Fallback para entornos sin Redis)
-            let jobId = null;
-            if (delayMs === 0) {
-                // Publicar inmediatamente
-                try {
-                    // Importar dinámicamente para evitar dependencias circulares
-                    const { FacebookService } = require('../services/facebook.service');
-                    const { SocialAccountRepository } = require('../repositories/SocialAccountRepository');
-                    const fbService = new FacebookService();
-                    const accRepo = new SocialAccountRepository();
-                    
-                    const accounts = await accRepo.findActiveByPlatform('FACEBOOK');
-                    const fbAccount = accounts.length > 0 ? accounts[0] : null;
-                    
-                    if (fbAccount && fbAccount.access_token) {
-                        const pages = await fbService.getPages(fbAccount.access_token);
-                        if (pages.length > 0) {
-                            // Enviar al primer page
-                            let mockFile = undefined;
-                            if (finalMediaUrl) {
-                                // Leer archivo local si hay imagen
-                                const filePath = path.join(process.cwd(), finalMediaUrl);
-                                mockFile = {
-                                    buffer: fs.readFileSync(filePath),
-                                    originalname: path.basename(filePath),
-                                    mimetype: 'image/jpeg'
-                                };
-                            }
-                            await fbService.publishToPage(pages[0].id, pages[0].access_token, message, mockFile as any);
-                        }
-                    }
-                    await postRepository.updateStatus(postId, 'PUBLISHED', null as any);
-                    return res.json({ success: true, message: 'Publicado directamente (Sin Redis)', data: { postId } });
-                } catch (publishErr) {
-                    console.error('Error publicando directo:', publishErr);
-                    await postRepository.updateStatus(postId, 'FAILED', null as any);
-                    return res.status(500).json({ success: false, message: 'Error publicando directo en Facebook' });
-                }
-            } else {
-                // Encolar en BullMQ
-                jobId = await QueueService.enqueuePost({
+            // 3. Encolar en BullMQ (siempre)
+                let jobId = await QueueService.enqueuePost({
                     postId,
                     workspaceId: workspaceId || 'ws-1',
                     platform,
                     message,
-                    mediaUrl: finalMediaUrl
+                    mediaUrl: finalMediaUrl,
+                    accountId: req.body.accountId // Añadido accountId
                 }, delayMs);
                 
                 // 4. Actualizar Post a SCHEDULED y guardar el Job ID

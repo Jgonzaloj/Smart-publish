@@ -32,14 +32,19 @@ export const publishWorker = new Worker(
         console.log(`[Worker] Procesando trabajo ${job.id} para el post ${postId} en ${platform}`);
 
         try {
-            // 1. Obtener la cuenta activa para esta plataforma (MVP: primera activa)
-            const accounts = await socialAccountRepository.findActiveByPlatform(platform);
+            // 1. Obtener la cuenta activa
+            let account;
+            if (job.data.accountId) {
+                account = await socialAccountRepository.findById(job.data.accountId);
+            } else {
+                const accounts = await socialAccountRepository.findActiveByPlatform(platform);
+                account = accounts.length > 0 ? accounts[0] : null;
+            }
             
-            if (accounts.length === 0) {
-                throw new Error(`No hay cuenta activa para la plataforma ${platform}`);
+            if (!account) {
+                throw new Error(`No hay cuenta activa para la plataforma ${platform} o ID proporcionado no válido.`);
             }
 
-            const account = accounts[0];
             const provider = getProvider(platform);
 
             // 2. Validar Scopes

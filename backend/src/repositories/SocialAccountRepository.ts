@@ -22,6 +22,14 @@ export class SocialAccountRepository {
         return rows.length > 0 ? (rows[0] as SocialAccount) : null;
     }
 
+    async findById(id: string): Promise<SocialAccount | null> {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            'SELECT * FROM social_accounts WHERE id = ? LIMIT 1',
+            [id]
+        );
+        return rows.length > 0 ? (rows[0] as SocialAccount) : null;
+    }
+
     async findActiveByPlatform(platform: string): Promise<SocialAccount[]> {
         const [rows] = await pool.query<RowDataPacket[]>(
             'SELECT * FROM social_accounts WHERE platform = ? AND status = ?',
