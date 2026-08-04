@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 import { Loader2, Plus, Zap, Play, Pause, Bot, CalendarClock, Settings2 } from 'lucide-react';
 
