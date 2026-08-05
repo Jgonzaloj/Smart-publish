@@ -42,12 +42,12 @@ export class FacebookController {
             // 1. Obtener perfil de Facebook
             const profile = await facebookService.getUserProfile(longLivedData.token);
 
-            // 2. Asegurar que existe un workspace (crear por defecto si no hay)
-            let workspace = await workspaceRepository.findFirst();
-            if (!workspace) {
-                workspace = { id: uuidv4(), name: 'Mi Espacio por Defecto' };
-                await workspaceRepository.create(workspace);
+            // 2. Usar el workspace del usuario autenticado
+            const user = (req as any).user;
+            if (!user || !user.workspace_id) {
+                return res.status(401).json({ success: false, message: 'Usuario no autenticado o sin workspace' });
             }
+            const workspaceId = user.workspace_id;
 
             // 3. Guardar cuenta de FACEBOOK en Base de Datos
             const accountId = uuidv4();
@@ -55,7 +55,7 @@ export class FacebookController {
 
             await socialAccountRepository.createOrUpdate({
                 id: accountId,
-                workspace_id: workspace.id,
+                workspace_id: workspaceId,
                 platform: 'FACEBOOK',
                 platform_account_id: profile.id,
                 account_name: profile.name,
@@ -75,7 +75,7 @@ export class FacebookController {
                         const igAccountId = uuidv4();
                         await socialAccountRepository.createOrUpdate({
                             id: igAccountId,
-                            workspace_id: workspace.id,
+                            workspace_id: workspaceId,
                             platform: 'INSTAGRAM',
                             platform_account_id: igUserId,
                             account_name: `${profile.name} (IG)`,
@@ -114,14 +114,20 @@ export class FacebookController {
         }
 
         try {
-            // 1. Buscar el token activo en la base de datos
-            const accounts = await socialAccountRepository.findActiveByPlatform('FACEBOOK');
-            
-            if (accounts.length === 0) {
-                return res.status(400).json({ success: false, message: 'No hay cuenta de Facebook conectada.' });
+            const user = (req as any).user;
+            if (!user || !user.workspace_id) {
+                return res.status(401).json({ success: false, message: 'Usuario no autenticado' });
             }
 
-            const userToken = accounts[0].access_token;
+            // 1. Buscar el token activo en la base de datos para el workspace actual
+            const accounts = await socialAccountRepository.findByWorkspace(user.workspace_id);
+            const fbAccounts = accounts.filter(acc => acc.platform === 'FACEBOOK' && acc.status === 'ACTIVE');
+            
+            if (fbAccounts.length === 0) {
+                return res.status(400).json({ success: false, message: 'No hay cuenta de Facebook conectada en tu espacio.' });
+            }
+
+            const userToken = fbAccounts[0].access_token;
 
             // 2. Obtener las páginas del usuario
             const pages = await facebookService.getPages(userToken);

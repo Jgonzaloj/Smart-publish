@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { SocialAccountRepository } from '../repositories/SocialAccountRepository';
 import { WorkspaceRepository } from '../repositories/WorkspaceRepository';
 
+import { v4 as uuidv4 } from 'uuid';
+
 export const login = (req: Request, res: Response) => {
     // Simular redirección a OAuth de TikTok
     res.redirect(`${process.env.FRONTEND_URL}/callback/tiktok?code=MOCK_TIKTOK_CODE`);
@@ -25,7 +27,8 @@ export const handleCallback = async (req: Request, res: Response) => {
         const mockAccessToken = `tiktok_token_${Date.now()}`;
         const mockTikTokUserId = `tt_user_${Math.floor(Math.random() * 10000)}`;
 
-        await accountRepo.create({
+        await accountRepo.createOrUpdate({
+            id: uuidv4(),
             workspace_id: workspace.id,
             platform: 'TIKTOK',
             account_name: 'Usuario de TikTok (Mock)',

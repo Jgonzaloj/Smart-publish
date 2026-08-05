@@ -16,7 +16,7 @@ export const getEngagement = async (req: Request, res: Response) => {
         }
 
         const accounts = await accountRepo.findByWorkspace(workspace.id);
-        const fbAccount = accounts.find(a => a.platform === 'FACEBOOK');
+        const fbAccount = accounts.find((a: any) => a.platform === 'FACEBOOK');
 
         if (!fbAccount) {
             return res.json({ success: true, data: [] }); // No data

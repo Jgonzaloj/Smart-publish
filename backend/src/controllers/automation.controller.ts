@@ -93,7 +93,6 @@ export class AutomationController {
                 // 4. Actualizar Post a SCHEDULED y guardar el Job ID
                 await postRepository.updateStatus(postId, 'SCHEDULED', jobId);
                 return res.json({ success: true, message: 'Post programado en BullMQ', data: { postId, jobId } });
-            }
 
         } catch (error: any) {
             console.error('Error scheduling:', error);

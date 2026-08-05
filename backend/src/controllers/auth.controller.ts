@@ -24,14 +24,36 @@ export class AuthController {
             const saltRounds = 10;
             const hashedPassword = await bcrypt.hash(password, saltRounds);
             
-            // 3. Crear el usuario
+            const workspaceId = uuidv4();
             const userId = uuidv4();
-            await pool.query(
-                'INSERT INTO users (id, email, password_hash, status) VALUES (?, ?, ?, ?)', 
-                [userId, email, hashedPassword, 'ACTIVE']
-            );
 
-            res.status(201).json({ success: true, message: 'Usuario registrado exitosamente' });
+            // 3. Iniciar Transacción
+            const connection = await pool.getConnection();
+            try {
+                await connection.beginTransaction();
+
+                // 4. Crear el Workspace (Plan FREE_TRIAL por defecto)
+                const workspaceName = `Workspace de ${name || email.split('@')[0]}`;
+                await connection.query(
+                    'INSERT INTO workspaces (id, name, plan_id) VALUES (?, ?, ?)',
+                    [workspaceId, workspaceName, 'FREE_TRIAL']
+                );
+
+                // 5. Crear el Usuario como ADMIN
+                await connection.query(
+                    'INSERT INTO users (id, workspace_id, email, password_hash, role) VALUES (?, ?, ?, ?, ?)', 
+                    [userId, workspaceId, email, hashedPassword, 'ADMIN']
+                );
+
+                await connection.commit();
+                res.status(201).json({ success: true, message: 'Usuario registrado exitosamente' });
+            } catch (err) {
+                await connection.rollback();
+                throw err;
+            } finally {
+                connection.release();
+            }
+
         } catch (error) {
             console.error('[Auth] Error registrando usuario:', error);
             res.status(500).json({ success: false, message: 'Error interno del servidor' });
@@ -44,10 +66,10 @@ export class AuthController {
 
         try {
             // 1. Buscar usuario
-            const [users]: any = await pool.query('SELECT id, password_hash FROM users WHERE email = ? AND status = ?', [email, 'ACTIVE']);
+            const [users]: any = await pool.query('SELECT id, password_hash, workspace_id, role FROM users WHERE email = ?', [email]);
             
             if (users.length === 0) {
-                // Prevención de enumeración de usuarios: Mensaje genérico
+                // Prevención de enumeración de usuarios
                 return res.status(401).json({ success: false, message: 'Credenciales inválidas' });
             }
 
@@ -62,19 +84,25 @@ export class AuthController {
 
             // 3. Generar JWT
             const token = jwt.sign(
-                { id: user.id, email },
+                { 
+                    id: user.id, 
+                    email, 
+                    workspace_id: user.workspace_id,
+                    role: user.role 
+                },
                 JWT_SECRET,
                 { expiresIn: JWT_EXPIRES_IN }
             );
 
-            // Obtener el workspace principal del usuario (Simulado MVP)
-            const [workspaces]: any = await pool.query('SELECT workspace_id FROM workspace_users WHERE user_id = ? LIMIT 1', [user.id]);
-            const workspace_id = workspaces.length > 0 ? workspaces[0].workspace_id : null;
-
             res.json({
                 success: true,
                 token,
-                workspace_id
+                workspace_id: user.workspace_id,
+                user: {
+                    id: user.id,
+                    email,
+                    role: user.role
+                }
             });
 
         } catch (error) {

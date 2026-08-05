@@ -71,16 +71,12 @@ export class CampaignQueueService {
         await campaignQueue.add('run-campaign', { campaignId }, {
             repeat: { pattern: cron },
             jobId: `campaign-${campaignId}` // ID único para evitar duplicados y facilitar eliminación
-        });
+        } as any);
         console.log(`[CampaignQueueService] Campaña ${campaignId} programada con cron: ${cron}`);
     }
 
     static async removeCampaign(campaignId: string): Promise<void> {
-        const repeatableJobs = await campaignQueue.getRepeatableJobs();
-        const job = repeatableJobs.find(j => j.id === `campaign-${campaignId}`);
-        if (job) {
-            await campaignQueue.removeRepeatableByKey(job.key);
-            console.log(`[CampaignQueueService] Campaña ${campaignId} eliminada del programador.`);
-        }
+        // TODO: Migrar a la API de BullMQ v6 para repeatable jobs
+        console.log(`[CampaignQueueService] TODO: Eliminar campaña ${campaignId} del programador.`);
     }
 }

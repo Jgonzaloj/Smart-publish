@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { SocialAccountRepository } from '../repositories/SocialAccountRepository';
 import { WorkspaceRepository } from '../repositories/WorkspaceRepository';
 
+import { v4 as uuidv4 } from 'uuid';
+
 export const login = (req: Request, res: Response) => {
     // Simular redirección a OAuth de LinkedIn
     // En real: https://www.linkedin.com/oauth/v2/authorization...
@@ -26,7 +28,8 @@ export const handleCallback = async (req: Request, res: Response) => {
         const mockAccessToken = `linkedin_token_${Date.now()}`;
         const mockLinkedInUserId = `li_user_${Math.floor(Math.random() * 10000)}`;
 
-        await accountRepo.create({
+        await accountRepo.createOrUpdate({
+            id: uuidv4(),
             workspace_id: workspace.id,
             platform: 'LINKEDIN',
             account_name: 'Usuario de LinkedIn (Mock)',

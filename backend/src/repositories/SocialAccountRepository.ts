@@ -4,7 +4,7 @@ import { RowDataPacket, ResultSetHeader } from 'mysql2';
 export interface SocialAccount {
     id: string;
     workspace_id: string;
-    platform: 'FACEBOOK' | 'INSTAGRAM' | 'TIKTOK';
+    platform: 'FACEBOOK' | 'INSTAGRAM' | 'TIKTOK' | 'LINKEDIN';
     account_name: string;
     platform_account_id: string;
     access_token: string;
@@ -34,6 +34,14 @@ export class SocialAccountRepository {
         const [rows] = await pool.query<RowDataPacket[]>(
             'SELECT * FROM social_accounts WHERE platform = ? AND status = ?',
             [platform, 'ACTIVE']
+        );
+        return rows as SocialAccount[];
+    }
+
+    async findByWorkspace(workspaceId: string): Promise<SocialAccount[]> {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            'SELECT * FROM social_accounts WHERE workspace_id = ?',
+            [workspaceId]
         );
         return rows as SocialAccount[];
     }
