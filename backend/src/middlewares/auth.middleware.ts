@@ -7,6 +7,7 @@ export interface AuthenticatedRequest extends Request {
     user?: {
         id: string;
         email: string;
+        workspace_id?: string;
     };
 }
 
@@ -26,7 +27,8 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: N
         // 3. Inyectar datos del usuario en la request
         req.user = {
             id: decoded.id,
-            email: decoded.email
+            email: decoded.email,
+            workspace_id: decoded.workspace_id || req.headers['x-workspace-id']
         };
 
         next();

@@ -12,13 +12,11 @@ export class FacebookController {
     static getAuthUrl(req: Request, res: Response) {
         const redirectUri = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/callback/facebook`;
         try {
-            // Se añaden permisos para Instagram
+            // Permisos de Instagram removidos temporalmente para pruebas
             const scopes = [
                 'pages_show_list',
                 'pages_read_engagement',
-                'pages_manage_posts',
-                'instagram_basic',
-                'instagram_content_publish'
+                'pages_manage_posts'
             ].join(',');
             const url = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${process.env.FB_APP_ID}&redirect_uri=${redirectUri}&scope=${scopes}&response_type=code`;
             res.json({ success: true, authUrl: url });

@@ -1,0 +1,89 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: auth.spec.ts >> Auth Flow >> debe mostrar error de credenciales inválidas
+- Location: tests\auth.spec.ts:5:3
+
+# Error details
+
+```
+Error: expect(locator).toBeVisible() failed
+
+Locator: locator('div.text-red-600').first()
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" with timeout 5000ms
+  - waiting for locator('div.text-red-600').first()
+
+```
+
+```yaml
+- text: Smart Publish
+- heading "Bienvenido de nuevo" [level=2]
+- paragraph: Ingresa a tu cuenta para continuar gestionando.
+- text: Correo Electrónico
+- textbox "tu@correo.com"
+- text: Contraseña
+- link "¿Olvidaste tu contraseña?":
+  - /url: "#"
+- textbox "••••••••"
+- button "Iniciar Sesión"
+- paragraph:
+  - text: ¿No tienes una cuenta?
+  - link "Regístrate gratis":
+    - /url: /register
+- heading "Gestiona tus redes sociales con Inteligencia Artificial." [level=1]
+- paragraph: Únete a cientos de agencias y creadores que programan, generan y analizan su contenido en piloto automático.
+- text: © 2026 Smart Publish. Todos los derechos reservados.
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | 
+  3  | test.describe('Auth Flow', () => {
+  4  | 
+  5  |   test('debe mostrar error de credenciales inválidas', async ({ page }) => {
+  6  |     // Ir a la página de login
+  7  |     await page.goto('/login');
+  8  | 
+  9  |     // Validar que estamos en la página correcta (por título o algún elemento)
+  10 |     await expect(page.locator('h2')).toContainText('Bienvenido de nuevo');
+  11 | 
+  12 |     // Llenar el formulario con credenciales incorrectas
+  13 |     await page.fill('input[type="email"]', 'usuario_inexistente@example.com');
+  14 |     await page.fill('input[type="password"]', 'contraseñaIncorrecta123');
+  15 | 
+  16 |     // Hacer clic en el botón de ingresar
+  17 |     await page.click('button[type="submit"]');
+  18 | 
+  19 |     // Esperar a que aparezca el mensaje de error del backend/UI
+  20 |     const errorMessage = page.locator('div.text-red-600').first();
+> 21 |     await expect(errorMessage).toBeVisible({ timeout: 5000 });
+     |                                ^ Error: expect(locator).toBeVisible() failed
+  22 |   });
+  23 | 
+  24 |   test('navegar a la pantalla de registro', async ({ page }) => {
+  25 |     // Ir a la página de login
+  26 |     await page.goto('/login');
+  27 | 
+  28 |     // Hacer clic en el enlace "Crear cuenta" o similar
+  29 |     await page.click('text=Regístrate gratis');
+  30 | 
+  31 |     // Validar que se ha navegado al registro
+  32 |     await expect(page).toHaveURL(/.*\/register/);
+  33 |     await expect(page.locator('h2')).toContainText('Crea tu cuenta');
+  34 |   });
+  35 | 
+  36 | });
+  37 | 
+```

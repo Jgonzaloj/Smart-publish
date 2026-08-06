@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { WorkspaceRepository } from '../repositories/WorkspaceRepository';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', {
-    apiVersion: '2024-04-10', // Or whichever the latest is
+    apiVersion: '2024-04-10' as any, // Bypass strict type checking for different SDK versions
 });
 
 const workspaceRepository = new WorkspaceRepository();

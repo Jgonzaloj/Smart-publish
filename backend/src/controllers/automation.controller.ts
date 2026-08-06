@@ -20,29 +20,12 @@ export class AutomationController {
         const { workspaceId, userId, platform, message, scheduledAt } = req.body;
         
         try {
-            let activeWorkspaceId = workspaceId;
-            let activeUserId = userId;
+            // Se usa el workspace del usuario autenticado (inyectado por authMiddleware)
+            const activeWorkspaceId = (req as any).user?.workspace_id;
+            const activeUserId = (req as any).user?.id;
 
-            // 0. Obtener o crear Workspace y User por defecto para evitar error de Foreign Key
-            if (!activeWorkspaceId || activeWorkspaceId === 'ws-1') {
-                const [wsRows] = await pool.query<RowDataPacket[]>('SELECT id FROM workspaces LIMIT 1');
-                if (wsRows.length > 0) {
-                    activeWorkspaceId = wsRows[0].id;
-                } else {
-                    activeWorkspaceId = uuidv4();
-                    await pool.query('INSERT INTO workspaces (id, name) VALUES (?, ?)', [activeWorkspaceId, 'Default Workspace']);
-                }
-            }
-
-            if (!activeUserId || activeUserId === 'user-1') {
-                const [userRows] = await pool.query<RowDataPacket[]>('SELECT id FROM users WHERE workspace_id = ? LIMIT 1', [activeWorkspaceId]);
-                if (userRows.length > 0) {
-                    activeUserId = userRows[0].id;
-                } else {
-                    activeUserId = uuidv4();
-                    await pool.query('INSERT INTO users (id, workspace_id, email, password_hash, role) VALUES (?, ?, ?, ?, ?)', 
-                        [activeUserId, activeWorkspaceId, `test-${Date.now()}@example.com`, 'hash', 'ADMIN']);
-                }
+            if (!activeWorkspaceId || !activeUserId) {
+                return res.status(401).json({ success: false, message: 'Usuario no autenticado correctamente' });
             }
 
             let finalMediaUrl: string | undefined = undefined;
@@ -86,7 +69,7 @@ export class AutomationController {
             // 3. Encolar en BullMQ (siempre)
                 let jobId = await QueueService.enqueuePost({
                     postId,
-                    workspaceId: workspaceId || 'ws-1',
+                    workspaceId: activeWorkspaceId,
                     platform,
                     message,
                     mediaUrl: finalMediaUrl,

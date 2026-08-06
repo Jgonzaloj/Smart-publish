@@ -60,7 +60,7 @@ export const Composer = () => {
     setIsPublishing(true);
     try {
       const formData = new FormData();
-      formData.append('workspaceId', 'ws-1'); // MVP
+      // formData.append('workspaceId', 'ws-1'); // Eliminado: el backend lo lee del token
       formData.append('platform', platform);
       formData.append('message', content);
       
