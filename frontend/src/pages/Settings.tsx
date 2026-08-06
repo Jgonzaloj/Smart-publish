@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
-import { Share2, Loader2, AlertCircle, RefreshCw, Unplug, Info, Clock, Briefcase, Camera } from 'lucide-react';
+import { Share2, Loader2, AlertCircle, RefreshCw, Unplug, Info, Clock, Briefcase, Camera, Users, Link as LinkIcon } from 'lucide-react';
+import { TeamSettings } from './TeamSettings';
 
 export const Settings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [fetchingStatus, setFetchingStatus] = useState(true);
+  const [activeTab, setActiveTab] = useState<'integrations' | 'team'>('integrations');
 
   const fetchStatus = async () => {
     try {
@@ -64,7 +66,31 @@ export const Settings = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+      {/* TABS */}
+      <div className="flex border-b border-slate-200 dark:border-slate-700">
+        <button 
+          onClick={() => setActiveTab('integrations')}
+          className={`pb-4 px-4 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === 'integrations' ? 'border-brand-500 text-brand-600 dark:text-brand-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+        >
+          <LinkIcon size={18} /> Integraciones
+        </button>
+        <button 
+          onClick={() => setActiveTab('team')}
+          className={`pb-4 px-4 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === 'team' ? 'border-brand-500 text-brand-600 dark:text-brand-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+        >
+          <Users size={18} /> Equipo y Permisos
+        </button>
+      </div>
+
+      {activeTab === 'team' && (
+        <div className="mt-8">
+          <TeamSettings />
+        </div>
+      )}
+
+      {activeTab === 'integrations' && (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         
         {/* TARJETA META (FACEBOOK + INSTAGRAM) */}
         <div className={`glass-panel overflow-hidden transition-all duration-300 relative group
@@ -220,6 +246,8 @@ export const Settings = () => {
           <strong>Seguridad primero:</strong> No guardamos tus contraseñas. Utilizamos tokens de acceso seguros oficiales (OAuth 2.0) proporcionados por las propias plataformas, los cuales puedes revocar en cualquier momento.
         </p>
       </div>
+      </>
+      )}
 
     </div>
   );

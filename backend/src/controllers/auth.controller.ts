@@ -3,8 +3,11 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { pool } from '../config/database';
 import { v4 as uuidv4 } from 'uuid';
+import { EmailService } from '../services/email.service';
+import crypto from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_fallback_key';
+const emailService = new EmailService();
 const JWT_EXPIRES_IN = '24h'; // Política de seguridad acordada (Fase 11)
 
 export class AuthController {
@@ -108,6 +111,66 @@ export class AuthController {
         } catch (error) {
             console.error('[Auth] Error en login:', error);
             res.status(500).json({ success: false, message: 'Error interno del servidor' });
+        }
+    }
+
+    // POST /api/auth/forgot-password
+    static async forgotPassword(req: Request, res: Response) {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ success: false, message: 'El correo es requerido' });
+
+        try {
+            const [users]: any = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
+            if (users.length === 0) {
+                // Security: don't reveal that the user doesn't exist
+                return res.json({ success: true, message: 'Si el correo existe, se ha enviado un enlace.' });
+            }
+
+            const token = crypto.randomBytes(32).toString('hex');
+            const expiresAt = new Date(Date.now() + 3600000); // 1 hora
+
+            await pool.query(
+                'INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE token = ?, expires_at = ?',
+                [email, token, expiresAt, token, expiresAt]
+            );
+
+            await emailService.sendPasswordResetEmail(email, token);
+
+            res.json({ success: true, message: 'Si el correo existe, se ha enviado un enlace.' });
+        } catch (error) {
+            console.error('[Auth] Error forgot-password:', error);
+            res.status(500).json({ success: false, message: 'Error procesando solicitud' });
+        }
+    }
+
+    // POST /api/auth/reset-password
+    static async resetPassword(req: Request, res: Response) {
+        const { email, token, newPassword } = req.body;
+
+        if (!email || !token || !newPassword) {
+            return res.status(400).json({ success: false, message: 'Faltan datos' });
+        }
+
+        try {
+            const [resets]: any = await pool.query(
+                'SELECT * FROM password_resets WHERE email = ? AND token = ? AND expires_at > NOW()',
+                [email, token]
+            );
+
+            if (resets.length === 0) {
+                return res.status(400).json({ success: false, message: 'Token inválido o expirado' });
+            }
+
+            const saltRounds = 10;
+            const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+            await pool.query('UPDATE users SET password_hash = ? WHERE email = ?', [hashedPassword, email]);
+            await pool.query('DELETE FROM password_resets WHERE email = ?', [email]);
+
+            res.json({ success: true, message: 'Contraseña actualizada correctamente' });
+        } catch (error) {
+            console.error('[Auth] Error reset-password:', error);
+            res.status(500).json({ success: false, message: 'Error procesando solicitud' });
         }
     }
 }

@@ -1,18 +1,25 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Calendar, PenTool, Settings, Bell, Zap, Sparkles, Menu, X, LogOut } from 'lucide-react';
+import { LayoutDashboard, Calendar, PenTool, Settings, Bell, Zap, Sparkles, Menu, X, LogOut, CreditCard, Shield } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const AppLayout = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user } = useAuth();
 
   const navItems = [
     { path: '/', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { path: '/calendar', icon: <Calendar size={20} />, label: 'Calendario' },
     { path: '/compose', icon: <PenTool size={20} />, label: 'Crear Post' },
     { path: '/campaigns', icon: <Zap size={20} />, label: 'Piloto IA' },
+    { path: '/billing', icon: <CreditCard size={20} />, label: 'Suscripción' },
     { path: '/settings', icon: <Settings size={20} />, label: 'Configuración' },
   ];
+
+  if (user?.role === 'SUPERADMIN') {
+    navItems.push({ path: '/superadmin', icon: <Shield size={20} />, label: 'Admin SaaS' });
+  }
 
   return (
     <div className="flex h-screen bg-transparent transition-colors duration-500 overflow-hidden relative">

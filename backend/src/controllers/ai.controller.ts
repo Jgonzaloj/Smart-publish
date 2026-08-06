@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { WorkspaceRepository } from '../repositories/WorkspaceRepository';
+
+const workspaceRepository = new WorkspaceRepository();
 
 export class AiController {
     static async suggestPost(req: Request, res: Response) {
@@ -29,6 +32,12 @@ Reglas:
             const result = await model.generateContent(prompt);
             const response = await result.response;
             const text = response.text();
+
+            // Increment usage
+            const workspaceId = (req as any).user?.workspace_id;
+            if (workspaceId) {
+                await workspaceRepository.incrementAiUsage(workspaceId);
+            }
 
             res.json({
                 success: true,

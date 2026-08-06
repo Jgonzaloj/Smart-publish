@@ -11,6 +11,9 @@ import { aiRoutes } from './routes/ai.routes';
 import { automationRoutes } from './routes/automation.routes';
 import { systemRoutes } from './routes/system.routes';
 import { analyticsRoutes } from './routes/analytics.routes';
+import billingRoutes from './routes/billing.routes';
+import { teamRoutes } from './routes/team.routes';
+import { superAdminRoutes } from './routes/superadmin.routes';
 import { errorHandler } from './middlewares/error.middleware';
 
 import path from 'path';
@@ -28,6 +31,9 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-workspace-id']
 }));
+// Mount billing routes before express.json() so the webhook can parse the raw body
+app.use('/api/billing', billingRoutes);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -67,6 +73,8 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/automation', automationRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/team', teamRoutes);
+app.use('/api/superadmin', superAdminRoutes);
 
 // Manejo seguro de Errores al final de todas las rutas
 app.use(errorHandler);

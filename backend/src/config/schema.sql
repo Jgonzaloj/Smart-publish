@@ -3,7 +3,14 @@
 CREATE TABLE IF NOT EXISTS workspaces (
     id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    plan_id VARCHAR(50),
+    plan_id VARCHAR(50) DEFAULT 'free',
+    stripe_customer_id VARCHAR(255) NULL,
+    stripe_subscription_id VARCHAR(255) NULL,
+    stripe_price_id VARCHAR(255) NULL,
+    plan_status ENUM('active', 'trialing', 'past_due', 'canceled', 'unpaid', 'incomplete', 'incomplete_expired', 'free') DEFAULT 'free',
+    ai_credits_used INT DEFAULT 0,
+    posts_used INT DEFAULT 0,
+    billing_cycle_reset TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -13,7 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
     workspace_id VARCHAR(36) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('ADMIN', 'MANAGER', 'EDITOR', 'VIEWER') DEFAULT 'EDITOR',
+    role ENUM('SUPERADMIN', 'ADMIN', 'MANAGER', 'EDITOR', 'VIEWER') DEFAULT 'EDITOR',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
@@ -105,4 +112,23 @@ CREATE TABLE IF NOT EXISTS campaigns (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
     FOREIGN KEY (social_account_id) REFERENCES social_accounts(id) ON DELETE CASCADE
+);
+
+-- Phase 2: Transaccional e Invitaciones
+CREATE TABLE IF NOT EXISTS password_resets (
+    email VARCHAR(255) PRIMARY KEY,
+    token VARCHAR(255) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS workspace_invites (
+    id VARCHAR(36) PRIMARY KEY,
+    workspace_id VARCHAR(36) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    role ENUM('SUPERADMIN', 'ADMIN', 'MANAGER', 'EDITOR', 'VIEWER') DEFAULT 'EDITOR',
+    token VARCHAR(255) NOT NULL UNIQUE,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
 );

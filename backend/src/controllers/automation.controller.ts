@@ -8,7 +8,10 @@ import { pool } from '../config/database';
 import { v4 as uuidv4 } from 'uuid';
 import { RowDataPacket } from 'mysql2';
 
+import { WorkspaceRepository } from '../repositories/WorkspaceRepository';
+
 const postRepository = new PostRepository();
+const workspaceRepository = new WorkspaceRepository();
 
 export class AutomationController {
     
@@ -92,6 +95,12 @@ export class AutomationController {
                 
                 // 4. Actualizar Post a SCHEDULED y guardar el Job ID
                 await postRepository.updateStatus(postId, 'SCHEDULED', jobId);
+                
+                // 5. Increment usage
+                if (activeWorkspaceId) {
+                    await workspaceRepository.incrementPostUsage(activeWorkspaceId);
+                }
+
                 return res.json({ success: true, message: 'Post programado en BullMQ', data: { postId, jobId } });
 
         } catch (error: any) {

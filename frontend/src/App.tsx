@@ -14,10 +14,14 @@ const LinkedInCallback = lazy(() => import('./pages/LinkedInCallback').then(modu
 const TikTokCallback = lazy(() => import('./pages/TikTokCallback').then(module => ({ default: module.TikTokCallback })));
 const Campaigns = lazy(() => import('./pages/Campaigns').then(module => ({ default: module.Campaigns })));
 const Calendar = lazy(() => import('./pages/Calendar').then(module => ({ default: module.Calendar })));
+const Billing = lazy(() => import('./pages/Billing').then(module => ({ default: module.Billing })));
+const SuperAdmin = lazy(() => import('./pages/SuperAdmin').then(module => ({ default: module.SuperAdmin })));
 
 // Páginas de Auth
 const Login = lazy(() => import('./pages/auth/Login').then(module => ({ default: module.Login })));
 const Register = lazy(() => import('./pages/auth/Register').then(module => ({ default: module.Register })));
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword').then(module => ({ default: module.ForgotPassword })));
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword').then(module => ({ default: module.ResetPassword })));
 
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-full w-full min-h-screen">
@@ -62,6 +66,16 @@ function App() {
                 <Register />
               </Suspense>
             } />
+            <Route path="/forgot-password" element={
+              <Suspense fallback={<LoadingFallback />}>
+                <ForgotPassword />
+              </Suspense>
+            } />
+            <Route path="/reset-password" element={
+              <Suspense fallback={<LoadingFallback />}>
+                <ResetPassword />
+              </Suspense>
+            } />
           </Route>
 
           {/* RUTAS PRIVADAS (Dashboard) */}
@@ -91,6 +105,11 @@ function App() {
                 <Settings />
               </Suspense>
             } />
+            <Route path="billing" element={
+              <Suspense fallback={<LoadingFallback />}>
+                <Billing />
+              </Suspense>
+            } />
             <Route path="callback/facebook" element={
               <Suspense fallback={<LoadingFallback />}>
                 <FacebookCallback />
@@ -104,6 +123,11 @@ function App() {
             <Route path="callback/tiktok" element={
               <Suspense fallback={<LoadingFallback />}>
                 <TikTokCallback />
+              </Suspense>
+            } />
+            <Route path="superadmin" element={
+              <Suspense fallback={<LoadingFallback />}>
+                <SuperAdmin />
               </Suspense>
             } />
           </Route>
