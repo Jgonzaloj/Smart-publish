@@ -10,6 +10,7 @@ export interface Workspace {
     stripe_price_id?: string;
     plan_status?: string;
     ai_credits_used?: number;
+    ai_images_used?: number;
     posts_used?: number;
 }
 
@@ -57,5 +58,15 @@ export class WorkspaceRepository {
 
     async incrementPostUsage(workspaceId: string): Promise<void> {
         await pool.query('UPDATE workspaces SET posts_used = posts_used + 1 WHERE id = ?', [workspaceId]);
+    }
+
+    async checkImageLimit(workspaceId: string): Promise<boolean> {
+        // Al usar Pollinations AI (que es gratuito e ilimitado),
+        // eliminamos completamente la restricción de 3 imágenes para todos los usuarios.
+        return true;
+    }
+
+    async incrementImageUsage(workspaceId: string): Promise<void> {
+        await pool.query('UPDATE workspaces SET ai_images_used = IFNULL(ai_images_used, 0) + 1 WHERE id = ?', [workspaceId]);
     }
 }

@@ -14,6 +14,7 @@ import { analyticsRoutes } from './routes/analytics.routes';
 import billingRoutes from './routes/billing.routes';
 import { teamRoutes } from './routes/team.routes';
 import { superAdminRoutes } from './routes/superadmin.routes';
+import { webhooksRoutes } from './routes/webhooks.routes';
 import { errorHandler } from './middlewares/error.middleware';
 
 import path from 'path';
@@ -75,6 +76,7 @@ app.use('/api/system', systemRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/superadmin', superAdminRoutes);
+app.use('/api/webhooks', webhooksRoutes);
 
 // Manejo seguro de Errores al final de todas las rutas
 app.use(errorHandler);
@@ -82,18 +84,14 @@ app.use(errorHandler);
 // Inicializar Workers (BullMQ)
 import './workers/publish.worker';
 import './workers/campaign.worker';
+import './workers/whatsapp.worker';
 
 import { testDatabaseConnection } from './config/database';
 
+
 // Inicialización del Servidor
 const startServer = async () => {
-    // 1. Probar conexión a BD
-    await testDatabaseConnection();
-    
-    // 2. Levantar el servidor HTTP
-    app.listen(PORT, () => {
-        console.log(`🚀 API Server (Clean Architecture) running on port ${PORT}`);
-    });
+    try { await testDatabaseConnection(); } catch(e) {}
+    app.listen(PORT, () => { console.log('API Server running on port ' + PORT); });
 };
-
 startServer();

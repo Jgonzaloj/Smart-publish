@@ -14,3 +14,4 @@ automationRoutes.post('/retry/:postId', authMiddleware, checkPostUsageLimit, Aut
 // Rutas para campañas
 automationRoutes.post('/campaigns', authMiddleware, CampaignController.createCampaign);
 automationRoutes.get('/campaigns', authMiddleware, CampaignController.getCampaigns);
+automationRoutes.delete('/campaigns/:id', authMiddleware, CampaignController.deleteCampaign);

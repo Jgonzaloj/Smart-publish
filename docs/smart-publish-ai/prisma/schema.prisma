@@ -1,0 +1,220 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------
+// 1. Autenticación y Multi-Tenancy (SKILL-05 & SKILL-24)
+// ------------------------------------------------------
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  createdAt     DateTime  @default(now())
+  memberships   Member[]
+  leadsOwned    Lead[]
+}
+
+model Organization {
+  id            String    @id @default(uuid())
+  name          String
+  billingEmail  String
+  createdAt     DateTime  @default(now())
+  members       Member[]
+  customers     Customer[]
+  categories    ServiceCategory[]
+  conversations Conversation[]
+  aiRuns        AiRun[]
+  payments      Payment[]
+  subscriptions Subscription[]
+}
+
+model Role {
+  id       String   @id @default(uuid())
+  name     String   @unique // SUPER_ADMIN, ADMIN, OPERATOR, AI_AGENT
+  members  Member[]
+}
+
+model Member {
+  id             String       @id @default(uuid())
+  user           User         @relation(fields: [userId], references: [id])
+  userId         String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  role           Role         @relation(fields: [roleId], references: [id])
+  roleId         String
+}
+
+// ------------------------------------------------------
+// 2. CRM y Leads (SKILL-07)
+// ------------------------------------------------------
+
+model Customer {
+  id             String         @id @default(uuid())
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  organizationId String
+  name           String
+  phone          String?
+  email          String?
+  leads          Lead[]
+  conversations  Conversation[]
+}
+
+model Lead {
+  id          String      @id @default(uuid())
+  customer    Customer    @relation(fields: [customerId], references: [id])
+  customerId  String
+  status      String      @default("NEW") // NEW, CONTACTED, QUALIFIED, QUOTED, WON, LOST
+  score       Int         @default(0)
+  owner       User?       @relation(fields: [ownerId], references: [id])
+  ownerId     String?
+  events      LeadEvent[]
+  quotes      Quote[]
+}
+
+model LeadEvent {
+  id          String   @id @default(uuid())
+  lead        Lead     @relation(fields: [leadId], references: [id])
+  leadId      String
+  eventType   String
+  description String?
+  timestamp   DateTime @default(now())
+}
+
+// ------------------------------------------------------
+// 3. Catálogo y Cotizaciones (SKILL-08 & SKILL-12)
+// ------------------------------------------------------
+
+model ServiceCategory {
+  id             String       @id @default(uuid())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  name           String
+  services       Service[]
+}
+
+model Service {
+  id          String          @id @default(uuid())
+  category    ServiceCategory @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  name        String
+  description String?
+  prices      Price[]
+  quoteItems  QuoteItem[]
+}
+
+model Price {
+  id         String   @id @default(uuid())
+  service    Service  @relation(fields: [serviceId], references: [id])
+  serviceId  String
+  amount     Float
+  currency   String   @default("USD")
+  conditions String?
+  quoteItems QuoteItem[]
+}
+
+model Quote {
+  id          String      @id @default(uuid())
+  lead        Lead        @relation(fields: [leadId], references: [id])
+  leadId      String
+  totalAmount Float
+  validUntil  DateTime
+  status      String      @default("DRAFT")
+  items       QuoteItem[]
+}
+
+model QuoteItem {
+  id        String  @id @default(uuid())
+  quote     Quote   @relation(fields: [quoteId], references: [id])
+  quoteId   String
+  service   Service @relation(fields: [serviceId], references: [id])
+  serviceId String
+  price     Price   @relation(fields: [priceId], references: [id])
+  priceId   String
+  quantity  Int     @default(1)
+}
+
+// ------------------------------------------------------
+// 4. Motor Conversacional (SKILL-09 & SKILL-10)
+// ------------------------------------------------------
+
+model Conversation {
+  id             String       @id @default(uuid())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  customer       Customer     @relation(fields: [customerId], references: [id])
+  customerId     String
+  channel        String       // whatsapp, instagram, web
+  status         String       @default("bot_handled") // open, closed, bot_handled
+  messages       Message[]
+  aiRuns         AiRun[]
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  conversationId String
+  senderType     String       // user, bot, customer
+  content        String
+  timestamp      DateTime     @default(now())
+}
+
+// ------------------------------------------------------
+// 5. Observabilidad de IA (SKILL-25)
+// ------------------------------------------------------
+
+model AiRun {
+  id             String       @id @default(uuid())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  conversationId String
+  tokensUsed     Int          @default(0)
+  cost           Float        @default(0.0)
+  latencyMs      Int          @default(0)
+  tasks          AiTask[]
+}
+
+model AiTask {
+  id        String @id @default(uuid())
+  run       AiRun  @relation(fields: [runId], references: [id])
+  runId     String
+  taskType  String // triage, quote_generation
+  status    String @default("COMPLETED")
+}
+
+// ------------------------------------------------------
+// 6. Billing y Suscripciones (SKILL-23)
+// ------------------------------------------------------
+
+model Plan {
+  id            String         @id @default(uuid())
+  name          String
+  price         Float
+  limitsJson    String         // JSON string
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id               String       @id @default(uuid())
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  organizationId   String
+  plan             Plan         @relation(fields: [planId], references: [id])
+  planId           String
+  status           String       @default("ACTIVE")
+  currentPeriodEnd DateTime
+}
+
+model Payment {
+  id             String       @id @default(uuid())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  amount         Float
+  status         String       @default("SUCCESS")
+  date           DateTime     @default(now())
+}

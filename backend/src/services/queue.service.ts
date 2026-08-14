@@ -69,7 +69,7 @@ export const campaignQueue = new Queue('campaignQueue', { connection: redisConne
 export class CampaignQueueService {
     static async scheduleCampaign(campaignId: string, cron: string): Promise<void> {
         await campaignQueue.add('run-campaign', { campaignId }, {
-            repeat: { pattern: cron },
+            repeat: { pattern: cron, tz: 'America/Lima' },
             jobId: `campaign-${campaignId}` // ID único para evitar duplicados y facilitar eliminación
         } as any);
         console.log(`[CampaignQueueService] Campaña ${campaignId} programada con cron: ${cron}`);
@@ -78,5 +78,22 @@ export class CampaignQueueService {
     static async removeCampaign(campaignId: string): Promise<void> {
         // TODO: Migrar a la API de BullMQ v6 para repeatable jobs
         console.log(`[CampaignQueueService] TODO: Eliminar campaña ${campaignId} del programador.`);
+    }
+}
+
+// --- NUEVO: Cola para Webhook de WhatsApp ---
+export const whatsappQueue = new Queue('whatsappQueue', { connection: redisConnection });
+
+export class WhatsAppQueueService {
+    /**
+     * Encola un evento de WhatsApp para ser procesado asíncronamente
+     */
+    static async enqueueEvent(workspaceId: string, payload: any): Promise<string> {
+        const job = await whatsappQueue.add('process-whatsapp-event', { workspaceId, payload }, {
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 1000 }
+        });
+        console.log(`[WhatsAppQueue] Evento encolado para workspace ${workspaceId}. Job ID: ${job.id}`);
+        return job.id!;
     }
 }

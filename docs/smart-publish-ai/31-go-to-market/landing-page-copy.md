@@ -1,0 +1,3 @@
+# Landing Page: SMART AI
+
+Descubre el poder de la Inteligencia Artificial B2B2C...

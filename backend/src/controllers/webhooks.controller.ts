@@ -76,4 +76,68 @@ export class WebhooksController {
             res.sendStatus(404);
         }
     }
+
+    /**
+     * Endpoint para validar el Webhook de WhatsApp
+     * GET /api/webhooks/whatsapp
+     */
+    static verifyWhatsAppWebhook(req: Request, res: Response) {
+        const VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'smart_publish_whatsapp_token';
+
+        const mode = req.query['hub.mode'];
+        const token = req.query['hub.verify_token'];
+        const challenge = req.query['hub.challenge'];
+
+        if (mode && token) {
+            if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+                console.log('✅ Webhook de WhatsApp verificado');
+                res.status(200).send(challenge);
+            } else {
+                res.sendStatus(403);
+            }
+        } else {
+            res.sendStatus(400);
+        }
+    }
+
+    /**
+     * Endpoint para recibir mensajes de WhatsApp (Webhook)
+     * POST /api/webhooks/whatsapp
+     */
+    static async handleWhatsAppEvent(req: Request, res: Response) {
+        try {
+            const body = req.body;
+            
+            // 1. Extraer el número receptor para identificar el Tenant
+            let receiverPhone = '';
+            if (body.entry && body.entry[0] && body.entry[0].changes && body.entry[0].changes[0].value) {
+                const metadata = body.entry[0].changes[0].value.metadata;
+                receiverPhone = metadata?.display_phone_number || '';
+            }
+
+            if (!receiverPhone) {
+                // Respondemos 200 para que Meta no reintente
+                return res.status(200).send('EVENT_RECEIVED_NO_PHONE');
+            }
+
+            // 2. Resolución de Tenant (Workspace)
+            // Asumimos que tienes un método en workspaceRepository para buscar por número de teléfono
+            // Si no existe, usamos un mock por ahora o puedes agregarlo luego.
+            // const workspace = await workspaceRepository.findByWhatsAppNumber(receiverPhone);
+            const workspaceId = `tenant_${receiverPhone}`; // Sustituir por lógica real
+
+            if (!workspaceId) {
+                console.warn(`[Webhook WhatsApp] Número no registrado: ${receiverPhone}`);
+                return res.status(200).send('EVENT_RECEIVED_NO_TENANT');
+            }
+
+            // 3. Encolar el evento y retornar 200 rápido
+            await import('../services/queue.service').then(m => m.WhatsAppQueueService.enqueueEvent(workspaceId, body));
+            
+            res.status(200).send('EVENT_RECEIVED');
+        } catch (error) {
+            console.error('[Webhook WhatsApp] Error:', error);
+            res.status(500).send('ERROR');
+        }
+    }
 }

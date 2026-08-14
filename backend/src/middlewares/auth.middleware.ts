@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_fallback_key';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    console.error('FATAL ERROR: JWT_SECRET no esta configurado en las variables de entorno.');
+    process.exit(1);
+}
 
 export interface AuthenticatedRequest extends Request {
     user?: {
@@ -24,11 +28,17 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: N
         // 2. Verificar firma y expiración
         const decoded = jwt.verify(token, JWT_SECRET) as any;
         
+        // Validacion IDOR: El header x-workspace-id DEBE coincidir con el del JWT
+        const headerWorkspaceId = req.headers['x-workspace-id'];
+        if (headerWorkspaceId && decoded.workspace_id && headerWorkspaceId !== decoded.workspace_id) {
+            return res.status(403).json({ success: false, message: 'FORBIDDEN_TENANT: No tienes acceso a este workspace.' });
+        }
+
         // 3. Inyectar datos del usuario en la request
         req.user = {
             id: decoded.id,
             email: decoded.email,
-            workspace_id: decoded.workspace_id || req.headers['x-workspace-id']
+            workspace_id: decoded.workspace_id
         };
 
         next();
