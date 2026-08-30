@@ -97,14 +97,21 @@ export class OutreachEngineService {
   }
 
   /**
-   * Envío controlado de mensajes con Circuit Breaker
+   * Envío controlado de mensajes con Circuit Breaker y candados de seguridad
    */
   async dispatchQueuedMessages(batchSize = 10): Promise<{ sent: number; pausedByCircuitBreaker: boolean }> {
     const health = this.outreachRepo.getDomainHealth();
 
-    // Circuit Breaker de seguridad
+    // Circuit Breaker de reputación de dominio
     if (health.circuit_breaker_active || health.bounce_rate_24h > config.MAX_BOUNCE_RATE) {
       console.warn('[CircuitBreaker] Envíos pausados automáticamente por tasa de bounce o alerta de reputación.');
+      return { sent: 0, pausedByCircuitBreaker: true };
+    }
+
+    // Circuit Breaker de Límite Diario (Warmup y Control de Costos)
+    const dailySendsWhatsApp = this.outreachRepo.getDailySendsCount('whatsapp');
+    if (dailySendsWhatsApp >= config.MAX_DAILY_WHATSAPP_SENDS) {
+      console.warn(`[CircuitBreaker] ⚠️ Límite diario de WhatsApp alcanzado (${dailySendsWhatsApp}/${config.MAX_DAILY_WHATSAPP_SENDS}). Encolando restantes.`);
       return { sent: 0, pausedByCircuitBreaker: true };
     }
 
@@ -112,6 +119,13 @@ export class OutreachEngineService {
     let sentCount = 0;
 
     for (const lead of queuedLeads) {
+      // Candado Anti-Baneo: Delays escalonados entre mensajes
+      if (sentCount > 0) {
+        const delayMs = config.USE_MOCK_MODE ? 200 : Math.floor(3000 + Math.random() * 4000);
+        console.log(`[Anti-Ban Guard] Aplicando delay escalonado de ${Math.round(delayMs / 1000)}s antes del próximo envío...`);
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+
       const proposal = this.proposalsRepo.findByLeadId(lead.id);
       if (!proposal) continue;
 
@@ -148,10 +162,13 @@ export class OutreachEngineService {
     const lead = this.leadsRepo.findById(leadId);
     if (!lead) return false;
 
-    // Marcar en outreach_results
+    // 1. Marcar en outreach_results
     this.outreachRepo.markReplied(leadId);
 
-    // Transición a REPLIED -> HUMAN_HANDOFF
+    // 2. Transición a estado intermedio REPLIED (trazabilidad exacta del blueprint)
+    this.leadsRepo.forceUpdateStatus(leadId, 'REPLIED');
+
+    // 3. Transición a HUMAN_HANDOFF con cerrador asignado
     this.leadsRepo.forceUpdateStatus(leadId, 'HUMAN_HANDOFF', config.DEFAULT_CLOSER_NAME);
 
     console.log(`[HumanHandoff] 🔥 ¡ALERTA DE CIERRE! Prospecto ${lead.business_name} ha respondido.`);
@@ -281,9 +298,11 @@ export class OutreachEngineService {
   }
 
   private async sendMessage(channel: 'whatsapp' | 'email', lead: ProspectLead, proposal: any): Promise<void> {
-    if (config.USE_MOCK_MODE) {
-      // Modo simulación seguro: no envía mensajes reales
-      console.log(`[Outreach Engine - MOCK] Simulando envío a ${lead.business_name} vía ${channel}`);
+    const isSyntheticLead = lead.place_id?.startsWith('ChIJ_mock_') || lead.business_name?.includes('#') || config.USE_MOCK_MODE;
+
+    if (isSyntheticLead) {
+      // Candado impenetrable: bajo ninguna circunstancia se emiten llamadas externas para datos sintéticos
+      console.log(`[Outreach Guard] 🛡️ Bloqueo de seguridad: Lead "${lead.business_name}" es sintético/mock. Registrando log simulado sin emitir llamada externa a WhatsApp.`);
       return;
     }
 

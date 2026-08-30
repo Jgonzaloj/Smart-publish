@@ -144,6 +144,19 @@ function renderStats() {
   statReview.textContent = s.byStatus['FLAGGED_FOR_REVIEW'] || 0;
   statHandoff.textContent = (s.byStatus['REPLIED'] || 0) + (s.byStatus['HUMAN_HANDOFF'] || 0);
   statWon.textContent = s.byStatus['WON'] || 0;
+
+  // Actualizar Badge MOCK vs REAL en Header
+  const modeBadge = document.getElementById('modeBadge');
+  const modeText = document.getElementById('modeText');
+  if (modeBadge && modeText) {
+    if (state.stats.mockMode) {
+      modeBadge.className = 'mode-badge mock';
+      modeText.textContent = '🟡 Modo Simulación (Sandbox)';
+    } else {
+      modeBadge.className = 'mode-badge real';
+      modeText.textContent = '🟢 Modo Real Activo';
+    }
+  }
 }
 
 function renderKanban() {
@@ -481,3 +494,11 @@ window.closeLead = async function(leadId, outcome) {
     alert('Error al cerrar lead');
   }
 };
+
+// Auto-refresco en vivo para Control Center (cada 4 segundos)
+setInterval(() => {
+  // Solo refrescar si no hay modales abiertos para no interrumpir al usuario
+  if (!leadModal.classList.contains('active') && !pipelineModal.classList.contains('active')) {
+    loadDashboardData();
+  }
+}, 4000);

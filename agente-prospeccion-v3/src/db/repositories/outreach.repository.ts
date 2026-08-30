@@ -93,4 +93,14 @@ export class OutreachRepository {
 
     return rows.map((r) => r.copy_used);
   }
+
+  getDailySendsCount(channel: 'whatsapp' | 'email'): number {
+    const row = this.db.prepare(`
+      SELECT count(*) as count
+      FROM outreach_results
+      WHERE channel = ? AND DATE(sent_at) = DATE('now')
+    `).get(channel) as { count: number };
+
+    return row ? Number(row.count) : 0;
+  }
 }

@@ -150,6 +150,27 @@ body {
   gap: 1.5rem;
 }
 
+.mode-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.02em;
+}
+.mode-badge.mock {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fde047;
+}
+.mode-badge.real {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+}
+
 .circuit-status {
   display: flex;
   align-items: center;
