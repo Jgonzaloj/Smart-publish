@@ -24,12 +24,22 @@ const orchestrator = new PipelineOrchestrator();
 
 // Middleware de Autenticación Básica opcional para proteger el dashboard en producción
 app.use((req, res, next) => {
-  // Las rutas públicas de demos y webhooks no requieren autenticación
-  if (req.path.startsWith('/api/demos') || req.path.startsWith('/api/webhooks')) {
+  // Las rutas públicas de demos, webhooks y assets estáticos no deben disparar 401 recursivo
+  if (
+    req.path.startsWith('/api/demos') || 
+    req.path.startsWith('/api/webhooks') ||
+    req.path.startsWith('/storage/screenshots') ||
+    req.path.endsWith('.css') ||
+    req.path.endsWith('.js') ||
+    req.path.endsWith('.svg') ||
+    req.path.endsWith('.png') ||
+    req.path.endsWith('.ico') ||
+    req.path.endsWith('.woff2')
+  ) {
     return next();
   }
 
-  // Si no se han definido credenciales, se permite el acceso directo (modo local/desarrollo)
+  // Si no se han definido credenciales, se permite el acceso directo
   if (!config.ADMIN_USER || !config.ADMIN_PASSWORD) {
     return next();
   }
@@ -42,7 +52,7 @@ app.use((req, res, next) => {
 
   const credentials = Buffer.from(authHeader.split(' ')[1], 'base64').toString('utf8').split(':');
   const user = credentials[0];
-  const pass = credentials[1];
+  const pass = credentials.slice(1).join(':');
 
   if (user === config.ADMIN_USER && pass === config.ADMIN_PASSWORD) {
     return next();
