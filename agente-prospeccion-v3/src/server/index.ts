@@ -22,45 +22,6 @@ const outreachRepo = new OutreachRepository();
 const outreachEngine = new OutreachEngineService();
 const orchestrator = new PipelineOrchestrator();
 
-// Middleware de Autenticación Básica opcional para proteger el dashboard en producción
-app.use((req, res, next) => {
-  // Las rutas públicas de demos, webhooks y assets estáticos no deben disparar 401 recursivo
-  if (
-    req.path.startsWith('/api/demos') || 
-    req.path.startsWith('/api/webhooks') ||
-    req.path.startsWith('/storage/screenshots') ||
-    req.path.endsWith('.css') ||
-    req.path.endsWith('.js') ||
-    req.path.endsWith('.svg') ||
-    req.path.endsWith('.png') ||
-    req.path.endsWith('.ico') ||
-    req.path.endsWith('.woff2')
-  ) {
-    return next();
-  }
-
-  // Si no se han definido credenciales, se permite el acceso directo
-  if (!config.ADMIN_USER || !config.ADMIN_PASSWORD) {
-    return next();
-  }
-
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Basic ')) {
-    res.setHeader('WWW-Authenticate', 'Basic realm="Agente Prospeccion Dashboard"');
-    return res.status(401).send('Autenticación requerida para acceder al panel');
-  }
-
-  const credentials = Buffer.from(authHeader.split(' ')[1], 'base64').toString('utf8').split(':');
-  const user = credentials[0];
-  const pass = credentials.slice(1).join(':');
-
-  if (user === config.ADMIN_USER && pass === config.ADMIN_PASSWORD) {
-    return next();
-  }
-
-  res.setHeader('WWW-Authenticate', 'Basic realm="Agente Prospeccion Dashboard"');
-  return res.status(401).send('Credenciales incorrectas');
-});
 
 // Servir capturas de pantalla generadas por Playwright
 app.use('/storage/screenshots', express.static(config.SCREENSHOTS_PATH));
