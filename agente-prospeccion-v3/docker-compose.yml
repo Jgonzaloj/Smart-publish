@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  agente-prospeccion:
+    build: .
+    container_name: agente-prospeccion-b2b
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./storage:/app/storage
+      - ./.env:/app/.env
+    environment:
+      - NODE_ENV=production

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>B2B Autonomous Prospecting Agent — Control Center v3.0</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <!-- Background Glows -->
+  <div class="bg-glow glow-1"></div>
+  <div class="bg-glow glow-2"></div>
+  <div class="bg-glow glow-3"></div>
+
+  <div class="app-layout">
+    <!-- Sidebar Header -->
+    <header class="top-nav">
+      <div class="brand">
+        <div class="logo-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Agente Prospección B2B <span class="version-badge">v3.0</span></h1>
+          <p class="brand-sub">Playwright Audits &bull; State Machine &bull; Human-in-the-Loop</p>
+        </div>
+      </div>
+
+      <div class="nav-controls">
+        <div class="circuit-status" id="circuitStatus">
+          <span class="status-dot green"></span>
+          <span class="status-text">Dominio Saludable (Circuit Breaker OK)</span>
+        </div>
+        <button class="btn btn-secondary" id="btnResetBoard" style="color: #fda4af; border-color: rgba(244, 63, 94, 0.3);">
+          🗑️ Limpiar Tablero
+        </button>
+        <button class="btn btn-primary" id="btnOpenPipelineModal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          Ejecutar Nuevo Ciclo
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-viewport">
+      <!-- Stats Overview Bar -->
+      <section class="stats-bar">
+        <div class="stat-card">
+          <div class="stat-icon icon-cyan">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          </div>
+          <div>
+            <div class="stat-label">Total Leads</div>
+            <div class="stat-value" id="statTotalLeads">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon icon-purple">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <div>
+            <div class="stat-label">Auditados Playwright</div>
+            <div class="stat-value" id="statAudited">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon icon-amber">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div>
+            <div class="stat-label">Revisión Humana (Gate)</div>
+            <div class="stat-value" id="statReview">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon icon-emerald">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div>
+            <div class="stat-label">Human Handoff (Respuestas)</div>
+            <div class="stat-value" id="statHandoff">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon icon-green">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+          </div>
+          <div>
+            <div class="stat-label">Ventas Ganadas (WON)</div>
+            <div class="stat-value" id="statWon">0</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Kanban State Columns -->
+      <section class="kanban-board">
+        <!-- Col 1: Ingestados & Auditoría -->
+        <div class="kanban-column" id="colIngested">
+          <div class="column-header">
+            <div class="col-title">
+              <span class="pill pill-blue">1</span>
+              <h3>Ingesta & Auditoría</h3>
+            </div>
+            <span class="count-badge" id="badgeIngested">0</span>
+          </div>
+          <div class="column-content" id="listIngested"></div>
+        </div>
+
+        <!-- Col 2: Propuestas & Gate Anti-Alucinación -->
+        <div class="kanban-column" id="colProposals">
+          <div class="column-header">
+            <div class="col-title">
+              <span class="pill pill-purple">2</span>
+              <h3>Propuestas & Gate</h3>
+            </div>
+            <span class="count-badge" id="badgeProposals">0</span>
+          </div>
+          <div class="column-content" id="listProposals"></div>
+        </div>
+
+        <!-- Col 3: Envíos & Outreach Activo -->
+        <div class="kanban-column" id="colOutreach">
+          <div class="column-header">
+            <div class="col-title">
+              <span class="pill pill-cyan">3</span>
+              <h3>Outreach & Envíos</h3>
+            </div>
+            <span class="count-badge" id="badgeOutreach">0</span>
+          </div>
+          <div class="column-content" id="listOutreach"></div>
+        </div>
+
+        <!-- Col 4: Human Handoff (El Humano Cierra) -->
+        <div class="kanban-column highlighted" id="colHuman">
+          <div class="column-header">
+            <div class="col-title">
+              <span class="pill pill-emerald">4</span>
+              <h3>Human Handoff (Cierre)</h3>
+            </div>
+            <span class="count-badge" id="badgeHuman">0</span>
+          </div>
+          <div class="column-content" id="listHuman"></div>
+        </div>
+
+        <!-- Col 5: Resultados Finales -->
+        <div class="kanban-column" id="colFinal">
+          <div class="column-header">
+            <div class="col-title">
+              <span class="pill pill-slate">5</span>
+              <h3>Resultados Finales</h3>
+            </div>
+            <span class="count-badge" id="badgeFinal">0</span>
+          </div>
+          <div class="column-content" id="listFinal"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL: Ejecutar Pipeline -->
+  <div class="modal-backdrop" id="pipelineModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>🚀 Disparar Ciclo de Prospección</h2>
+        <button class="modal-close" id="btnClosePipelineModal">&times;</button>
+      </div>
+      <form id="pipelineForm">
+        <div class="form-group">
+          <label>Nicho de Negocio</label>
+          <input type="text" id="inputNiche" value="Clínicas Dentales" required placeholder="Ej. Clínicas Dentales, Abogados, Restaurantes">
+        </div>
+        <div class="form-group">
+          <label>Ubicación / Geografía</label>
+          <input type="text" id="inputLocation" value="Madrid" required placeholder="Ej. Madrid, Barcelona, Bogotá, CDMX">
+        </div>
+        <div class="form-group">
+          <label>Cantidad de Leads a Prospectar</label>
+          <input type="number" id="inputLimit" value="5" min="1" max="25" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCancelPipeline">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitPipeline">
+            <span class="btn-spinner" id="pipelineSpinner"></span>
+            Iniciar Ejecución Playwright + LLM
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Detalle de Lead & Auditoría -->
+  <div class="modal-backdrop" id="leadModal">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h2 id="modalLeadName">Nombre del Negocio</h2>
+          <p class="modal-sub" id="modalLeadSubtitle">Detalle de Lead y Diagnóstico Playwright</p>
+        </div>
+        <button class="modal-close" id="btnCloseLeadModal">&times;</button>
+      </div>
+      <div class="modal-body" id="leadModalBody">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
