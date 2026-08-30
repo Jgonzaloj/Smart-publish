@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Taxi Ica — Central de Administración y Flota</title>
+  <link rel="stylesheet" href="/shared.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    .admin-layout {
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    .grid-admin {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 16px;
+      margin-top: 14px;
+    }
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .metric-val {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--primary);
+      font-family: var(--font-heading);
+    }
+    .table-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.82rem;
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    th {
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-status {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-status.requested { background: rgba(245, 158, 11, 0.2); color: #fde047; }
+    .badge-status.accepted { background: rgba(6, 182, 212, 0.2); color: #67e8f9; }
+    .badge-status.in_progress { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
+    .badge-status.completed, .badge-status.paid { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+    .badge-status.sos { background: rgba(239, 68, 68, 0.3); color: #fca5a5; animation: pulse-sos 1.5s infinite; }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <header class="hub-header" style="margin-bottom: 14px; padding: 12px 18px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="font-size: 1.8rem;">🚖</div>
+        <div>
+          <h2 style="font-size: 1.25rem; color: #fff;">Taxi Ica &mdash; Centro de Control y Despacho</h2>
+          <p style="font-size: 0.78rem; color: var(--text-muted);">Monitoreo de Flota en Tiempo Real &bull; Ica, Perú</p>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <span class="badge-tag" style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border-color: #10b981;">
+          🟢 Socket Conectado
+        </span>
+        <button class="pill-btn" onclick="loadAdminMetrics()">🔄 Actualizar</button>
+      </div>
+    </header>
+
+    <!-- Metrics Row -->
+    <div class="metrics-row">
+      <div class="metric-card">
+        <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">TOTAL DE VIAJES</span>
+        <div class="metric-val" id="metricTotalRides">0</div>
+      </div>
+      <div class="metric-card">
+        <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">VIAJES COMPLETADOS</span>
+        <div class="metric-val" style="color: var(--secondary);" id="metricCompletedRides">0</div>
+      </div>
+      <div class="metric-card">
+        <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">CONDUCTORES ACTIVOS</span>
+        <div class="metric-val" style="color: #38bdf8;" id="metricActiveDrivers">4</div>
+      </div>
+      <div class="metric-card">
+        <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">COMISIONES APP (10%)</span>
+        <div class="metric-val" style="color: #f59e0b;" id="metricCommissions">S/ 0.00</div>
+      </div>
+    </div>
+
+    <!-- Main Grid: Fleet Map + Live Ride Feed -->
+    <div class="grid-admin">
+      <!-- Live Fleet Map of Ica -->
+      <div class="table-container" style="padding: 0; overflow: hidden; height: 380px; display: flex; flex-direction: column;">
+        <div style="padding: 10px 14px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="font-size: 0.95rem;">📍 Mapa de la Flota en Vivo (Ica)</h3>
+          <span style="font-size: 0.72rem; color: var(--text-dim);">Plaza de Armas &bull; Huacachina &bull; Parcona</span>
+        </div>
+        <div id="adminFleetMap" style="flex: 1; width: 100%;"></div>
+      </div>
+
+      <!-- Live Rides Stream -->
+      <div class="table-container" style="height: 380px; display: flex; flex-direction: column;">
+        <h3 style="font-size: 0.95rem; margin-bottom: 10px;">⚡ Flujo de Viajes en Vivo</h3>
+        <div id="liveRideList" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          <!-- Dynamically filled -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Driver Fleet Table -->
+    <div class="table-container" style="margin-top: 14px;">
+      <h3 style="font-size: 0.98rem; margin-bottom: 10px;">🚗 Padrón de Conductores y Documentación (ATU / Ica)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Conductor</th>
+            <th>Teléfono</th>
+            <th>Vehículo & Placa</th>
+            <th>Ubicación Actual</th>
+            <th>Estado</th>
+            <th>SOAT / Licencia</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="driverTableBody">
+          <!-- Filled by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    let adminMap;
+    let driverMarkers = {};
+
+    function initAdminMap() {
+      adminMap = L.map('adminFleetMap', { zoomControl: true }).setView([-14.06777, -75.72861], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(adminMap);
+    }
+
+    async function loadAdminMetrics() {
+      const res = await fetch('/api/admin/metrics');
+      const data = await res.json();
+      if (!data.success) return;
+
+      document.getElementById('metricTotalRides').textContent = data.metrics.total_rides;
+      document.getElementById('metricCompletedRides').textContent = data.metrics.completed_rides;
+      document.getElementById('metricActiveDrivers').textContent = data.metrics.active_drivers;
+      document.getElementById('metricCommissions').textContent = `S/ ${data.metrics.total_commissions.toFixed(2)}`;
+
+      renderDriversOnMap(data.drivers);
+      renderDriverTable(data.drivers);
+      renderRideList(data.recent_rides);
+    }
+
+    function renderDriversOnMap(drivers) {
+      drivers.forEach(d => {
+        const lat = d.current_location.latitude;
+        const lng = d.current_location.longitude;
+
+        if (driverMarkers[d.id]) {
+          driverMarkers[d.id].setLatLng([lat, lng]);
+        } else {
+          const marker = L.marker([lat, lng], {
+            icon: L.divIcon({
+              className: 'custom-taxi-marker',
+              html: `<div style="background:#f59e0b; color:#000; font-size:16px; width:28px; height:28px; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; box-shadow:0 0 10px rgba(245,158,11,0.6);">🚗</div>`,
+              iconSize: [28, 28],
+              iconAnchor: [14, 14]
+            })
+          }).bindPopup(`<strong>${d.full_name}</strong><br>${d.vehicle?.brand} ${d.vehicle?.model} (${d.vehicle?.plate_number})<br>Estado: ${d.status}`).addTo(adminMap);
+
+          driverMarkers[d.id] = marker;
+        }
+      });
+    }
+
+    function renderDriverTable(drivers) {
+      const tbody = document.getElementById('driverTableBody');
+      tbody.innerHTML = drivers.map(d => `
+        <tr>
+          <td><strong>${d.full_name}</strong></td>
+          <td>${d.phone}</td>
+          <td>${d.vehicle?.brand} ${d.vehicle?.model} <span style="background:#000; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700;">${d.vehicle?.plate_number}</span></td>
+          <td>${d.current_location.address}</td>
+          <td><span class="badge-status ${d.status === 'online' ? 'completed' : 'requested'}">${d.status}</span></td>
+          <td><span style="color:#10b981; font-weight:700;">✓ Aprobado</span></td>
+          <td><button class="pill-btn" onclick="alert('Verificando documentos de ${d.full_name}')">Ver Docs</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderRideList(rides) {
+      const container = document.getElementById('liveRideList');
+      if (!rides || rides.length === 0) {
+        container.innerHTML = '<p style="font-size:0.82rem; color:var(--text-dim); text-align:center; padding:16px;">No hay viajes recientes registrados</p>';
+        return;
+      }
+
+      container.innerHTML = rides.map(r => `
+        <div class="card-mini" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px;">
+          <div>
+            <div style="font-weight:700; font-size:0.85rem; color:#fff;">${r.passenger_name} ➡️ ${r.destination.address}</div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">Origen: ${r.origin.address} &bull; Tarifa: <strong style="color:var(--primary);">S/ ${r.estimated_fare.toFixed(2)}</strong> (${r.payment_method})</div>
+          </div>
+          <span class="badge-status ${r.sos_triggered ? 'sos' : r.status.toLowerCase()}">${r.sos_triggered ? '🚨 SOS' : r.status}</span>
+        </div>
+      `).join('');
+    }
+
+    // Escuchar eventos en vivo del socket
+    socket.on('admin_event', () => {
+      loadAdminMetrics();
+    });
+
+    socket.on('sos_alert', (event) => {
+      alert(`🚨 ¡ALERTA SOS DE EMERGENCIA EN ICA!\nViaje ID: ${event.ride.id}\nPasajero: ${event.ride.passenger_name}\nConductor: ${event.ride.driver?.full_name || 'En asignación'}\nUbicación: ${event.ride.origin.address}`);
+      loadAdminMetrics();
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initAdminMap();
+      loadAdminMetrics();
+    });
+  </script>
+</body>
+</html>

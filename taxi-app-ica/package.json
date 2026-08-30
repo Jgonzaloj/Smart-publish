@@ -1,0 +1,32 @@
+{
+  "name": "taxi-app-ica",
+  "version": "1.0.0",
+  "description": "Ecosistema de aplicativo de taxi para Ica, Perú (Pasajero, Conductor, Admin y Backend en Tiempo Real)",
+  "main": "dist/server/app.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server/app.ts",
+    "build": "tsc",
+    "start": "node dist/server/app.js",
+    "test:e2e": "npx playwright test tests/e2e-taxi-flow.spec.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.5",
+    "@types/uuid": "^10.0.0",
+    "playwright": "^1.50.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

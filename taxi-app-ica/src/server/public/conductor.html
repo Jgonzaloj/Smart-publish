@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Taxi Ica — App Conductor (inDrive Mode)</title>
+  <link rel="stylesheet" href="/shared.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    .toggle-online {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid #10b981;
+      padding: 6px 12px;
+      border-radius: var(--radius-full);
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #6ee7b7;
+    }
+    .toggle-online.offline {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #fca5a5;
+    }
+    .ride-offer-modal {
+      position: absolute;
+      bottom: 20px;
+      left: 14px;
+      right: 14px;
+      background: var(--bg-card);
+      border: 2px solid var(--primary);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.4);
+      z-index: 2000;
+      animation: bounce-in 0.4s ease;
+    }
+    @keyframes bounce-in {
+      0% { transform: translateY(100%); }
+      100% { transform: translateY(0); }
+    }
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #334155;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+      width: 100%;
+      transition: width 1s linear;
+    }
+    .stat-pill {
+      background: var(--bg-surface);
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      text-align: center;
+    }
+    .counter-offer-pills {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .counter-pill {
+      flex: 1;
+      padding: 6px;
+      background: var(--bg-surface);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: var(--radius-sm);
+      color: #fde047;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .counter-pill:hover {
+      background: rgba(245, 158, 11, 0.25);
+      border-color: var(--primary);
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-viewport">
+    <header class="phone-header">
+      <div class="brand-badge">
+        <span>🚗</span> Chofer <span class="badge-tag" style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7;">inDrive Activo</span>
+      </div>
+      <div id="btnToggleOnline" class="toggle-online" onclick="toggleOnlineStatus()">
+        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: currentColor;"></span>
+        <span id="txtOnlineStatus">EN LÍNEA</span>
+      </div>
+    </header>
+
+    <!-- Map View of Driver in Ica -->
+    <div id="mapDriver" class="map-view"></div>
+
+    <!-- Active Status Bar -->
+    <div id="driverControls" class="bottom-sheet">
+      <!-- State 1: Idle (Waiting for rides) -->
+      <div id="driverIdle">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div>
+            <div style="font-weight: 700; font-size: 1rem; color: #fff;">Mario Huamán García</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">Toyota Yaris &bull; Placa: <strong>Y1A-452</strong></div>
+          </div>
+          <div class="badge-tag" style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border-color: #10b981;">
+            ✓ SOAT Aprobado
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <div class="stat-pill">
+            <div style="font-size: 0.72rem; color: var(--text-muted);">Billetera / Saldo</div>
+            <div style="font-size: 1.1rem; font-weight: 800; color: var(--primary);">S/ 65.50</div>
+          </div>
+          <div class="stat-pill">
+            <div style="font-size: 0.72rem; color: var(--text-muted);">Ganancias Hoy</div>
+            <div style="font-size: 1.1rem; font-weight: 800; color: var(--secondary);">S/ 84.00</div>
+          </div>
+        </div>
+
+        <p style="font-size: 0.8rem; text-align: center; color: var(--text-dim);">
+          📡 Radar libre en Ica &bull; Puedes aceptar tarifas o contraofertar
+        </p>
+      </div>
+
+      <!-- State 2: Active Ride Navigation -->
+      <div id="driverActiveTrip" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span class="badge-tag" id="tripStageBadge" style="background: rgba(245, 158, 11, 0.2); color: var(--primary);">📍 Yendo al Pasajero</span>
+          <div style="font-weight: 800; font-size: 1.2rem; color: var(--primary);" id="activeTripFare">S/ 8.00</div>
+        </div>
+
+        <div class="card-mini" style="margin-bottom: 12px;">
+          <div style="font-size: 0.75rem; color: var(--text-muted);">PASAJERO</div>
+          <div id="tripPassengerName" style="font-weight: 700; color: #fff;">Carlos Quispe Morales</div>
+          <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">
+            Origen: <strong id="tripOriginText">Plaza de Armas</strong><br>
+            Destino: <strong id="tripDestText">Huacachina</strong>
+          </div>
+        </div>
+
+        <!-- Dynamic Action Button based on Trip State -->
+        <button id="btnTripAction" class="btn-primary" onclick="advanceTripStep()">
+          📍 He Llegado al Origen
+        </button>
+      </div>
+    </div>
+
+    <!-- inDrive 15-Second Ride Offer & Counter-Offer Modal -->
+    <div id="rideOfferModal" class="ride-offer-modal" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span class="badge-tag" style="background: rgba(245, 158, 11, 0.2); color: var(--primary);">OFERTA DEL PASAJERO</span>
+        <span id="offerTimer" style="font-weight: 800; color: #ef4444;">15s</span>
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressTimer"></div>
+      </div>
+
+      <div style="margin: 8px 0;">
+        <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary);" id="offerFare">S/ 8.00</div>
+        <div style="font-size: 0.85rem; color: #fff; margin-top: 4px;">
+          📍 Origen: <strong id="offerOrigin">Plaza de Armas de Ica</strong>
+        </div>
+        <div style="font-size: 0.85rem; color: #fff;">
+          🏁 Destino: <strong id="offerDest">Laguna de Huacachina</strong>
+        </div>
+        <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;" id="offerDetails">
+          Distancia: 4.8 km &bull; Pago: 💵 Efectivo
+        </div>
+      </div>
+
+      <!-- Quick Counter-Offer Buttons (inDrive style) -->
+      <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">O Contraofertar:</label>
+      <div class="counter-offer-pills">
+        <button class="counter-pill" id="counter1" onclick="sendCounterOffset(1)">+ S/ 1.00</button>
+        <button class="counter-pill" id="counter2" onclick="sendCounterOffset(2)">+ S/ 2.00</button>
+        <button class="counter-pill" id="counter3" onclick="sendCounterOffset(4)">+ S/ 4.00</button>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 10px;">
+        <button class="pill-btn" onclick="rejectOffer()" style="color: #f87171; border-color: rgba(239, 68, 68, 0.4);">
+          Rechazar
+        </button>
+        <button class="btn-primary" style="flex: 2;" onclick="acceptDirectOffer()">
+          ⚡ Aceptar por <span id="btnAcceptPrice">S/ 8.00</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    let map, markerDriver;
+    let isOnline = true;
+    let currentOffer = null;
+    let baseFare = 8.00;
+    let activeRide = null;
+    let timerInterval = null;
+    let tripStep = 0;
+
+    const DRIVER_ID = 'drv_mario_1';
+    let driverPos = [-14.06820, -75.72910];
+
+    function initMap() {
+      map = L.map('mapDriver', { zoomControl: false }).setView(driverPos, 14);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
+
+      markerDriver = L.marker(driverPos, {
+        icon: L.divIcon({
+          className: 'custom-icon-driver',
+          html: '<div style="background:#f59e0b; color:#000; font-size:18px; text-align:center; width:26px; height:26px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 12px #f59e0b;">🚗</div>',
+          iconSize: [26, 26],
+          iconAnchor: [13, 13]
+        })
+      }).addTo(map);
+    }
+
+    function toggleOnlineStatus() {
+      isOnline = !isOnline;
+      const btn = document.getElementById('btnToggleOnline');
+      const txt = document.getElementById('txtOnlineStatus');
+      if (isOnline) {
+        btn.className = 'toggle-online';
+        txt.textContent = 'EN LÍNEA';
+      } else {
+        btn.className = 'toggle-online offline';
+        txt.textContent = 'DESCONECTADO';
+      }
+      fetch(`/api/drivers/${DRIVER_ID}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: isOnline ? 'online' : 'offline' })
+      });
+    }
+
+    socket.on('new_ride_available', (event) => {
+      if (!isOnline || activeRide) return;
+      showOfferModal(event.ride);
+    });
+
+    function showOfferModal(ride) {
+      currentOffer = ride;
+      baseFare = ride.negotiated_fare || ride.estimated_fare;
+      document.getElementById('offerFare').textContent = `S/ ${baseFare.toFixed(2)}`;
+      document.getElementById('btnAcceptPrice').textContent = `S/ ${baseFare.toFixed(2)}`;
+      document.getElementById('offerOrigin').textContent = ride.origin.address;
+      document.getElementById('offerDest').textContent = ride.destination.address;
+      document.getElementById('offerDetails').textContent = `Distancia: ${ride.distance_km} km &bull; Pago: ${ride.payment_method === 'yape' ? '💜 Yape' : '💵 Efectivo'}`;
+
+      document.getElementById('counter1').textContent = `S/ ${(baseFare + 1).toFixed(2)}`;
+      document.getElementById('counter2').textContent = `S/ ${(baseFare + 2).toFixed(2)}`;
+      document.getElementById('counter3').textContent = `S/ ${(baseFare + 4).toFixed(2)}`;
+
+      document.getElementById('rideOfferModal').style.display = 'block';
+
+      let timeLeft = 15;
+      const timerElem = document.getElementById('offerTimer');
+      const progressElem = document.getElementById('progressTimer');
+
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timerElem.textContent = `${timeLeft}s`;
+        progressElem.style.width = `${(timeLeft / 15) * 100}%`;
+
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          rejectOffer();
+        }
+      }, 1000);
+    }
+
+    function sendCounterOffset(offset) {
+      const base = currentOffer ? (currentOffer.negotiated_fare || currentOffer.estimated_fare || 8) : 8;
+      sendCounterOffer(base + offset);
+    }
+
+    async function sendCounterOffer(amount) {
+      clearInterval(timerInterval);
+      await fetch(`/api/rides/${currentOffer.id}/bid`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driver_id: DRIVER_ID,
+          offered_fare: amount
+        })
+      });
+
+      // Notificar que se envió contraoferta y esperar si el pasajero acepta
+      document.getElementById('rideOfferModal').innerHTML = `
+        <div style="text-align:center; padding:16px;">
+          <div style="font-size:1.8rem; margin-bottom:6px;">⏳</div>
+          <div style="font-weight:700; color:#fff;">Contraoferta de S/ ${amount.toFixed(2)} enviada</div>
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-top:4px;">Esperando que el pasajero confirme tu precio...</div>
+        </div>
+      `;
+
+      // Escuchar si el pasajero acepta nuestra contraoferta
+      socket.on(`ride_update_${currentOffer.id}`, (event) => {
+        if (event.status === 'ACCEPTED' && event.ride.driver_id === DRIVER_ID) {
+          document.getElementById('rideOfferModal').style.display = 'none';
+          activeRide = event.ride;
+          startActiveTripUi(activeRide);
+        }
+      });
+    }
+
+    async function acceptDirectOffer() {
+      clearInterval(timerInterval);
+      document.getElementById('rideOfferModal').style.display = 'none';
+
+      const res = await fetch(`/api/rides/${currentOffer.id}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ driver_id: DRIVER_ID })
+      });
+      const data = await res.json();
+      if (data.success) {
+        activeRide = data.ride;
+        startActiveTripUi(activeRide);
+      }
+    }
+
+    function rejectOffer() {
+      clearInterval(timerInterval);
+      document.getElementById('rideOfferModal').style.display = 'none';
+      currentOffer = null;
+    }
+
+    function startActiveTripUi(ride) {
+      tripStep = 0;
+      document.getElementById('driverIdle').style.display = 'none';
+      document.getElementById('driverActiveTrip').style.display = 'block';
+
+      document.getElementById('activeTripFare').textContent = `S/ ${(ride.negotiated_fare || ride.estimated_fare).toFixed(2)}`;
+      document.getElementById('tripPassengerName').textContent = ride.passenger_name;
+      document.getElementById('tripOriginText').textContent = ride.origin.address;
+      document.getElementById('tripDestText').textContent = ride.destination.address;
+
+      document.getElementById('tripStageBadge').textContent = '📍 Yendo al Pasajero';
+      document.getElementById('btnTripAction').textContent = '📍 He Llegado al Origen';
+    }
+
+    async function advanceTripStep() {
+      if (!activeRide) return;
+
+      if (tripStep === 0) {
+        tripStep = 1;
+        await fetch(`/api/rides/${activeRide.id}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'ARRIVED' })
+        });
+        document.getElementById('tripStageBadge').textContent = '🙋🏽‍♂️ Pasajero en el Punto';
+        document.getElementById('btnTripAction').textContent = '🚖 Iniciar Carrera (En Ruta)';
+      } else if (tripStep === 1) {
+        tripStep = 2;
+        await fetch(`/api/rides/${activeRide.id}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'IN_PROGRESS' })
+        });
+        document.getElementById('tripStageBadge').textContent = '🏁 En Viaje hacia Destino';
+        document.getElementById('btnTripAction').textContent = '🏁 Finalizar Carrera y Cobrar';
+      } else if (tripStep === 2) {
+        await fetch(`/api/rides/${activeRide.id}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'COMPLETED' })
+        });
+
+        await fetch(`/api/rides/${activeRide.id}/pay`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: activeRide.negotiated_fare || activeRide.estimated_fare,
+            method: activeRide.payment_method
+          })
+        });
+
+        alert(`✅ ¡Carrera completada con éxito!\nCobro: S/ ${(activeRide.negotiated_fare || activeRide.estimated_fare).toFixed(2)} (${activeRide.payment_method === 'yape' ? 'Yape' : 'Efectivo'})`);
+
+        document.getElementById('driverActiveTrip').style.display = 'none';
+        document.getElementById('driverIdle').style.display = 'block';
+        activeRide = null;
+        tripStep = 0;
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initMap();
+    });
+  </script>
+</body>
+</html>

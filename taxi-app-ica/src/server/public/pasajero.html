@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Taxi Ica — App Pasajero (inDrive & Map Selector)</title>
+  <link rel="stylesheet" href="/shared.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    .map-floating-hint {
+      position: absolute;
+      top: 60px;
+      left: 14px;
+      right: 14px;
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid var(--primary);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: var(--radius-full);
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-align: center;
+      z-index: 1000;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .map-picker-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .tab-picker {
+      flex: 1;
+      padding: 6px 8px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: var(--bg-surface);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .tab-picker.active-origin {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: #10b981;
+      color: #6ee7b7;
+    }
+    .tab-picker.active-dest {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: var(--primary);
+      color: #fde047;
+    }
+    .fare-counter {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 6px 12px;
+      margin: 8px 0;
+    }
+    .btn-step {
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      color: #fff;
+      font-size: 1.4rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .btn-step:hover {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .fare-price-big {
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: var(--primary);
+      font-family: var(--font-heading);
+      text-align: center;
+    }
+    .driver-offer-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      animation: slide-up 0.3s ease;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    }
+    @keyframes slide-up {
+      from { transform: translateY(15px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .driver-card-matched {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-surface);
+      padding: 12px;
+      border-radius: var(--radius-md);
+      margin-bottom: 12px;
+      border: 1px solid var(--border-color);
+    }
+    .driver-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #f59e0b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+    .payment-pill {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .pill-btn {
+      flex: 1;
+      padding: 7px 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .pill-btn.active {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    .pill-btn.active-yape {
+      background: rgba(116, 34, 132, 0.3);
+      border-color: #9a2cb0;
+      color: #fff;
+    }
+    .status-banner {
+      background: #1e293b;
+      padding: 8px 12px;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-viewport">
+    <header class="phone-header">
+      <div class="brand-badge">
+        <span>🚖</span> Taxi Ica <span class="badge-tag" style="background: rgba(245, 158, 11, 0.2); color: var(--primary);">inDrive</span>
+      </div>
+      <button id="btnSosHeader" class="pill-btn" onclick="triggerSos()" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fca5a5; display: none;">
+        🚨 SOS
+      </button>
+    </header>
+
+    <!-- Map Floating Guidance Hint -->
+    <div id="mapHint" class="map-floating-hint">
+      <span>👆 Toca en el mapa para marcar tu Destino</span>
+    </div>
+
+    <!-- Map View of Ica -->
+    <div id="mapPassenger" class="map-view"></div>
+
+    <!-- Bottom Sheet 1: Route & Offer Bidding -->
+    <div id="panelRequest" class="bottom-sheet" style="max-height: 75%;">
+      <!-- Mode Tabs: Click on Map Mode -->
+      <div class="map-picker-tabs">
+        <div class="tab-picker" id="tabSetOrigin" onclick="setClickMode('origin')">
+          📍 Mover Origen
+        </div>
+        <div class="tab-picker active-dest" id="tabSetDest" onclick="setClickMode('dest')">
+          🏁 Elegir Destino en Mapa
+        </div>
+      </div>
+
+      <div style="margin-bottom: 6px;">
+        <label style="font-size: 0.72rem; color: #6ee7b7; font-weight: 700;">📍 Punto de Recogida (Origen)</label>
+        <select id="selectOrigin" class="input-select" style="margin-bottom: 6px;"></select>
+      </div>
+
+      <div style="margin-bottom: 6px;">
+        <label style="font-size: 0.72rem; color: #fde047; font-weight: 700;">🏁 Punto de Llegada (Destino)</label>
+        <select id="selectDestination" class="input-select" style="margin-bottom: 6px;"></select>
+      </div>
+
+      <!-- Distance & Route Info -->
+      <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">
+        <span>Distancia: <strong style="color: #fff;" id="txtDistanceKm">4.8 km</strong></span>
+        <span>Tiempo estimado: <strong style="color: #fff;" id="txtDurationMin">12 min</strong></span>
+      </div>
+
+      <!-- inDrive Offer Counter -->
+      <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">Tu Oferta de Tarifa (Soles)</label>
+      <div class="fare-counter">
+        <button class="btn-step" onclick="adjustOffer(-1)">−</button>
+        <div style="text-align: center;">
+          <div class="fare-price-big" id="offerPriceDisplay">S/ 8.00</div>
+          <div style="font-size: 0.68rem; color: var(--text-dim);" id="suggestedFareHint">Tarifa sugerida: S/ 8.00</div>
+        </div>
+        <button class="btn-step" onclick="adjustOffer(1)">+</button>
+      </div>
+
+      <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">Método de Pago</label>
+      <div class="payment-pill">
+        <div class="pill-btn active" id="payCash" onclick="setPaymentMethod('cash')">💵 Efectivo</div>
+        <div class="pill-btn" id="payYape" onclick="setPaymentMethod('yape')">💜 Yape (QR / Cel)</div>
+      </div>
+
+      <button id="btnRequestRide" class="btn-primary">
+        <span>🚀</span> Buscar Taxi con Mi Oferta
+      </button>
+    </div>
+
+    <!-- Bottom Sheet 2: Searching & Live Driver Bids -->
+    <div id="panelSearching" class="bottom-sheet" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div>
+          <div style="font-weight: 700; font-size: 0.95rem; color: #fff;">📡 Ofertas de Conductores</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">Tu oferta: <strong style="color: var(--primary);" id="searchFarePrice">S/ 8.00</strong></div>
+        </div>
+        <button class="pill-btn" onclick="cancelRide()" style="color: #f87171; border-color: rgba(239, 68, 68, 0.3);">
+          Cancelar
+        </button>
+      </div>
+
+      <!-- Live Bids Container -->
+      <div id="driverBidsContainer" style="max-height: 220px; overflow-y: auto;">
+        <div style="text-align: center; padding: 18px; color: var(--text-dim); font-size: 0.82rem;">
+          Esperando respuestas de taxistas cercanos en Ica...
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Sheet 3: Matched & In Progress -->
+    <div id="panelMatched" class="bottom-sheet" style="display: none;">
+      <div class="status-banner" id="statusBanner">
+        <span id="statusText">🚗 Conductor en camino</span>
+        <span id="statusTime" class="badge-tag" style="color: #6ee7b7; border-color: #10b981;">En camino</span>
+      </div>
+
+      <div class="driver-card-matched">
+        <div class="driver-avatar">👨🏽‍✈️</div>
+        <div style="flex: 1;">
+          <div id="driverName" style="font-weight: 700; font-size: 0.92rem; color: #fff;">Mario Huamán García</div>
+          <div id="driverCar" style="font-size: 0.78rem; color: var(--text-muted);">Toyota Yaris &bull; Gris Plata</div>
+          <div style="font-size: 0.76rem; color: var(--primary); font-weight: 700;">
+            Placa: <span id="driverPlate" style="background: #000; padding: 2px 6px; border-radius: 4px; color: #fff;">Y1A-452</span> &bull; ⭐ <span id="driverRating">4.95</span>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 0.7rem; color: var(--text-muted);">TARIFA ACORDADA</div>
+          <div style="font-size: 1.2rem; font-weight: 800; color: var(--primary);" id="matchedAgreedFare">S/ 8.00</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+        <button class="pill-btn" onclick="alert('Llamando al conductor al 956987111')">📞 Llamar</button>
+        <button class="pill-btn" onclick="alert('Enlace de rastreo en vivo compartido por WhatsApp')">📲 Compartir</button>
+        <button class="pill-btn" onclick="triggerSos()" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fca5a5;">🚨 SOS</button>
+      </div>
+
+      <div id="yapePaymentNotice" class="fare-box" style="display: none; background: rgba(116, 34, 132, 0.15); border-color: #742284; padding: 8px 12px;">
+        <div style="font-size: 0.8rem;">💜 Pagarás con <strong>Yape</strong> al finalizar</div>
+        <div style="font-size: 1rem; font-weight: 800; color: #d8b4fe;" id="matchedFareYape">S/ 8.00</div>
+      </div>
+    </div>
+
+    <!-- Bottom Sheet 4: Trip Completed & Yape QR / Rating -->
+    <div id="panelCompleted" class="bottom-sheet" style="display: none; text-align: center;">
+      <div style="font-size: 2rem; margin-bottom: 4px;">🎉</div>
+      <h3 style="font-size: 1.15rem; color: #fff;">¡Llegaste a tu destino!</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Viaje seguro completado con Taxi Ica</p>
+
+      <div class="fare-counter" style="flex-direction: column; padding: 12px;">
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Monto Final Acordado</div>
+        <div class="fare-price-big" id="finalFareDisplay">S/ 8.00</div>
+        <div id="paymentMethodConfirm" style="font-size: 0.78rem; font-weight: 700; color: var(--secondary);">Pago en Efectivo</div>
+      </div>
+
+      <div id="yapeQrContainer" style="display: none; margin: 10px 0; padding: 12px; background: rgba(116, 34, 132, 0.15); border-radius: var(--radius-md); border: 1px solid #742284;">
+        <div style="font-weight: 700; color: #d8b4fe; font-size: 0.85rem; margin-bottom: 4px;">Paga escaneando o por número Yape</div>
+        <div style="font-size: 0.82rem; margin-bottom: 4px;">Número Yape: <strong id="yapePhoneDisplay">956987111</strong></div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Ref: <span id="yapeRefCodeDisplay" style="font-family: monospace; font-weight: 700; color: #fff;">YAPE-123456</span></div>
+      </div>
+
+      <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; display: block; margin-top: 8px;">Califica a tu Conductor</label>
+      <div style="font-size: 1.6rem; cursor: pointer; margin-bottom: 12px; letter-spacing: 4px;" id="starRating">
+        ⭐⭐⭐⭐⭐
+      </div>
+
+      <button class="btn-primary" onclick="finishAndReset()">
+        ✅ Finalizar y Calificar
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    let map, markerOrigin, markerDest, markerDriver, routePolyline;
+    let landmarks = [];
+    let currentRide = null;
+    let selectedPayment = 'cash';
+    let currentOffer = 8.00;
+    let suggestedFare = 8.00;
+    let clickMode = 'dest'; // 'origin' or 'dest'
+
+    let currentOriginPoint = { lat: -14.06777, lng: -75.72861, name: 'Plaza de Armas de Ica' };
+    let currentDestPoint = { lat: -14.08745, lng: -75.76332, name: 'Laguna de Huacachina (Oasis)' };
+
+    function initMap() {
+      map = L.map('mapPassenger', { zoomControl: false }).setView([-14.06777, -75.72861], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
+
+      // 1. Marcador Origen (Verde) - Arrastrable
+      markerOrigin = L.marker([currentOriginPoint.lat, currentOriginPoint.lng], {
+        draggable: true,
+        icon: L.divIcon({
+          className: 'custom-icon-origin',
+          html: '<div style="background:#10b981; color:#000; font-size:16px; font-weight:800; text-align:center; width:30px; height:30px; border-radius:50%; border:3px solid #fff; box-shadow:0 0 14px #10b981; display:flex; align-items:center; justify-content:center;">📍</div>',
+          iconSize: [30, 30],
+          iconAnchor: [15, 15]
+        })
+      }).addTo(map);
+
+      // 2. Marcador Destino (Dorado/Rojo) - Arrastrable
+      markerDest = L.marker([currentDestPoint.lat, currentDestPoint.lng], {
+        draggable: true,
+        icon: L.divIcon({
+          className: 'custom-icon-dest',
+          html: '<div style="background:#f59e0b; color:#000; font-size:16px; font-weight:800; text-align:center; width:30px; height:30px; border-radius:50%; border:3px solid #fff; box-shadow:0 0 14px #f59e0b; display:flex; align-items:center; justify-content:center;">🏁</div>',
+          iconSize: [30, 30],
+          iconAnchor: [15, 15]
+        })
+      }).addTo(map);
+
+      // Eventos de arrastre
+      markerOrigin.on('dragend', function (e) {
+        const coord = e.target.getLatLng();
+        currentOriginPoint.lat = coord.lat;
+        currentOriginPoint.lng = coord.lng;
+        currentOriginPoint.name = `Punto en Mapa (${coord.lat.toFixed(4)}, ${coord.lng.toFixed(4)})`;
+        syncSelectWithPoint('selectOrigin', currentOriginPoint);
+        updateRouteAndFare();
+      });
+
+      markerDest.on('dragend', function (e) {
+        const coord = e.target.getLatLng();
+        currentDestPoint.lat = coord.lat;
+        currentDestPoint.lng = coord.lng;
+        currentDestPoint.name = `Punto en Mapa (${coord.lat.toFixed(4)}, ${coord.lng.toFixed(4)})`;
+        syncSelectWithPoint('selectDestination', currentDestPoint);
+        updateRouteAndFare();
+      });
+
+      // Evento de CLIC en cualquier punto del mapa de Ica
+      map.on('click', function (e) {
+        if (currentRide) return; // No mover si ya hay viaje activo
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+
+        if (clickMode === 'origin') {
+          currentOriginPoint = { lat, lng, name: `Punto en Mapa (${lat.toFixed(4)}, ${lng.toFixed(4)})` };
+          markerOrigin.setLatLng([lat, lng]);
+          syncSelectWithPoint('selectOrigin', currentOriginPoint);
+          setClickMode('dest'); // Pasar automáticamente a fijar destino
+        } else {
+          currentDestPoint = { lat, lng, name: `Punto en Mapa (${lat.toFixed(4)}, ${lng.toFixed(4)})` };
+          markerDest.setLatLng([lat, lng]);
+          syncSelectWithPoint('selectDestination', currentDestPoint);
+        }
+
+        updateRouteAndFare();
+      });
+
+      updateRouteAndFare();
+    }
+
+    function setClickMode(mode) {
+      clickMode = mode;
+      const tabOrigin = document.getElementById('tabSetOrigin');
+      const tabDest = document.getElementById('tabSetDest');
+      const hint = document.getElementById('mapHint');
+
+      if (mode === 'origin') {
+        tabOrigin.className = 'tab-picker active-origin';
+        tabDest.className = 'tab-picker';
+        hint.innerHTML = '<span>📍 Toca en el mapa para mover tu <strong>Punto de Recogida</strong></span>';
+      } else {
+        tabOrigin.className = 'tab-picker';
+        tabDest.className = 'tab-picker active-dest';
+        hint.innerHTML = '<span>🏁 Toca en el mapa para fijar tu <strong>Destino</strong></span>';
+      }
+    }
+
+    function syncSelectWithPoint(selectId, point) {
+      const select = document.getElementById(selectId);
+      let found = false;
+      for (let i = 0; i < select.options.length; i++) {
+        if (select.options[i].text === point.name) {
+          select.selectedIndex = i;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        // Añadir opción temporal de punto en mapa
+        const opt = new Option(point.name, 'custom_point', true, true);
+        select.add(opt);
+      }
+    }
+
+    async function loadLandmarks() {
+      const res = await fetch('/api/landmarks');
+      const data = await res.json();
+      landmarks = data.landmarks;
+
+      const selOrigin = document.getElementById('selectOrigin');
+      const selDest = document.getElementById('selectDestination');
+      selOrigin.innerHTML = '';
+      selDest.innerHTML = '';
+
+      landmarks.forEach((l, idx) => {
+        const opt1 = new Option(l.name, l.id, idx === 0, idx === 0);
+        const opt2 = new Option(l.name, l.id, idx === 1, idx === 1);
+        selOrigin.add(opt1);
+        selDest.add(opt2);
+      });
+
+      selOrigin.addEventListener('change', () => {
+        const item = landmarks.find(l => l.id === selOrigin.value);
+        if (item) {
+          currentOriginPoint = { lat: item.lat, lng: item.lng, name: item.name };
+          markerOrigin.setLatLng([item.lat, item.lng]);
+          updateRouteAndFare();
+        }
+      });
+
+      selDest.addEventListener('change', () => {
+        const item = landmarks.find(l => l.id === selDest.value);
+        if (item) {
+          currentDestPoint = { lat: item.lat, lng: item.lng, name: item.name };
+          markerDest.setLatLng([item.lat, item.lng]);
+          updateRouteAndFare();
+        }
+      });
+
+      updateRouteAndFare();
+    }
+
+    async function updateRouteAndFare() {
+      // 1. Dibujar línea de ruta entre Origen y Destino
+      if (routePolyline) map.removeLayer(routePolyline);
+
+      routePolyline = L.polyline([
+        [currentOriginPoint.lat, currentOriginPoint.lng],
+        [currentDestPoint.lat, currentDestPoint.lng]
+      ], {
+        color: '#f59e0b',
+        weight: 4,
+        opacity: 0.85,
+        dashArray: '8, 8'
+      }).addTo(map);
+
+      // Ajustar vista del mapa para ver ambos puntos
+      map.fitBounds(routePolyline.getBounds(), { padding: [40, 40] });
+
+      // 2. Calcular tarifa con el backend
+      const res = await fetch('/api/tariff/estimate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          origin: { latitude: currentOriginPoint.lat, longitude: currentOriginPoint.lng, address: currentOriginPoint.name },
+          destination: { latitude: currentDestPoint.lat, longitude: currentDestPoint.lng, address: currentDestPoint.name },
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        suggestedFare = data.estimate.estimated_fare;
+        currentOffer = suggestedFare;
+        document.getElementById('offerPriceDisplay').textContent = `S/ ${currentOffer.toFixed(2)}`;
+        document.getElementById('suggestedFareHint').textContent = `Tarifa sugerida: S/ ${suggestedFare.toFixed(2)}`;
+        document.getElementById('txtDistanceKm').textContent = `${data.estimate.distance_km} km`;
+        document.getElementById('txtDurationMin').textContent = `${data.estimate.duration_minutes} min`;
+      }
+    }
+
+    function adjustOffer(amount) {
+      currentOffer = Math.max(5.00, currentOffer + amount);
+      document.getElementById('offerPriceDisplay').textContent = `S/ ${currentOffer.toFixed(2)}`;
+    }
+
+    function setPaymentMethod(method) {
+      selectedPayment = method;
+      document.getElementById('payCash').className = method === 'cash' ? 'pill-btn active' : 'pill-btn';
+      document.getElementById('payYape').className = method === 'yape' ? 'pill-btn active-yape' : 'pill-btn';
+    }
+
+    document.getElementById('btnRequestRide').addEventListener('click', async () => {
+      const res = await fetch('/api/rides/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          passenger_id: 'usr_passenger_demo',
+          origin: { latitude: currentOriginPoint.lat, longitude: currentOriginPoint.lng, address: currentOriginPoint.name },
+          destination: { latitude: currentDestPoint.lat, longitude: currentDestPoint.lng, address: currentDestPoint.name },
+          payment_method: selectedPayment,
+          negotiated_fare: currentOffer,
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        currentRide = data.ride;
+        document.getElementById('searchFarePrice').textContent = `S/ ${currentRide.estimated_fare.toFixed(2)}`;
+        document.getElementById('panelRequest').style.display = 'none';
+        document.getElementById('panelSearching').style.display = 'block';
+        document.getElementById('mapHint').style.display = 'none';
+
+        listenRideEvents(currentRide.id);
+      }
+    });
+
+    function listenRideEvents(rideId) {
+      socket.on(`ride_bid_${rideId}`, (event) => {
+        renderDriverBids(event.all_bids);
+      });
+
+      socket.on(`ride_update_${rideId}`, (event) => {
+        if (event.status === 'ACCEPTED') {
+          showMatchedScreen(event.ride);
+        } else if (event.status === 'ARRIVED') {
+          document.getElementById('statusText').textContent = '📍 Conductor en tu punto de recogida';
+          document.getElementById('statusTime').textContent = 'Llegó';
+        } else if (event.status === 'IN_PROGRESS') {
+          document.getElementById('statusText').textContent = '🚖 En viaje hacia tu destino';
+          document.getElementById('statusTime').textContent = 'En Ruta';
+        } else if (event.status === 'COMPLETED') {
+          showCompletedScreen(event.ride);
+        }
+      });
+    }
+
+    function renderDriverBids(bids) {
+      const container = document.getElementById('driverBidsContainer');
+      if (!bids || bids.length === 0) return;
+
+      container.innerHTML = bids.map(b => `
+        <div class="driver-offer-card">
+          <div>
+            <div style="font-weight:700; font-size:0.88rem; color:#fff;">${b.driver_name}</div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">${b.vehicle_model} &bull; a ${b.eta_minutes} min &bull; ⭐ ${b.driver_rating.toFixed(2)}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:800; font-size:1.15rem; color:var(--primary);">S/ ${b.offered_fare.toFixed(2)}</div>
+            <button class="pill-btn" onclick="acceptDriverBid('${b.driver_id}', ${b.offered_fare})" style="background:rgba(245,158,11,0.2); border-color:var(--primary); color:#fff; padding:4px 10px; font-size:0.75rem; margin-top:2px;">
+              Aceptar Oferta
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function acceptDriverBid(driverId, agreedFare) {
+      const res = await fetch(`/api/rides/${currentRide.id}/accept-bid`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ driver_id: driverId, agreed_fare: agreedFare })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showMatchedScreen(data.ride);
+      }
+    }
+
+    function showMatchedScreen(ride) {
+      currentRide = ride;
+      document.getElementById('panelSearching').style.display = 'none';
+      document.getElementById('panelMatched').style.display = 'block';
+      document.getElementById('btnSosHeader').style.display = 'block';
+
+      if (ride.driver) {
+        document.getElementById('driverName').textContent = ride.driver.full_name;
+        document.getElementById('driverCar').textContent = `${ride.driver.vehicle?.brand} ${ride.driver.vehicle?.model} &bull; ${ride.driver.vehicle?.color}`;
+        document.getElementById('driverPlate').textContent = ride.driver.vehicle?.plate_number || 'Y1A-452';
+        document.getElementById('driverRating').textContent = ride.driver.rating_avg.toFixed(2);
+      }
+      document.getElementById('matchedAgreedFare').textContent = `S/ ${(ride.estimated_fare).toFixed(2)}`;
+
+      if (ride.payment_method === 'yape') {
+        document.getElementById('yapePaymentNotice').style.display = 'flex';
+        document.getElementById('matchedFareYape').textContent = `S/ ${ride.estimated_fare.toFixed(2)}`;
+      }
+
+      if (markerDriver) map.removeLayer(markerDriver);
+      markerDriver = L.marker([ride.driver?.current_location?.latitude || -14.0682, ride.driver?.current_location?.longitude || -75.7291], {
+        icon: L.divIcon({
+          className: 'custom-icon-taxi',
+          html: '<div style="background:#000; color:#f59e0b; font-size:20px; text-align:center; width:28px; height:28px; border-radius:50%; border:2px solid #f59e0b; box-shadow:0 0 12px #f59e0b;">🚖</div>',
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
+        })
+      }).addTo(map);
+    }
+
+    function showCompletedScreen(ride) {
+      currentRide = ride;
+      document.getElementById('panelMatched').style.display = 'none';
+      document.getElementById('btnSosHeader').style.display = 'none';
+      document.getElementById('panelCompleted').style.display = 'block';
+
+      document.getElementById('finalFareDisplay').textContent = `S/ ${(ride.final_fare || ride.estimated_fare).toFixed(2)}`;
+      document.getElementById('paymentMethodConfirm').textContent = ride.payment_method === 'yape' ? '💜 Pago con Yape' : '💵 Pago en Efectivo';
+
+      if (ride.payment_method === 'yape') {
+        document.getElementById('yapeQrContainer').style.display = 'block';
+        document.getElementById('yapePhoneDisplay').textContent = ride.driver?.phone || '956987111';
+        document.getElementById('yapeRefCodeDisplay').textContent = `YAPE-${Math.floor(100000 + Math.random() * 900000)}`;
+      }
+    }
+
+    function cancelRide() {
+      document.getElementById('panelSearching').style.display = 'none';
+      document.getElementById('panelRequest').style.display = 'block';
+      document.getElementById('mapHint').style.display = 'flex';
+      currentRide = null;
+    }
+
+    async function triggerSos() {
+      if (!currentRide) return;
+      if (confirm('🚨 ¿Deseas activar la ALERTA SOS de emergencia hacia la central de Taxi Ica?')) {
+        await fetch(`/api/rides/${currentRide.id}/sos`, { method: 'POST' });
+        alert('🚨 Alerta SOS emitida. La central de Ica y patrullas locales han recibido tu ubicación.');
+      }
+    }
+
+    function finishAndReset() {
+      document.getElementById('panelCompleted').style.display = 'none';
+      document.getElementById('panelRequest').style.display = 'block';
+      document.getElementById('mapHint').style.display = 'flex';
+      currentRide = null;
+      if (markerDriver) map.removeLayer(markerDriver);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      loadLandmarks();
+    });
+  </script>
+</body>
+</html>
