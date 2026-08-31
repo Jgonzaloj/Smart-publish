@@ -566,31 +566,37 @@ app.post('/api/auth/phone-otp', (req, res) => {
     const cleanPhone = phone.replace(/\D/g, '').slice(-9);
     // Generar código OTP criptográficamente aleatorio de 6 dígitos
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 min TTL
+    const expiresAtMs = Date.now() + 15 * 60 * 1000; // 15 min TTL
     db.prepare(`
     INSERT OR REPLACE INTO phone_otps (phone, code, role, attempts, expires_at, created_at)
     VALUES (?, ?, ?, 0, ?, datetime('now'))
-  `).run(cleanPhone, otpCode, role || 'passenger', expiresAt);
+  `).run(cleanPhone, otpCode, role || 'passenger', expiresAtMs.toString());
     console.log(`[SMS AUTH GATEWAY] Código OTP generado para +51 ${cleanPhone}: ${otpCode}`);
     res.json({
         success: true,
-        message: `Código de verificación de 6 dígitos enviado por SMS al +51 ${cleanPhone}. Válido por 5 minutos.`,
+        message: `Código de verificación de 6 dígitos enviado por SMS al +51 ${cleanPhone}. Válido por 15 minutos.`,
         demo_code: otpCode // Permite visualizar el código para pruebas hasta configurar proveedor SMS real
     });
 });
 app.post('/api/auth/verify-otp', (req, res) => {
     const { phone, code, role } = req.body;
-    const cleanPhone = (phone || '').replace(/\D/g, '').slice(-9);
-    if (!cleanPhone || !code) {
+    const cleanPhone = (phone || '').toString().replace(/\D/g, '').slice(-9);
+    const cleanCode = (code || '').toString().trim();
+    if (!cleanPhone || !cleanCode) {
         return res.status(400).json({ success: false, message: 'Teléfono y código son requeridos' });
     }
     const otpRecord = db.prepare(`
     SELECT * FROM phone_otps 
-    WHERE phone = ? AND code = ? AND datetime(expires_at) > datetime('now')
-  `).get(cleanPhone, code.toString().trim());
+    WHERE phone = ? AND code = ?
+  `).get(cleanPhone, cleanCode);
     if (!otpRecord) {
         db.prepare('UPDATE phone_otps SET attempts = attempts + 1 WHERE phone = ?').run(cleanPhone);
-        return res.status(400).json({ success: false, message: 'Código de verificación inválido o expirado' });
+        return res.status(400).json({ success: false, message: 'Código de verificación inválido' });
+    }
+    const exp = Number(otpRecord.expires_at);
+    if (exp && exp < Date.now()) {
+        db.prepare('DELETE FROM phone_otps WHERE phone = ?').run(cleanPhone);
+        return res.status(400).json({ success: false, message: 'Código expirado. Solicite un nuevo código.' });
     }
     db.prepare('DELETE FROM phone_otps WHERE phone = ?').run(cleanPhone);
     let user = db.prepare('SELECT * FROM users WHERE phone = ?').get(cleanPhone);
@@ -604,16 +610,20 @@ app.post('/api/auth/verify-otp', (req, res) => {
     `).run(userId, cleanPhone, fullName, userRole);
         if (userRole === 'driver') {
             db.prepare(`
-        INSERT OR IGNORE INTO drivers (user_id, status, wallet_balance)
-        VALUES (?, 'offline', 50.00)
+        INSERT INTO drivers (user_id, status, current_lat, current_lng, current_address, wallet_balance)
+        VALUES (?, 'online', -14.06777, -75.72861, 'Plaza de Armas de Ica', 50.00)
       `).run(userId);
+            db.prepare(`
+        INSERT INTO vehicles (id, driver_id, plate_number, brand, model, color, year)
+        VALUES (?, ?, 'Y1A-452', 'Toyota', 'Yaris', 'Gris', 2022)
+      `).run(`veh_${cleanPhone}`, userId);
         }
-        user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+        user = { id: userId, phone: cleanPhone, role: userRole, full_name: fullName };
     }
     const token = generateToken({
         id: user.id,
-        role: user.role,
         phone: user.phone,
+        role: user.role || userRole,
         name: user.full_name
     });
     res.json({
@@ -622,9 +632,8 @@ app.post('/api/auth/verify-otp', (req, res) => {
         user: {
             id: user.id,
             phone: user.phone,
-            full_name: user.full_name,
-            role: user.role,
-            rating_avg: user.rating_avg
+            role: user.role || userRole,
+            name: user.full_name
         }
     });
 });

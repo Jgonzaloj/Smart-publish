@@ -632,63 +632,45 @@
     }
 
     async function openDriverDocsModal() {
-      document.getElementById('modalDriverDocs').style.display = 'flex';
+      const modal = document.getElementById('modalDriverDocs');
+      if (modal) modal.style.display = 'flex';
+      const authModal = document.getElementById('modalDriverAuth');
+      if (authModal) authModal.style.display = 'none';
+
       try {
-        const res = await fetch(`/api/drivers/${DRIVER_ID}/profile`);
-        const data = await res.json();
-        if (data.success && data.driver) {
-          const d = data.driver;
-          document.getElementById('selfName').value = d.full_name || '';
-          document.getElementById('selfPhone').value = d.phone || '';
-          document.getElementById('selfDni').value = d.dni || '';
-          document.getElementById('selfPlate').value = d.plate_number || '';
-          document.getElementById('selfModel').value = `${d.model || 'Yaris'} ${d.color || 'Gris'}`;
+        const phone = localStorage.getItem('driver_phone');
+        const driverId = localStorage.getItem('driver_id') || DRIVER_ID;
+        if (phone) {
+          const res = await fetch(`/api/drivers/${driverId}/profile`);
+          const data = await res.json();
+          if (data && data.success && data.driver) {
+            const d = data.driver;
+            if (document.getElementById('selfName') && d.full_name) document.getElementById('selfName').value = d.full_name;
+            if (document.getElementById('selfPhone') && d.phone) document.getElementById('selfPhone').value = d.phone;
+            if (document.getElementById('selfDni') && d.dni) document.getElementById('selfDni').value = d.dni;
+            if (document.getElementById('selfPlate') && d.plate_number) document.getElementById('selfPlate').value = d.plate_number;
+            if (document.getElementById('selfModel') && d.model) document.getElementById('selfModel').value = `${d.model || 'Yaris'} ${d.color || 'Gris'}`.trim();
 
-          // Documentos reales
-          document.getElementById('selfPropertyCard').value = d.property_card || '';
-          document.getElementById('txt_file_tp').textContent = d.property_card_photo || 'tarjeta_propiedad.pdf';
-
-          document.getElementById('selfSoat').value = d.soat_number || '';
-          document.getElementById('selfSoatExpiry').value = d.soat_expiry || '2027-06-30';
-          document.getElementById('txt_file_soat').textContent = d.soat_photo || 'soat_digital.pdf';
-
-          document.getElementById('selfRevTecnica').value = d.technical_review_number || '';
-          document.getElementById('selfRevExpiry').value = d.technical_review_expiry || '2026-12-31';
-          document.getElementById('txt_file_rev').textContent = d.technical_review_photo || 'revision_tecnica.pdf';
-
-          document.getElementById('selfLicense').value = d.license_number || '';
-          document.getElementById('selfLicExpiry').value = d.license_expiry || '2028-12-31';
-
-          // Badges de estado documental
-          const badgeTp = document.getElementById('badge_tp');
-          const badgeSoat = document.getElementById('badge_soat');
-          const badgeRev = document.getElementById('badge_rev');
-          const badgeLic = document.getElementById('badge_lic');
-
-          if (d.doc_status === 'approved') {
-            badgeTp.textContent = '✓ Validada';
-            badgeSoat.textContent = '✓ Vigente';
-            badgeRev.textContent = '✓ Aprobada';
-            badgeLic.textContent = '✓ Cat. A-IIa';
-          } else if (d.doc_status === 'rejected') {
-            badgeTp.textContent = '🔴 Observado';
-            badgeSoat.textContent = '🔴 Observado';
-            badgeRev.textContent = '🔴 Observado';
-            badgeLic.textContent = '🔴 Observado';
-          } else {
-            badgeTp.textContent = '🟡 En Revisión';
-            badgeSoat.textContent = '🟡 En Revisión';
-            badgeRev.textContent = '🟡 En Revisión';
-            badgeLic.textContent = '🟡 En Revisión';
+            if (d.property_card && document.getElementById('selfPropertyCard')) document.getElementById('selfPropertyCard').value = d.property_card;
+            if (d.property_card_photo && document.getElementById('txt_file_tp')) document.getElementById('txt_file_tp').textContent = d.property_card_photo;
+            if (d.soat_number && document.getElementById('selfSoat')) document.getElementById('selfSoat').value = d.soat_number;
+            if (d.soat_expiry && document.getElementById('selfSoatExpiry')) document.getElementById('selfSoatExpiry').value = d.soat_expiry;
+            if (d.technical_review_number && document.getElementById('selfRevTecnica')) document.getElementById('selfRevTecnica').value = d.technical_review_number;
+            if (d.license_number && document.getElementById('selfLicense')) document.getElementById('selfLicense').value = d.license_number;
           }
         }
       } catch (err) {
-        console.warn('Error cargando perfil del conductor:', err);
+        console.warn('Error cargando perfil:', err);
       }
     }
 
     function closeDriverDocsModal() {
       document.getElementById('modalDriverDocs').style.display = 'none';
+      const phone = localStorage.getItem('driver_phone');
+      const token = localStorage.getItem('driver_token');
+      if (!phone || !token) {
+        openDriverAuthModal();
+      }
     }
 
     function handleDocFileSelect(input, labelId) {
