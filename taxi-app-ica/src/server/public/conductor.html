@@ -209,9 +209,10 @@
         ✕ RECHAZAR VIAJE
       </button>
     </div>
+  </div><!-- /driverAppMain -->
 
-    <!-- MODAL: MIS DOCUMENTOS / REGISTRO DE CONDUCTOR -->
-    <div id="modalDriverDocs" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(6px); z-index: 3000; align-items: center; justify-content: center; padding: 14px;">
+  <!-- MODAL: MIS DOCUMENTOS / REGISTRO DE CONDUCTOR (DISPONIBLE ANTES Y DESPUÉS DEL LOGIN) -->
+  <div id="modalDriverDocs" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(8px); z-index: 5000; align-items: center; justify-content: center; padding: 14px;">
       <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; padding: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
           <h3 style="font-size: 1.1rem; color: #fff;">📋 Acreditación y Documentos</h3>
@@ -340,7 +341,6 @@
         </form>
       </div>
     </div>
-  </div>
 
   <!-- Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -702,30 +702,59 @@
 
     async function handleDriverRegisterSelf(e) {
       e.preventDefault();
-      const body = {
-        property_card: document.getElementById('selfPropertyCard').value,
-        property_card_photo: document.getElementById('txt_file_tp').textContent,
-        soat_number: document.getElementById('selfSoat').value,
-        soat_expiry: document.getElementById('selfSoatExpiry').value,
-        soat_photo: document.getElementById('txt_file_soat').textContent,
-        technical_review_number: document.getElementById('selfRevTecnica').value,
-        technical_review_expiry: document.getElementById('selfRevExpiry').value,
-        technical_review_photo: document.getElementById('txt_file_rev').textContent,
-        license_number: document.getElementById('selfLicense').value,
-        license_expiry: document.getElementById('selfLicExpiry').value,
-      };
+      const full_name = document.getElementById('selfName').value.trim();
+      const phone = document.getElementById('selfPhone').value.trim();
+      const dni = document.getElementById('selfDni').value.trim();
+      const plate_number = document.getElementById('selfPlate').value.trim();
+      const model = document.getElementById('selfModel').value.trim();
 
-      const res = await fetch(`/api/drivers/${DRIVER_ID}/documents`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert(data.message);
-        closeDriverDocsModal();
-      } else {
-        alert('Error: ' + data.message);
+      const property_card = document.getElementById('selfPropertyCard').value.trim();
+      const property_card_photo = document.getElementById('txt_file_tp').textContent;
+      const soat_number = document.getElementById('selfSoat').value.trim();
+      const soat_expiry = document.getElementById('selfSoatExpiry').value;
+      const soat_photo = document.getElementById('txt_file_soat').textContent;
+      const technical_review_number = document.getElementById('selfRevTecnica').value.trim();
+      const technical_review_expiry = document.getElementById('selfRevExpiry').value;
+      const technical_review_photo = document.getElementById('txt_file_rev').textContent;
+      const license_number = document.getElementById('selfLicense').value.trim();
+      const license_expiry = document.getElementById('selfLicExpiry').value;
+
+      try {
+        const res = await fetch('/api/drivers/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            full_name,
+            phone,
+            dni,
+            plate_number,
+            model,
+            brand: 'Toyota',
+            property_card,
+            property_card_photo,
+            soat_number,
+            soat_expiry,
+            soat_photo,
+            technical_review_number,
+            technical_review_expiry,
+            technical_review_photo,
+            license_number,
+            license_expiry,
+            auto_approve: false
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('✅ ¡Solicitud y documentos enviados con éxito a la Central de Ica!\n\nTu expediente está en estado "🟡 PENDIENTE DE APROBACIÓN".\nUn administrador revisará tus documentos en el Panel de Control para habilitarte.');
+          closeDriverDocsModal();
+          const phoneInput = document.getElementById('inputDriverLoginPhone');
+          if (phoneInput) phoneInput.value = phone;
+          openDriverAuthModal();
+        } else {
+          alert('Error: ' + (data.message || 'No se pudo enviar la solicitud'));
+        }
+      } catch (err) {
+        alert('Error al conectar con la central de taxis');
       }
     }
 
