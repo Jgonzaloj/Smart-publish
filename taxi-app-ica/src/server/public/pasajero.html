@@ -69,16 +69,19 @@
     <header class="phone-header">
       <div class="brand-badge">
         <span style="color: var(--accent-action);">🚕</span>
-        <span style="font-size: 1.05rem;">Taxi Ica</span>
-        <span style="color: var(--accent-action); font-size: 0.85rem; font-weight: 800;">PASAJERO</span>
+        <span style="font-size: 1rem; font-weight: 800;">Taxi Ica</span>
+        <span class="brand-role" style="color: var(--accent-action); font-size: 0.75rem; font-weight: 800;">PASAJERO</span>
       </div>
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <div id="passengerProfileBadge" class="status-badge" style="background: rgba(20, 184, 166, 0.15); color: #5eead4; border: 1px solid var(--accent-action); cursor: pointer;" onclick="openPassengerAuthModal()">
+      <div class="header-actions">
+        <div id="passengerProfileBadge" class="header-user-pill" onclick="openPassengerAuthModal()">
           📱 Ingresar
         </div>
-        <div id="btnSosHeader" class="status-badge" style="display:none; background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444; cursor: pointer;" onclick="triggerSos()">
+        <button id="btnHeaderLogout" class="header-logout-btn" style="display:none;" onclick="logoutPassenger()" title="Cerrar sesión">
+          🚪 Salir
+        </button>
+        <button id="btnSosHeader" class="header-sos-btn" style="display:none;" onclick="triggerSos()">
           🚨 SOS
-        </div>
+        </button>
       </div>
     </header>
 
@@ -897,10 +900,14 @@
       const phone = localStorage.getItem('passenger_phone');
       const name = localStorage.getItem('passenger_name') || 'Pasajero';
       const badge = document.getElementById('passengerProfileBadge');
+      const btnLogout = document.getElementById('btnHeaderLogout');
       if (phone) {
-        badge.innerHTML = `👤 ${name.split(' ')[0]} &bull; 📱 ${phone.slice(-4)} <span onclick="logoutPassenger(); event.stopPropagation();" style="color:#f87171; margin-left:6px; font-weight:800;" title="Cerrar sesión">[ Salir ]</span>`;
+        badge.innerHTML = `👤 ${name.split(' ')[0]}`;
+        badge.title = `${name} (+51 ${phone})`;
+        if (btnLogout) btnLogout.style.display = 'inline-flex';
       } else {
         badge.innerHTML = `📱 Ingresar`;
+        if (btnLogout) btnLogout.style.display = 'none';
       }
     }
 

@@ -95,15 +95,18 @@
     <header class="phone-header">
       <div class="brand-badge">
         <span>🚗</span>
-        <span style="font-size: 1.05rem;">Taxi Ica</span>
-        <span style="color: var(--accent-action); font-size: 0.85rem; font-weight: 800;">CHOFER</span>
+        <span style="font-size: 1rem; font-weight: 800;">Taxi Ica</span>
+        <span class="brand-role" style="color: var(--accent-action); font-size: 0.75rem; font-weight: 800;">CHOFER</span>
       </div>
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <button id="btnDriverAccountBadge" class="pill-btn" onclick="openDriverAuthModal()" style="padding: 4px 8px; font-size: 0.72rem; background: rgba(20,184,166,0.15); border-color: var(--accent-action); color: #5eead4;">
+      <div class="header-actions">
+        <button id="btnDriverAccountBadge" class="header-user-pill" onclick="openDriverAuthModal()">
           📱 Ingresar
         </button>
-        <button class="pill-btn" onclick="openDriverDocsModal()" style="padding: 4px 10px; font-size: 0.75rem; background: var(--bg-surface); border-color: var(--accent-action); color: #fff;">
-          📋 Mis Docs
+        <button class="pill-btn" onclick="openDriverDocsModal()" style="padding: 4px 8px; font-size: 0.72rem; background: var(--bg-surface); border-color: var(--accent-action); color: #fff; white-space: nowrap;">
+          📋 Docs
+        </button>
+        <button id="btnHeaderDriverLogout" class="header-logout-btn" style="display:none;" onclick="logoutDriver()" title="Cerrar sesión">
+          🚪 Salir
         </button>
         <div id="btnToggleOnline" class="status-toggle-btn" onclick="toggleOnlineStatus()">
           <span id="dotOnline">🟢</span> <span id="txtOnlineStatus">EN SERVICIO</span>
@@ -769,10 +772,14 @@
       const phone = localStorage.getItem('driver_phone');
       const name = localStorage.getItem('driver_name') || 'Carlos R.';
       const badge = document.getElementById('btnDriverAccountBadge');
+      const btnLogout = document.getElementById('btnHeaderDriverLogout');
       if (phone) {
-        badge.innerHTML = `👤 ${name.split(' ')[0]} &bull; 📱 ${phone.slice(-4)} <span onclick="logoutDriver(); event.stopPropagation();" style="color:#f87171; margin-left:6px; font-weight:800;" title="Cerrar sesión">[ Salir ]</span>`;
+        badge.innerHTML = `👤 ${name.split(' ')[0]}`;
+        badge.title = `${name} (+51 ${phone})`;
+        if (btnLogout) btnLogout.style.display = 'inline-flex';
       } else {
         badge.innerHTML = `📱 Ingresar`;
+        if (btnLogout) btnLogout.style.display = 'none';
       }
     }
 
