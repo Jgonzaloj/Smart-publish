@@ -223,11 +223,14 @@
         <button class="btn-counter" id="counter3" onclick="sendCounterOffset(3)">S/ 18.00</button>
       </div>
 
-      <!-- Custom Contraoferta Input -->
-      <div style="display: flex; gap: 6px; margin: 6px 0 8px;">
-        <input type="number" id="inputCustomBid" step="0.50" min="6" class="form-input" placeholder="Otro precio (ej: 8.50)" style="flex: 1; padding: 6px 10px; font-size: 0.85rem; text-align: center;" />
-        <button type="button" class="pill-btn" onclick="sendCustomBid()" style="background: rgba(20,184,166,0.2); border-color: var(--accent-action); color: #5eead4; font-weight: 800; font-size: 0.78rem; padding: 6px 12px;">
-          Enviar Oferta
+      <!-- Custom Contraoferta Input con Estilo Premium Oscuro -->
+      <div style="background: rgba(15, 23, 42, 0.85); border: 1.5px solid rgba(20, 184, 166, 0.4); border-radius: var(--radius-md); padding: 6px 8px; margin: 8px 0; display: flex; align-items: center; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 4px; flex: 1; background: #0b132b; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; padding: 6px 10px;">
+          <span style="font-weight: 900; color: var(--accent-action); font-size: 0.95rem;">S/</span>
+          <input type="number" id="inputCustomBid" step="0.50" min="6" placeholder="0.00" style="width: 100%; background: transparent; border: none; outline: none; color: #fff; font-size: 1.15rem; font-weight: 800; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; text-align: center;" />
+        </div>
+        <button type="button" onclick="sendCustomBid()" style="background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); border: none; border-radius: 8px; color: #000; font-weight: 800; font-size: 0.82rem; padding: 10px 14px; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3); transition: transform 0.1s ease;">
+          <span>🚀</span> Enviar
         </button>
       </div>
 

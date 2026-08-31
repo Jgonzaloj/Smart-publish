@@ -638,29 +638,11 @@
 
         listenRideEvents(currentRide.id);
 
-        if (dispatchMode === 'AUTO') {
-          // Modo A: Auto-Match inmediato
-          document.getElementById('searchingTitle').textContent = '⚡ Asignando mejor conductor...';
-          try {
-            const matchRes = await fetch(`/api/rides/${currentRide.id}/auto-match`, { method: 'POST' });
-            const matchData = await matchRes.json();
-            if (matchData.success && matchData.ride) {
-              showMatchedScreen(matchData.ride);
-            } else {
-              currentRide.status = 'ACCEPTED';
-              showMatchedScreen(currentRide);
-            }
-          } catch {
-            currentRide.status = 'ACCEPTED';
-            showMatchedScreen(currentRide);
-          }
-        } else if (dispatchMode === 'SELECT') {
-          // Modo B: Cargar TOP 3 candidatos con MatchScore
+        if (dispatchMode === 'SELECT') {
           document.getElementById('searchingTitle').textContent = '👤 Elige tu Conductor Ideal';
           loadTopCandidates(currentRide.id);
         } else {
-          // Modo C: inDrive Bidding
-          document.getElementById('searchingTitle').textContent = '💰 Ofertas Entrantes de Choferes';
+          document.getElementById('searchingTitle').textContent = '📡 Buscando conductores cercanos...';
         }
       }
     }
