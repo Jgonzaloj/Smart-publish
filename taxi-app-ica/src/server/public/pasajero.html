@@ -82,11 +82,22 @@
       </div>
     </header>
 
+    <!-- Floating GPS Button -->
+    <button id="btnGpsLocate" class="floating-gps-btn" onclick="locateUserGps()" title="Centrar mi ubicación">
+      🎯 Mi Ubicación GPS
+    </button>
+
     <!-- Map Canvas -->
     <div id="mapPassenger" class="map-canvas"></div>
 
     <!-- Bottom Sheet 1: Request & Smart Fare (PDF Spec) -->
     <div id="panelRequest" class="bottom-sheet">
+      <!-- Drag Handle to Collapse/Expand Menu (Ver Mapa Completo) -->
+      <div class="sheet-drag-handle" onclick="toggleBottomSheet()" title="Pulsar para ocultar o mostrar menú">
+        <div class="handle-bar"></div>
+        <span class="handle-hint" id="sheetHintText">▼ Toca aquí para ver todo el mapa</span>
+      </div>
+
       <!-- Two Service Modes (Page 10 & 11) -->
       <div class="mode-selector">
         <div class="mode-tab active" id="tabModeAuto" onclick="setDispatchMode('AUTO')">
@@ -357,6 +368,70 @@
       });
 
       updateRouteAndFare();
+    }
+
+    let isSheetMinimized = false;
+
+    function toggleBottomSheet() {
+      const sheet = document.getElementById('panelRequest');
+      const hint = document.getElementById('sheetHintText');
+      if (!sheet) return;
+
+      isSheetMinimized = !isSheetMinimized;
+      if (isSheetMinimized) {
+        sheet.classList.add('minimized');
+        if (hint) hint.textContent = '▲ Toca aquí para ver opciones y pedir taxi';
+      } else {
+        sheet.classList.remove('minimized');
+        if (hint) hint.textContent = '▼ Toca aquí para ver todo el mapa';
+      }
+    }
+
+    function locateUserGps() {
+      const btn = document.getElementById('btnGpsLocate');
+      if (btn) btn.innerHTML = '🔄 Obteniendo GPS...';
+
+      if (!navigator.geolocation) {
+        alert('Tu navegador no soporta geolocalización GPS.');
+        if (btn) btn.innerHTML = '🎯 Mi Ubicación GPS';
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+
+          currentOriginPoint = {
+            lat: lat,
+            lng: lng,
+            name: `📍 Mi Ubicación GPS (${lat.toFixed(4)}, ${lng.toFixed(4)})`
+          };
+
+          if (map) {
+            map.flyTo([lat, lng], 16, { animate: true, duration: 1.2 });
+          }
+
+          if (markerOrigin) {
+            markerOrigin.setLatLng([lat, lng]);
+          }
+
+          syncSelectWithPoint('selectOrigin', currentOriginPoint);
+          updateRouteAndFare();
+
+          if (btn) btn.innerHTML = '🎯 Ubicación Actual ✓';
+          setTimeout(() => { if (btn) btn.innerHTML = '🎯 Mi Ubicación GPS'; }, 3000);
+        },
+        (err) => {
+          console.warn('GPS error', err);
+          if (map) {
+            map.flyTo([-14.06777, -75.72861], 16);
+          }
+          alert('No se pudo obtener el GPS exacto (permiso no otorgado o señal baja). Se ha ubicado en Plaza de Armas de Ica.');
+          if (btn) btn.innerHTML = '🎯 Mi Ubicación GPS';
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
     }
 
     function setDispatchMode(mode) {

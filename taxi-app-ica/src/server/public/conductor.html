@@ -98,6 +98,7 @@
         <span style="font-size: 1.05rem;">Taxi Ica</span>
         <span style="color: var(--accent-action); font-size: 0.85rem; font-weight: 800;">CHOFER</span>
       </div>
+      <div style="display: flex; align-items: center; gap: 6px;">
         <button id="btnDriverAccountBadge" class="pill-btn" onclick="openDriverAuthModal()" style="padding: 4px 8px; font-size: 0.72rem; background: rgba(20,184,166,0.15); border-color: var(--accent-action); color: #5eead4;">
           📱 Ingresar
         </button>
@@ -109,6 +110,11 @@
         </div>
       </div>
     </header>
+
+    <!-- Floating GPS Button -->
+    <button id="btnDriverGpsLocate" class="floating-gps-btn" onclick="locateDriverGps()" title="Centrar mi taxi" style="bottom: 120px;">
+      🎯 Mi Ubicación GPS
+    </button>
 
     <!-- Map Canvas (Broad view of Ica) -->
     <div id="mapDriver" class="map-canvas"></div>
@@ -367,6 +373,48 @@
           iconAnchor: [15, 15]
         })
       }).addTo(map);
+    }
+
+    function locateDriverGps() {
+      const btn = document.getElementById('btnDriverGpsLocate');
+      if (btn) btn.innerHTML = '🔄 Obteniendo GPS...';
+
+      if (!navigator.geolocation) {
+        alert('Dispositivo sin soporte GPS');
+        if (btn) btn.innerHTML = '🎯 Mi Ubicación GPS';
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          driverPos = [lat, lng];
+
+          if (map) {
+            map.flyTo([lat, lng], 16, { animate: true, duration: 1.2 });
+          }
+          if (markerDriver) {
+            markerDriver.setLatLng([lat, lng]);
+          }
+
+          socket.emit('driver_location', {
+            driver_id: DRIVER_ID,
+            lat: lat,
+            lng: lng,
+            heading: pos.coords.heading || 0,
+            speed: pos.coords.speed || 0
+          });
+
+          if (btn) btn.innerHTML = '🎯 Ubicación Actual ✓';
+          setTimeout(() => { if (btn) btn.innerHTML = '🎯 Mi Ubicación GPS'; }, 3000);
+        },
+        (err) => {
+          console.warn('GPS driver error', err);
+          if (btn) btn.innerHTML = '🎯 Mi Ubicación GPS';
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
     }
 
     function toggleOnlineStatus() {

@@ -162,6 +162,34 @@ h1, h2, h3, h4, .brand-font {
 }
 
 /* Bottom Sheet Clean Floating */
+/* Bottom Sheet Clean Floating with Collapsible Minimizing */
+.sheet-drag-handle {
+  width: 100%;
+  padding: 4px 0 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+.sheet-drag-handle .handle-bar {
+  width: 46px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+.sheet-drag-handle:hover .handle-bar {
+  background: var(--accent-action);
+  width: 54px;
+}
+.sheet-drag-handle .handle-hint {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+  font-weight: 600;
+}
+
 .bottom-sheet {
   position: absolute;
   bottom: 0;
@@ -170,12 +198,44 @@ h1, h2, h3, h4, .brand-font {
   background: var(--bg-card);
   border-top: 1px solid var(--border-color);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  padding: 16px 20px 24px;
+  padding: 10px 18px 24px;
   z-index: 100;
-  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
-  max-height: 82%;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
+  max-height: 85%;
   overflow-y: auto;
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bottom-sheet.minimized {
+  transform: translateY(calc(100% - 68px)) !important;
+}
+
+.floating-gps-btn {
+  position: absolute;
+  right: 14px;
+  bottom: 240px;
+  z-index: 90;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid var(--accent-action);
+  color: #5eead4;
+  border-radius: var(--radius-full);
+  padding: 8px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  transition: all 0.25s ease;
+}
+
+.floating-gps-btn:hover {
+  background: var(--accent-action);
+  color: #0f172a;
+  transform: translateY(-2px);
 }
 
 @keyframes slideUp {
