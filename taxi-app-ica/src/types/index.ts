@@ -60,7 +60,7 @@ export interface Vehicle {
 export interface Driver extends User {
   status: DriverStatus;
   current_location: LocationPoint;
-  last_location_update: string;
+  last_location_update?: string;
   vehicle?: Vehicle;
   documents?: DriverDocument;
   wallet_balance: number;

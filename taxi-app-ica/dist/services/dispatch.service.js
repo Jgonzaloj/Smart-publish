@@ -2,20 +2,22 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '../db/database.js';
 import { GeoService } from './geo.service.js';
 import { TariffService } from './tariff.service.js';
+import { CandidateService } from './dispatch/candidate.service.js';
 export class DispatchService {
     db = getDatabase();
     geoService = new GeoService();
     tariffService = new TariffService();
+    candidateService = new CandidateService();
+    activeBids = new Map();
     /**
-     * 1. Crea una nueva solicitud de viaje y busca conductores cercanos en Ica
+     * 1. Solicita un viaje y ejecuta el Smart Dispatch Engine (Candidatos TOP con Match Score)
      */
     requestRide(data) {
         const id = `ride_${uuidv4().substring(0, 8)}`;
         const fareResult = this.tariffService.calculateFare(data.origin, data.destination);
-        // Obtener datos del pasajero
         const passenger = this.db.prepare('SELECT * FROM users WHERE id = ?').get(data.passenger_id);
-        const passengerName = passenger?.full_name || 'Pasajero';
-        const passengerPhone = passenger?.phone || '956000000';
+        const passengerName = passenger?.full_name || 'Carlos Quispe Morales';
+        const passengerPhone = passenger?.phone || '956123456';
         const passengerRating = passenger?.rating_avg || 4.9;
         const estimatedFare = data.negotiated_fare || fareResult.recommended_fare;
         const stmt = this.db.prepare(`
@@ -44,67 +46,42 @@ export class DispatchService {
             negotiated_fare: data.negotiated_fare || null,
             payment_method: data.payment_method,
         });
-        const nearbyDrivers = this.findNearbyAvailableDrivers(data.origin.latitude, data.origin.longitude, 6.0); // radio 6km
+        // Smart Dispatch: Obtener y rankear el TOP 6 de candidatos por Match Score
+        const rankedCandidates = this.candidateService.findAndRankCandidates(data.origin.latitude, data.origin.longitude, 5.0, // Radio 5km
+        6);
+        const wave1 = rankedCandidates.filter(c => c.wave === 1);
+        const wave2 = rankedCandidates.filter(c => c.wave === 2);
         const ride = this.getRideById(id);
-        return { ride, nearby_drivers: nearbyDrivers };
+        return {
+            ride,
+            top_candidates: rankedCandidates,
+            wave_1_drivers: wave1,
+            wave_2_drivers: wave2,
+        };
     }
     /**
-     * 2. Encuentra conductores online disponibles ordenados por cercanía
+     * Modo A: Auto-Match — Asigna automáticamente al conductor #1 con mayor Match Score
      */
-    findNearbyAvailableDrivers(lat, lng, maxRadiusKm = 5.0) {
-        const rows = this.db.prepare(`
-      SELECT u.id, u.phone, u.full_name, u.email, u.role, u.rating_avg, u.total_rides, u.created_at,
-             d.status, d.current_lat, d.current_lng, d.current_address, d.wallet_balance, d.commission_rate, d.last_location_update,
-             v.plate_number, v.brand, v.model, v.color, v.year, v.photo_url
-      FROM drivers d
-      JOIN users u ON d.user_id = u.id
-      LEFT JOIN vehicles v ON d.user_id = v.driver_id
-      WHERE d.status = 'online'
-    `).all();
-        const driversWithDistance = rows.map(r => {
-            const distance = this.geoService.calculateDistanceKm(lat, lng, r.current_lat, r.current_lng);
-            return {
-                driver: {
-                    id: r.id,
-                    phone: r.phone,
-                    full_name: r.full_name,
-                    email: r.email,
-                    role: 'driver',
-                    rating_avg: Number(r.rating_avg),
-                    total_rides: Number(r.total_rides),
-                    created_at: r.created_at,
-                    status: r.status,
-                    current_location: {
-                        latitude: Number(r.current_lat),
-                        longitude: Number(r.current_lng),
-                        address: r.current_address,
-                    },
-                    last_location_update: r.last_location_update,
-                    wallet_balance: Number(r.wallet_balance),
-                    commission_rate: Number(r.commission_rate),
-                    vehicle: r.plate_number ? {
-                        id: `veh_${r.id}`,
-                        driver_id: r.id,
-                        plate_number: r.plate_number,
-                        brand: r.brand,
-                        model: r.model,
-                        color: r.color,
-                        year: Number(r.year),
-                        photo_url: r.photo_url,
-                    } : undefined,
-                },
-                distance,
-            };
-        });
-        // Filtrar por radio y ordenar por el más cercano
-        return driversWithDistance
-            .filter(d => d.distance <= maxRadiusKm)
-            .sort((a, b) => a.distance - b.distance)
-            .map(d => d.driver);
+    autoMatchBestDriver(rideId) {
+        const ride = this.getRideById(rideId);
+        if (!ride || ride.status !== 'REQUESTED')
+            return null;
+        const topCandidate = this.candidateService.findAndRankCandidates(ride.origin.latitude, ride.origin.longitude, 5.0, 1)[0];
+        if (!topCandidate)
+            return null;
+        return this.acceptDriverBid(rideId, topCandidate.driver.id, ride.negotiated_fare || ride.estimated_fare);
     }
-    activeBids = new Map();
     /**
-     * 3a. Conductor envía una Contraoferta (Modelo inDrive)
+     * Obtiene los candidatos rankeados para que el pasajero elija manualmente
+     */
+    getCandidatesForRide(rideId) {
+        const ride = this.getRideById(rideId);
+        if (!ride)
+            return [];
+        return this.candidateService.findAndRankCandidates(ride.origin.latitude, ride.origin.longitude, 5.0, 4);
+    }
+    /**
+     * Conductor envía una Contraoferta
      */
     submitDriverBid(rideId, driverId, offeredFare) {
         const ride = this.getRideById(rideId);
@@ -137,7 +114,6 @@ export class DispatchService {
             created_at: new Date().toISOString(),
         };
         const currentList = this.activeBids.get(rideId) || [];
-        // Filtrar si el conductor ya tenía una puja previa para actualizarla
         const updatedList = currentList.filter(b => b.driver_id !== driverId);
         updatedList.push(bid);
         this.activeBids.set(rideId, updatedList);
@@ -147,7 +123,7 @@ export class DispatchService {
         return this.activeBids.get(rideId) || [];
     }
     /**
-     * 3b. Pasajero Acepta la Oferta de un Conductor Específico
+     * Pasajero Acepta la Oferta de un Conductor Específico
      */
     acceptDriverBid(rideId, driverId, agreedFare) {
         const finalFare = agreedFare || this.getRideById(rideId)?.estimated_fare || 10;
@@ -159,19 +135,13 @@ export class DispatchService {
         const result = stmt.run({ rideId, driverId, finalFare });
         if (result.changes === 0)
             return null;
-        this.activeBids.delete(rideId); // Limpiar pujas
+        this.activeBids.delete(rideId);
         this.db.prepare("UPDATE drivers SET status = 'busy' WHERE user_id = ?").run(driverId);
         return this.getRideById(rideId);
     }
-    /**
-     * 3. Conductor Acepta el Viaje directamente con el precio del pasajero
-     */
     acceptRide(rideId, driverId) {
         return this.acceptDriverBid(rideId, driverId);
     }
-    /**
-     * 4. Transición de Estado del Viaje (State Machine)
-     */
     updateRideStatus(rideId, newStatus) {
         const current = this.getRideById(rideId);
         if (!current)
@@ -187,97 +157,78 @@ export class DispatchService {
         updateSql += ' WHERE id = ?';
         params.push(rideId);
         this.db.prepare(updateSql).run(...params);
-        // Si terminó o se canceló, liberar al conductor
-        if (['COMPLETED', 'PAID', 'CANCELLED'].includes(newStatus) && current.driver_id) {
-            this.db.prepare("UPDATE drivers SET status = 'online' WHERE user_id = ?").run(current.driver_id);
+        if (newStatus === 'COMPLETED' || newStatus === 'PAID' || newStatus === 'CANCELLED') {
+            if (current.driver_id) {
+                this.db.prepare("UPDATE drivers SET status = 'online' WHERE user_id = ?").run(current.driver_id);
+            }
         }
         return this.getRideById(rideId);
     }
-    /**
-     * 5. Activar Alerta SOS de Emergencia
-     */
     triggerSos(rideId) {
-        this.db.prepare('UPDATE rides SET sos_triggered = 1 WHERE id = ?').run(rideId);
+        const stmt = this.db.prepare('UPDATE rides SET sos_triggered = 1 WHERE id = ?');
+        stmt.run(rideId);
         return this.getRideById(rideId);
     }
-    /**
-     * 6. Actualizar Ubicación GPS en vivo del Conductor
-     */
-    updateDriverLocation(driverId, lat, lng, address) {
-        this.db.prepare(`
-      UPDATE drivers 
-      SET current_lat = @lat, current_lng = @lng, current_address = COALESCE(@address, current_address), last_location_update = CURRENT_TIMESTAMP
-      WHERE user_id = @driverId
-    `).run({ driverId, lat, lng, address: address || null });
-    }
-    /**
-     * 7. Obtener detalle completo del viaje
-     */
     getRideById(rideId) {
         const row = this.db.prepare(`
       SELECT r.*, 
-             p.full_name as passenger_name, p.phone as passenger_phone, p.rating_avg as passenger_rating,
-             d.full_name as driver_name, d.phone as driver_phone, d.rating_avg as driver_rating,
-             v.plate_number, v.brand, v.model, v.color, v.year,
-             dr.current_lat as driver_lat, dr.current_lng as driver_lng, dr.current_address as driver_address
+             u.full_name as passenger_name, u.phone as passenger_phone, u.rating_avg as passenger_rating,
+             d.status as driver_status, d.current_lat as driver_lat, d.current_lng as driver_lng, d.current_address as driver_address,
+             du.full_name as driver_name, du.phone as driver_phone, du.rating_avg as driver_rating,
+             v.plate_number, v.brand, v.model, v.color
       FROM rides r
-      JOIN users p ON r.passenger_id = p.id
-      LEFT JOIN users d ON r.driver_id = d.id
-      LEFT JOIN drivers dr ON r.driver_id = dr.user_id
-      LEFT JOIN vehicles v ON r.driver_id = v.driver_id
+      JOIN users u ON r.passenger_id = u.id
+      LEFT JOIN drivers d ON r.driver_id = d.user_id
+      LEFT JOIN users du ON d.user_id = du.id
+      LEFT JOIN vehicles v ON d.user_id = v.driver_id
       WHERE r.id = ?
     `).get(rideId);
         if (!row)
             return null;
-        return {
-            id: row.id,
-            passenger_id: row.passenger_id,
-            passenger_name: row.passenger_name,
-            passenger_phone: row.passenger_phone,
-            passenger_rating: Number(row.passenger_rating || 5.0),
-            driver_id: row.driver_id || undefined,
-            driver: row.driver_id ? {
+        let driver;
+        if (row.driver_id) {
+            driver = {
                 id: row.driver_id,
                 phone: row.driver_phone,
                 full_name: row.driver_name,
                 role: 'driver',
-                rating_avg: Number(row.driver_rating || 5.0),
-                total_rides: 45,
-                created_at: '',
-                status: 'busy',
+                rating_avg: row.driver_rating || 4.9,
+                total_rides: 50,
+                status: row.driver_status,
                 current_location: {
-                    latitude: Number(row.driver_lat || row.origin_lat),
-                    longitude: Number(row.driver_lng || row.origin_lng),
-                    address: row.driver_address || '',
+                    latitude: row.driver_lat,
+                    longitude: row.driver_lng,
+                    address: row.driver_address,
                 },
-                last_location_update: new Date().toISOString(),
-                wallet_balance: 50.0,
-                commission_rate: 0.10,
-                vehicle: row.plate_number ? {
+                vehicle: {
                     id: `veh_${row.driver_id}`,
                     driver_id: row.driver_id,
                     plate_number: row.plate_number,
                     brand: row.brand,
                     model: row.model,
                     color: row.color,
-                    year: Number(row.year || 2022),
-                } : undefined,
-            } : undefined,
-            origin: {
-                latitude: Number(row.origin_lat),
-                longitude: Number(row.origin_lng),
-                address: row.origin_address,
-            },
-            destination: {
-                latitude: Number(row.dest_lat),
-                longitude: Number(row.dest_lng),
-                address: row.dest_address,
-            },
-            distance_km: Number(row.distance_km),
-            duration_minutes: Number(row.duration_minutes),
-            estimated_fare: Number(row.estimated_fare),
-            final_fare: row.final_fare ? Number(row.final_fare) : undefined,
-            negotiated_fare: row.negotiated_fare ? Number(row.negotiated_fare) : undefined,
+                    year: 2022,
+                },
+                wallet_balance: 60.0,
+                commission_rate: 0.10,
+                created_at: new Date().toISOString(),
+            };
+        }
+        return {
+            id: row.id,
+            passenger_id: row.passenger_id,
+            passenger_name: row.passenger_name,
+            passenger_phone: row.passenger_phone,
+            passenger_rating: row.passenger_rating,
+            driver_id: row.driver_id,
+            driver,
+            origin: { latitude: row.origin_lat, longitude: row.origin_lng, address: row.origin_address },
+            destination: { latitude: row.dest_lat, longitude: row.dest_lng, address: row.dest_address },
+            distance_km: row.distance_km,
+            duration_minutes: row.duration_minutes,
+            estimated_fare: row.estimated_fare,
+            final_fare: row.final_fare,
+            negotiated_fare: row.negotiated_fare,
             payment_method: row.payment_method,
             status: row.status,
             sos_triggered: Boolean(row.sos_triggered),
@@ -287,11 +238,21 @@ export class DispatchService {
             completed_at: row.completed_at,
         };
     }
-    /**
-     * Obtiene todos los viajes para el panel de administración
-     */
-    getAllRides(limit = 50) {
+    updateDriverLocation(driverId, lat, lng, address = 'Ica') {
+        this.db.prepare(`
+      UPDATE drivers
+      SET current_lat = ?, current_lng = ?, current_address = ?, last_location_update = CURRENT_TIMESTAMP
+      WHERE user_id = ?
+    `).run(lat, lng, address, driverId);
+    }
+    getAllRides(limit = 20) {
         const rows = this.db.prepare('SELECT id FROM rides ORDER BY created_at DESC LIMIT ?').all(limit);
-        return rows.map(r => this.getRideById(r.id));
+        return rows.map(r => this.getRideById(r.id)).filter(Boolean);
+    }
+    findNearbyAvailableDrivers(lat, lng, maxRadiusKm = 5.0) {
+        return this.candidateService.findAndRankCandidates(lat, lng, maxRadiusKm, 20).map(c => c.driver);
+    }
+    getActiveDrivers() {
+        return this.candidateService.findAndRankCandidates(-14.06777, -75.72861, 20.0, 50).map(c => c.driver);
     }
 }

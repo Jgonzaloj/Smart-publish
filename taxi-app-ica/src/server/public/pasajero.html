@@ -3,37 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Taxi Ica — Marketplace de Movilidad (Price Intelligence)</title>
+  <title>Taxi Ica — Marketplace & Smart Dispatch</title>
   <link rel="stylesheet" href="/shared.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <style>
-    .map-floating-hint {
-      position: absolute;
-      top: 58px;
-      left: 14px;
-      right: 14px;
-      background: rgba(15, 23, 42, 0.92);
-      border: 1px solid var(--accent-cyan);
-      color: #fff;
-      padding: 6px 12px;
-      border-radius: var(--radius-full);
-      font-size: 0.75rem;
+    .dispatch-mode-selector {
+      display: flex;
+      gap: 6px;
+      margin: 8px 0;
+      background: #0b1120;
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+    .mode-tab {
+      flex: 1;
+      padding: 6px 4px;
+      font-size: 0.72rem;
       font-weight: 700;
       text-align: center;
-      z-index: 1000;
-      backdrop-filter: blur(8px);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+    }
+    .mode-tab.active {
+      background: rgba(6, 182, 212, 0.2);
+      color: #67e8f9;
+      border: 1px solid #06b6d4;
     }
     .probability-badge {
-      padding: 6px 10px;
+      padding: 5px 10px;
       border-radius: var(--radius-md);
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       font-weight: 700;
       text-align: center;
       margin-top: 4px;
@@ -59,7 +63,7 @@
       border: 1px solid var(--border-color);
       border-radius: var(--radius-sm);
       color: #fff;
-      font-size: 0.76rem;
+      font-size: 0.75rem;
       font-weight: 700;
       cursor: pointer;
       text-align: center;
@@ -70,8 +74,29 @@
       background: rgba(6, 182, 212, 0.15);
       color: #67e8f9;
     }
-    .chip-offer:hover {
-      border-color: var(--primary);
+    .driver-card-select {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+    }
+    .driver-card-select:hover {
+      border-color: #06b6d4;
+      background: rgba(6, 182, 212, 0.05);
+    }
+    .score-badge {
+      background: rgba(16, 185, 129, 0.2);
+      color: #6ee7b7;
+      border: 1px solid #10b981;
+      padding: 2px 6px;
+      border-radius: var(--radius-full);
+      font-size: 0.68rem;
+      font-weight: 800;
     }
   </style>
 </head>
@@ -79,41 +104,33 @@
   <div class="phone-viewport">
     <header class="phone-header">
       <div class="brand-badge">
-        <span>🚖</span> Taxi Ica <span class="badge-tag" style="background: rgba(6, 182, 212, 0.15); color: #67e8f9; border-color: #06b6d4;">Motor V2</span>
+        <span>🚖</span> Taxi Ica <span class="badge-tag" style="background: rgba(6, 182, 212, 0.15); color: #67e8f9; border-color: #06b6d4;">Smart Dispatch</span>
       </div>
       <button id="btnSosHeader" class="pill-btn" onclick="triggerSos()" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fca5a5; display: none;">
         🚨 SOS
       </button>
     </header>
 
-    <!-- Map Floating Guidance Hint -->
-    <div id="mapHint" class="map-floating-hint">
-      <span>👆 Toca en el mapa para marcar tu Destino</span>
-    </div>
-
     <!-- Map View of Ica (Protagonista 75%) -->
     <div id="mapPassenger" class="map-view"></div>
 
-    <!-- Bottom Sheet 1: Route & Smart Pricing Negotiation -->
-    <div id="panelRequest" class="bottom-sheet" style="max-height: 80%;">
-      <!-- Mode Tabs: Click on Map Mode -->
-      <div class="map-picker-tabs" style="display: flex; gap: 6px; margin-bottom: 6px;">
-        <div class="tab-picker" id="tabSetOrigin" onclick="setClickMode('origin')" style="flex: 1; padding: 5px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-muted); font-size: 0.72rem; font-weight: 700; cursor: pointer; text-align: center;">
-          📍 Mover Origen
-        </div>
-        <div class="tab-picker" id="tabSetDest" onclick="setClickMode('dest')" style="flex: 1; padding: 5px 8px; border-radius: var(--radius-sm); border: 1px solid var(--accent-cyan); background: rgba(6, 182, 212, 0.2); color: #67e8f9; font-size: 0.72rem; font-weight: 700; cursor: pointer; text-align: center;">
-          🏁 Elegir Destino en Mapa
-        </div>
+    <!-- Bottom Sheet 1: Route & Dispatch Mode -->
+    <div id="panelRequest" class="bottom-sheet" style="max-height: 82%;">
+      <!-- 3 Modos de Despacho para Flota Controlada -->
+      <div class="dispatch-mode-selector">
+        <div class="mode-tab active" id="tabModeAuto" onclick="setDispatchMode('AUTO')">⚡ Auto-Match</div>
+        <div class="mode-tab" id="tabModeSelect" onclick="setDispatchMode('SELECT')">👤 TOP 3 Choferes</div>
+        <div class="mode-tab" id="tabModeBid" onclick="setDispatchMode('BID')">💰 Negociar</div>
       </div>
 
       <div style="margin-bottom: 4px;">
         <label style="font-size: 0.7rem; color: #6ee7b7; font-weight: 700;">📍 Punto de Recogida (Origen)</label>
-        <select id="selectOrigin" class="input-select" style="margin: 2px 0 6px; padding: 8px 10px; font-size: 0.85rem;"></select>
+        <select id="selectOrigin" class="input-select" style="margin: 2px 0 4px; padding: 7px 10px; font-size: 0.82rem;"></select>
       </div>
 
       <div style="margin-bottom: 4px;">
         <label style="font-size: 0.7rem; color: #fde047; font-weight: 700;">🏁 Punto de Llegada (Destino)</label>
-        <select id="selectDestination" class="input-select" style="margin: 2px 0 6px; padding: 8px 10px; font-size: 0.85rem;"></select>
+        <select id="selectDestination" class="input-select" style="margin: 2px 0 4px; padding: 7px 10px; font-size: 0.82rem;"></select>
       </div>
 
       <!-- Distance & Route Breakdown -->
@@ -122,55 +139,55 @@
         <span id="txtZoneTag" style="color: var(--primary); font-weight: 700;">Zona Urbana</span>
       </div>
 
-      <!-- inDrive Offer Counter with Smart Probability -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-        <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">TU OFERTA DE TARIFA</label>
-        <span style="font-size: 0.7rem; color: #67e8f9;">Recomendado: <strong id="lblRecommendedPrice">S/ 14.00</strong></span>
-      </div>
-
-      <div class="fare-counter" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 4px 12px; margin: 4px 0;">
-        <button class="btn-step" onclick="adjustOffer(-1)" style="width: 36px; height: 36px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: #fff; font-size: 1.3rem; font-weight: 800; cursor: pointer;">−</button>
-        <div style="text-align: center;">
-          <div class="fare-price-big" id="offerPriceDisplay" style="font-size: 1.6rem; font-weight: 800; color: var(--primary);">S/ 14.00</div>
+      <!-- Bidding / Fare Box -->
+      <div id="biddingControls">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+          <label style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">TARIFA DE VIAJE</label>
+          <span style="font-size: 0.68rem; color: #67e8f9;">Recomendado: <strong id="lblRecommendedPrice">S/ 14.00</strong></span>
         </div>
-        <button class="btn-step" onclick="adjustOffer(1)" style="width: 36px; height: 36px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: #fff; font-size: 1.3rem; font-weight: 800; cursor: pointer;">+</button>
-      </div>
 
-      <!-- Semáforo de Probabilidad de Aceptación -->
-      <div id="probBadge" class="probability-badge prob-high">
-        <span id="probText">🟢 Alta probabilidad de encontrar conductor</span>
-      </div>
+        <div class="fare-counter" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 4px 12px; margin: 4px 0;">
+          <button class="btn-step" onclick="adjustOffer(-1)" style="width: 34px; height: 34px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: #fff; font-size: 1.2rem; font-weight: 800; cursor: pointer;">−</button>
+          <div style="text-align: center;">
+            <div class="fare-price-big" id="offerPriceDisplay" style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">S/ 14.00</div>
+          </div>
+          <button class="btn-step" onclick="adjustOffer(1)" style="width: 34px; height: 34px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: #fff; font-size: 1.2rem; font-weight: 800; cursor: pointer;">+</button>
+        </div>
 
-      <!-- Quick Chips -->
-      <div class="quick-offer-chips" id="quickOfferChips"></div>
+        <!-- Semáforo de Probabilidad -->
+        <div id="probBadge" class="probability-badge prob-high">
+          <span id="probText">🟢 Alta probabilidad de conductor rápido</span>
+        </div>
+
+        <div class="quick-offer-chips" id="quickOfferChips"></div>
+      </div>
 
       <!-- Payment Method -->
-      <div class="payment-pill" style="display: flex; gap: 8px; margin: 8px 0 10px;">
+      <div class="payment-pill" style="display: flex; gap: 8px; margin: 8px 0 8px;">
         <div class="pill-btn active" id="payCash" onclick="setPaymentMethod('cash')" style="flex: 1; padding: 6px; font-size: 0.78rem; text-align: center;">💵 Efectivo</div>
         <div class="pill-btn" id="payYape" onclick="setPaymentMethod('yape')" style="flex: 1; padding: 6px; font-size: 0.78rem; text-align: center;">💜 Yape (QR)</div>
       </div>
 
       <button id="btnRequestRide" class="btn-primary" style="padding: 12px 16px;">
-        <span>🚀</span> Solicitar Viaje en Ica
+        <span id="btnRequestIcon">⚡</span> <span id="btnRequestLabel">Asignar Taxi Rápido (Auto-Match)</span>
       </button>
     </div>
 
-    <!-- Bottom Sheet 2: Searching & Live Driver Bids -->
+    <!-- Bottom Sheet 2: Mode B (Select Driver from TOP 3 candidates) or Mode C (Live Bids) -->
     <div id="panelSearching" class="bottom-sheet" style="display: none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <div>
-          <div style="font-weight: 700; font-size: 0.95rem; color: #fff;">📡 Ofertas de Conductores</div>
-          <div style="font-size: 0.75rem; color: var(--text-muted);">Tu oferta: <strong style="color: var(--primary);" id="searchFarePrice">S/ 14.00</strong></div>
+          <div style="font-weight: 700; font-size: 0.95rem; color: #fff;" id="searchingTitle">📡 Conductores Disponibles</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">Tarifa: <strong style="color: var(--primary);" id="searchFarePrice">S/ 14.00</strong></div>
         </div>
         <button class="pill-btn" onclick="cancelRide()" style="color: #f87171; border-color: rgba(239, 68, 68, 0.3);">
           Cancelar
         </button>
       </div>
 
-      <!-- Live Bids Container -->
-      <div id="driverBidsContainer" style="max-height: 220px; overflow-y: auto;">
+      <div id="driverBidsContainer" style="max-height: 240px; overflow-y: auto;">
         <div style="text-align: center; padding: 18px; color: var(--text-dim); font-size: 0.82rem;">
-          Esperando respuestas de taxistas cercanos en Ica...
+          Calculando Match Score y buscando en la flota de Ica...
         </div>
       </div>
     </div>
@@ -209,7 +226,7 @@
       </div>
     </div>
 
-    <!-- Bottom Sheet 4: Trip Completed & Yape QR / Rating -->
+    <!-- Bottom Sheet 4: Trip Completed -->
     <div id="panelCompleted" class="bottom-sheet" style="display: none; text-align: center;">
       <div style="font-size: 2rem; margin-bottom: 4px;">🎉</div>
       <h3 style="font-size: 1.15rem; color: #fff;">¡Llegaste a tu destino!</h3>
@@ -246,7 +263,7 @@
     let selectedPayment = 'cash';
     let currentOffer = 14.00;
     let recommendedFare = 14.00;
-    let clickMode = 'dest';
+    let dispatchMode = 'AUTO'; // 'AUTO', 'SELECT', 'BID'
 
     let currentOriginPoint = { lat: -14.06777, lng: -75.72861, name: 'Plaza de Armas de Ica' };
     let currentDestPoint = { lat: -14.08745, lng: -75.76332, name: 'Laguna de Huacachina (Oasis)' };
@@ -301,47 +318,33 @@
         const lat = e.latlng.lat;
         const lng = e.latlng.lng;
 
-        if (clickMode === 'origin') {
-          currentOriginPoint = { lat, lng, name: `Punto en Mapa (${lat.toFixed(4)}, ${lng.toFixed(4)})` };
-          markerOrigin.setLatLng([lat, lng]);
-          syncSelectWithPoint('selectOrigin', currentOriginPoint);
-          setClickMode('dest');
-        } else {
-          currentDestPoint = { lat, lng, name: `Punto en Mapa (${lat.toFixed(4)}, ${lng.toFixed(4)})` };
-          markerDest.setLatLng([lat, lng]);
-          syncSelectWithPoint('selectDestination', currentDestPoint);
-        }
-
+        currentDestPoint = { lat, lng, name: `Punto en Mapa (${lat.toFixed(4)}, ${lng.toFixed(4)})` };
+        markerDest.setLatLng([lat, lng]);
+        syncSelectWithPoint('selectDestination', currentDestPoint);
         updateRouteAndFare();
       });
 
       updateRouteAndFare();
     }
 
-    function setClickMode(mode) {
-      clickMode = mode;
-      const tabOrigin = document.getElementById('tabSetOrigin');
-      const tabDest = document.getElementById('tabSetDest');
-      const hint = document.getElementById('mapHint');
+    function setDispatchMode(mode) {
+      dispatchMode = mode;
+      document.getElementById('tabModeAuto').className = mode === 'AUTO' ? 'mode-tab active' : 'mode-tab';
+      document.getElementById('tabModeSelect').className = mode === 'SELECT' ? 'mode-tab active' : 'mode-tab';
+      document.getElementById('tabModeBid').className = mode === 'BID' ? 'mode-tab active' : 'mode-tab';
 
-      if (mode === 'origin') {
-        tabOrigin.style.borderColor = '#10b981';
-        tabOrigin.style.background = 'rgba(16, 185, 129, 0.2)';
-        tabOrigin.style.color = '#6ee7b7';
+      const btnIcon = document.getElementById('btnRequestIcon');
+      const btnLabel = document.getElementById('btnRequestLabel');
 
-        tabDest.style.borderColor = 'var(--border-color)';
-        tabDest.style.background = 'var(--bg-surface)';
-        tabDest.style.color = 'var(--text-muted)';
-        hint.innerHTML = '<span>📍 Toca en el mapa para mover tu <strong>Punto de Recogida</strong></span>';
+      if (mode === 'AUTO') {
+        btnIcon.textContent = '⚡';
+        btnLabel.textContent = 'Asignar Taxi Rápido (Auto-Match)';
+      } else if (mode === 'SELECT') {
+        btnIcon.textContent = '👤';
+        btnLabel.textContent = 'Ver TOP 3 Conductores Disponibles';
       } else {
-        tabOrigin.style.borderColor = 'var(--border-color)';
-        tabOrigin.style.background = 'var(--bg-surface)';
-        tabOrigin.style.color = 'var(--text-muted)';
-
-        tabDest.style.borderColor = '#06b6d4';
-        tabDest.style.background = 'rgba(6, 182, 212, 0.2)';
-        tabDest.style.color = '#67e8f9';
-        hint.innerHTML = '<span>🏁 Toca en el mapa para fijar tu <strong>Destino</strong></span>';
+        btnIcon.textContent = '💰';
+        btnLabel.textContent = 'Solicitar y Negociar Tarifa (inDrive)';
       }
     }
 
@@ -504,15 +507,74 @@
         document.getElementById('searchFarePrice').textContent = `S/ ${(currentRide.negotiated_fare || currentRide.estimated_fare).toFixed(2)}`;
         document.getElementById('panelRequest').style.display = 'none';
         document.getElementById('panelSearching').style.display = 'block';
-        document.getElementById('mapHint').style.display = 'none';
 
         listenRideEvents(currentRide.id);
+
+        if (dispatchMode === 'AUTO') {
+          // Modo A: Auto-Match inmediato (1.2s de animación realista)
+          document.getElementById('searchingTitle').textContent = '⚡ Asignando mejor conductor...';
+          setTimeout(async () => {
+            const matchRes = await fetch(`/api/rides/${currentRide.id}/auto-match`, { method: 'POST' });
+            const matchData = await matchRes.json();
+            if (matchData.success) {
+              showMatchedScreen(matchData.ride);
+            }
+          }, 1200);
+        } else if (dispatchMode === 'SELECT') {
+          // Modo B: Cargar TOP 3 candidatos con MatchScore
+          document.getElementById('searchingTitle').textContent = '👤 Elige tu Conductor Ideal';
+          loadTopCandidates(currentRide.id);
+        } else {
+          // Modo C: inDrive Bidding
+          document.getElementById('searchingTitle').textContent = '💰 Ofertas Entrantes de Choferes';
+        }
       }
     });
 
+    async function loadTopCandidates(rideId) {
+      const res = await fetch(`/api/rides/${rideId}/candidates`);
+      const data = await res.json();
+      const container = document.getElementById('driverBidsContainer');
+
+      if (data.candidates && data.candidates.length > 0) {
+        container.innerHTML = data.candidates.map(c => `
+          <div class="driver-card-select">
+            <div>
+              <div style="font-weight:700; font-size:0.88rem; color:#fff;">
+                ${c.driver.full_name} <span class="score-badge">Match: ${c.match_score} pts</span>
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">
+                ${c.driver.vehicle?.brand} ${c.driver.vehicle?.model} (${c.driver.vehicle?.plate_number}) &bull; ETA: <strong>${c.eta_minutes} min</strong>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:1.1rem; font-weight:800; color:var(--primary);">S/ ${currentOffer.toFixed(2)}</div>
+              <button class="pill-btn" onclick="acceptCandidate('${c.driver.id}')" style="background:rgba(6,182,212,0.2); border-color:#06b6d4; color:#67e8f9; padding:4px 10px; font-size:0.75rem; margin-top:2px;">
+                Elegir Taxi
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    async function acceptCandidate(driverId) {
+      const res = await fetch(`/api/rides/${currentRide.id}/accept-bid`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ driver_id: driverId, agreed_fare: currentOffer })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showMatchedScreen(data.ride);
+      }
+    }
+
     function listenRideEvents(rideId) {
       socket.on(`ride_bid_${rideId}`, (event) => {
-        renderDriverBids(event.all_bids);
+        if (dispatchMode === 'BID') {
+          renderDriverBids(event.all_bids);
+        }
       });
 
       socket.on(`ride_update_${rideId}`, (event) => {
@@ -535,31 +597,19 @@
       if (!bids || bids.length === 0) return;
 
       container.innerHTML = bids.map(b => `
-        <div class="driver-offer-card" style="background:var(--bg-surface); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:10px 12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+        <div class="driver-card-select">
           <div>
             <div style="font-weight:700; font-size:0.88rem; color:#fff;">${b.driver_name}</div>
             <div style="font-size:0.75rem; color:var(--text-muted);">${b.vehicle_model} &bull; a ${b.eta_minutes} min &bull; ⭐ ${b.driver_rating.toFixed(2)}</div>
           </div>
           <div style="text-align:right;">
             <div style="font-weight:800; font-size:1.15rem; color:var(--primary);">S/ ${b.offered_fare.toFixed(2)}</div>
-            <button class="pill-btn" onclick="acceptDriverBid('${b.driver_id}', ${b.offered_fare})" style="background:rgba(6,182,212,0.2); border-color:#06b6d4; color:#fff; padding:4px 10px; font-size:0.75rem; margin-top:2px;">
+            <button class="pill-btn" onclick="acceptCandidate('${b.driver_id}', ${b.offered_fare})" style="background:rgba(6,182,212,0.2); border-color:#06b6d4; color:#fff; padding:4px 10px; font-size:0.75rem; margin-top:2px;">
               Aceptar Oferta
             </button>
           </div>
         </div>
       `).join('');
-    }
-
-    async function acceptDriverBid(driverId, agreedFare) {
-      const res = await fetch(`/api/rides/${currentRide.id}/accept-bid`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ driver_id: driverId, agreed_fare: agreedFare })
-      });
-      const data = await res.json();
-      if (data.success) {
-        showMatchedScreen(data.ride);
-      }
     }
 
     function showMatchedScreen(ride) {
@@ -611,7 +661,6 @@
     function cancelRide() {
       document.getElementById('panelSearching').style.display = 'none';
       document.getElementById('panelRequest').style.display = 'block';
-      document.getElementById('mapHint').style.display = 'flex';
       currentRide = null;
     }
 
@@ -626,7 +675,6 @@
     function finishAndReset() {
       document.getElementById('panelCompleted').style.display = 'none';
       document.getElementById('panelRequest').style.display = 'block';
-      document.getElementById('mapHint').style.display = 'flex';
       currentRide = null;
       if (markerDriver) map.removeLayer(markerDriver);
     }

@@ -10,6 +10,7 @@ import { GeoService } from '../services/geo.service.js';
 import { TariffService } from '../services/tariff.service.js';
 import { DispatchService } from '../services/dispatch.service.js';
 import { PaymentService } from '../services/payment.service.js';
+import { ZoneService } from '../services/geo/zone.service.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
@@ -25,6 +26,7 @@ const geoService = new GeoService();
 const tariffService = new TariffService();
 const dispatchService = new DispatchService();
 const paymentService = new PaymentService();
+const zoneService = new ZoneService();
 // Servir frontend estático
 const publicPath = path.resolve(process.cwd(), 'src', 'server', 'public');
 app.use(express.static(publicPath));
@@ -71,8 +73,8 @@ app.post('/api/rides/request', (req, res) => {
         negotiated_fare: negotiated_fare ? parseFloat(negotiated_fare) : undefined,
     });
     const ride = result.ride;
-    // Notificar a todos los conductores conectados por WebSocket
-    io.emit('new_ride_available', { ride, nearby_drivers: result.nearby_drivers });
+    // Notificar a todos los conductores conectados por WebSocket (Prioridad a Wave 1)
+    io.emit('new_ride_available', { ride, candidates: result.top_candidates, wave_1: result.wave_1_drivers });
     io.emit('admin_event', { type: 'RIDE_REQUESTED', ride });
     // ==============================================================================
     // SIMULADOR DE FLOTA ACTIVA DE ICA (Para pruebas fluidas e interactivas)
@@ -95,7 +97,7 @@ app.post('/api/rides/request', (req, res) => {
             }
         }, bot.delay);
     });
-    res.json({ success: true, ride, nearby_drivers_count: result.nearby_drivers.length });
+    res.json({ success: true, ride, candidates_count: result.top_candidates.length });
 });
 app.get('/api/rides/:id', (req, res) => {
     const ride = dispatchService.getRideById(req.params.id);
@@ -111,6 +113,22 @@ app.post('/api/rides/:id/sos', (req, res) => {
     io.emit('sos_alert', { ride, timestamp: new Date().toISOString() });
     io.to(`ride_${ride.id}`).emit('sos_triggered', { ride });
     res.json({ success: true, message: 'Alerta SOS emitida a la central de Ica', ride });
+});
+app.post('/api/rides/:id/auto-match', (req, res) => {
+    const ride = dispatchService.autoMatchBestDriver(req.params.id);
+    if (!ride)
+        return res.status(400).json({ success: false, message: 'No hay conductores disponibles para auto-match' });
+    io.emit(`ride_update_${ride.id}`, { ride, status: 'ACCEPTED' });
+    io.emit('admin_event', { type: 'RIDE_ACCEPTED', ride });
+    res.json({ success: true, ride });
+});
+app.get('/api/rides/:id/candidates', (req, res) => {
+    const candidates = dispatchService.getCandidatesForRide(req.params.id);
+    res.json({ success: true, candidates });
+});
+app.get('/api/admin/heatmap', (req, res) => {
+    const heatmap = zoneService.getZoneHeatMap();
+    res.json({ success: true, zones: heatmap });
 });
 // ==============================================================================
 // 3. ENDPOINTS DEL CONDUCTOR & SUBASTA EN VIVO (MODELO INDRIVE MEJORADO)

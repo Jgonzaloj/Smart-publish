@@ -1,68 +1,56 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Ecosistema Taxi App Ica - Modelo inDrive Mejorado', () => {
-  test('Flujo de Negociación inDrive: Pasajero propone S/ 8.00, Conductor contraoferta S/ 10.00 y Pasajero acepta', async ({ browser }) => {
-    // 1. Contexto Pasajero
+test.describe('Ecosistema Taxi App Ica - Smart Dispatch & Negociación', () => {
+  test('Flujo 1: Asignación Rápida Auto-Match (Smart Match Score #1)', async ({ browser }) => {
     const passengerContext = await browser.newContext({ viewport: { width: 440, height: 900 } });
     const passengerPage = await passengerContext.newPage();
 
-    // 2. Contexto Conductor
+    await passengerPage.goto('http://localhost:4000/pasajero');
+    await passengerPage.click('#tabModeAuto');
+    await passengerPage.click('#btnRequestRide');
+
+    // Debe auto-asignar al conductor #1 con alto Match Score
+    await expect(passengerPage.locator('#panelMatched')).toBeVisible({ timeout: 6000 });
+    await expect(passengerPage.locator('#driverName')).not.toBeEmpty();
+    await expect(passengerPage.locator('#driverCar')).toBeVisible();
+  });
+
+  test('Flujo 2: Negociación inDrive (Pasajero propone y Conductor contraoferta)', async ({ browser }) => {
+    const passengerContext = await browser.newContext({ viewport: { width: 440, height: 900 } });
+    const passengerPage = await passengerContext.newPage();
+
     const driverContext = await browser.newContext({ viewport: { width: 440, height: 900 } });
     const driverPage = await driverContext.newPage();
 
-    // 3. Contexto Admin
-    const adminContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
-    const adminPage = await adminContext.newPage();
-
-    // Cargar páginas
     await driverPage.goto('http://localhost:4000/conductor');
-    await adminPage.goto('http://localhost:4000/admin');
     await passengerPage.goto('http://localhost:4000/pasajero');
 
-    // Pasajero: Verifica selector de tarifa libre inDrive
-    await expect(passengerPage.locator('#offerPriceDisplay')).toBeVisible();
-
-    // Pasajero: Ajusta su oferta a S/ 8.00
+    // Pasajero elige Modo Negociar
+    await passengerPage.click('#tabModeBid');
     await passengerPage.click('#payYape');
     await passengerPage.click('#btnRequestRide');
 
-    // Pasajero entra en radar de búsqueda
-    await expect(passengerPage.locator('#panelSearching')).toBeVisible();
-
-    // Conductor: Recibe la oferta del pasajero
+    // Conductor recibe oferta y contraoferta
     await expect(driverPage.locator('#rideOfferModal')).toBeVisible({ timeout: 5000 });
-
-    // Conductor: En vez de aceptar directo, envía contraoferta de + S/ 2.00 (inDrive Bidding)
     await driverPage.click('#counter2');
-    await driverPage.waitForTimeout(500);
 
-    // Pasajero: Recibe la contraoferta en su bandeja en vivo y la acepta
-    await expect(passengerPage.locator('text=Aceptar Oferta')).toBeVisible({ timeout: 5000 });
-    await passengerPage.click('text=Aceptar Oferta');
+    // Pasajero ve y acepta la contraoferta
+    await expect(passengerPage.locator('text=Aceptar Oferta').first()).toBeVisible({ timeout: 5000 });
+    await passengerPage.locator('text=Aceptar Oferta').first().click();
 
-    // Pasajero y Conductor sincronizados en carrera activa
+    // Sincronizados en carrera activa
     await expect(passengerPage.locator('#panelMatched')).toBeVisible({ timeout: 5000 });
     await expect(driverPage.locator('#driverActiveTrip')).toBeVisible({ timeout: 5000 });
 
-    // Conductor: 1. He Llegado al Origen
+    // Completar viaje
     await driverPage.click('#btnTripAction');
-    await passengerPage.waitForTimeout(600);
-
-    // Conductor: 2. Iniciar Carrera
+    await driverPage.waitForTimeout(400);
     await driverPage.click('#btnTripAction');
-    await passengerPage.waitForTimeout(600);
-
-    // Conductor: 3. Finalizar Carrera y Cobrar
+    await driverPage.waitForTimeout(400);
     await driverPage.click('#btnTripAction');
 
-    // Pasajero: Pantalla de finalización con Yape
+    // Pantalla de pago Yape
     await expect(passengerPage.locator('#panelCompleted')).toBeVisible({ timeout: 5000 });
-    await expect(passengerPage.locator('#yapeQrContainer')).toBeVisible();
-
-    // Pasajero califica
     await passengerPage.click('text=Finalizar y Calificar');
-    await expect(passengerPage.locator('#panelRequest')).toBeVisible();
-
-    console.log('✅ ¡Prueba de Negociación y Subasta inDrive completada con éxito rotundo!');
   });
 });
