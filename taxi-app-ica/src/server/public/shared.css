@@ -79,14 +79,26 @@ h1, h2, h3, h4, .brand-font {
 
 /* Smartphone Layout Frame */
 .phone-viewport {
-  max-width: 440px;
+  width: 100%;
+  max-width: 460px;
+  min-height: 100vh;
+  min-height: 100dvh;
   height: 100vh;
+  height: 100dvh;
   margin: 0 auto;
   background: var(--bg-dark);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  box-sizing: border-box;
+}
+
+@media (max-width: 500px) {
+  .phone-viewport {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
 }
 
 /* Header */

@@ -10,9 +10,17 @@ test.describe('Ecosistema Smart Mobility Ica - Tests E2E', () => {
 
   test('Flujo E2E: Ciclo Completo de Negociación, Carrera y Pago Yape', async ({ browser }) => {
     const driverContext = await browser.newContext({ viewport: { width: 440, height: 900 } });
+    await driverContext.addInitScript(() => {
+      localStorage.setItem('driver_phone', '956789012');
+      localStorage.setItem('driver_token', 'test_driver_token');
+    });
     const driverPage = await driverContext.newPage();
 
     const passengerContext = await browser.newContext({ viewport: { width: 440, height: 900 } });
+    await passengerContext.addInitScript(() => {
+      localStorage.setItem('passenger_phone', '956123456');
+      localStorage.setItem('passenger_token', 'test_passenger_token');
+    });
     const passengerPage = await passengerContext.newPage();
 
     await driverPage.goto('http://localhost:4000/conductor');
@@ -52,6 +60,10 @@ test.describe('Ecosistema Smart Mobility Ica - Tests E2E', () => {
 
   test('Flujo E2E: Selección Directa de Conductor TOP 3 con MatchScore', async ({ browser }) => {
     const passengerContext = await browser.newContext({ viewport: { width: 440, height: 900 } });
+    await passengerContext.addInitScript(() => {
+      localStorage.setItem('passenger_phone', '956123456');
+      localStorage.setItem('passenger_token', 'test_passenger_token');
+    });
     const passengerPage = await passengerContext.newPage();
 
     await passengerPage.goto('http://localhost:4000/pasajero');

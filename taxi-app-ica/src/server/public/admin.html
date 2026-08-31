@@ -210,30 +210,31 @@
   </style>
 </head>
 <body>
-  <div class="admin-layout">
-    <!-- PWA Install Banner -->
-    <div id="pwaInstallBanner" style="display: none; background: linear-gradient(135deg, #1e293b, #0f766e); color: #fff; padding: 10px 14px; border-radius: var(--radius-md); margin-bottom: 12px; align-items: center; justify-content: space-between; border: 1.5px solid var(--accent-action); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 1.4rem;">🖥️</span>
-        <div>
-          <strong style="font-size: 0.85rem;">Instalar Panel Admin en Celular</strong>
-          <div style="font-size: 0.72rem; color: #94a3b8;">Monitorea flota y audita conductores desde tu móvil</div>
+  <div id="adminDashboardMain" style="display: none;">
+    <div class="admin-layout">
+      <!-- PWA Install Banner -->
+      <div id="pwaInstallBanner" style="display: none; background: linear-gradient(135deg, #1e293b, #0f766e); color: #fff; padding: 10px 14px; border-radius: var(--radius-md); margin-bottom: 12px; align-items: center; justify-content: space-between; border: 1.5px solid var(--accent-action); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.4rem;">🖥️</span>
+          <div>
+            <strong style="font-size: 0.85rem;">Instalar Panel Admin en Celular</strong>
+            <div style="font-size: 0.72rem; color: #94a3b8;">Monitorea flota y audita conductores desde tu móvil</div>
+          </div>
         </div>
+        <button id="btnPwaInstall" class="pill-btn" style="background: var(--accent-action); color: #000; font-weight: 800; font-size: 0.78rem; padding: 6px 14px; border: none; cursor: pointer;">
+          Instalar
+        </button>
       </div>
-      <button id="btnPwaInstall" class="pill-btn" style="background: var(--accent-action); color: #000; font-weight: 800; font-size: 0.78rem; padding: 6px 14px; border: none; cursor: pointer;">
-        Instalar
-      </button>
-    </div>
 
-    <!-- Header -->
-    <header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 14px 20px; margin-bottom: 14px; gap: 10px;">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="font-size: 1.8rem;">🖥️</div>
-        <div>
-          <h1 style="font-size: 1.25rem; color: #fff; margin: 0;">Smart Mobility Ica &mdash; Centro de Control</h1>
-          <p style="font-size: 0.78rem; color: var(--text-muted); margin: 2px 0 0;">Monitoreo de 50 Vehículos &bull; Motor de Tarifas &bull; Gestión Documental</p>
+      <!-- Header -->
+      <header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 14px 20px; margin-bottom: 14px; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="font-size: 1.8rem;">🖥️</div>
+          <div>
+            <h1 style="font-size: 1.25rem; color: #fff; margin: 0;">Smart Mobility Ica &mdash; Centro de Control</h1>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 2px 0 0;">Monitoreo de 50 Vehículos &bull; Motor de Tarifas &bull; Gestión Documental</p>
+          </div>
         </div>
-      </div>
       <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
         <div id="adminUserBadge" style="display: none; align-items: center; gap: 6px; background: rgba(20, 184, 166, 0.15); border: 1px solid var(--accent-action); padding: 4px 10px; border-radius: var(--radius-full); font-size: 0.75rem; color: #5eead4;">
           <span>👤 Operador Central</span>
@@ -616,6 +617,7 @@
       </div>
     </div>
   </div>
+  </div><!-- /adminDashboardMain -->
 
   <!-- Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1079,12 +1081,17 @@
 
     function checkAdminAuth() {
       const token = localStorage.getItem('admin_token');
+      const main = document.getElementById('adminDashboardMain');
+      const modal = document.getElementById('modalAdminLogin');
       if (!token) {
-        document.getElementById('modalAdminLogin').style.display = 'flex';
+        if (main) main.style.display = 'none';
+        if (modal) modal.style.display = 'flex';
         document.getElementById('adminUserBadge').style.display = 'none';
       } else {
-        document.getElementById('modalAdminLogin').style.display = 'none';
+        if (main) main.style.display = 'block';
+        if (modal) modal.style.display = 'none';
         document.getElementById('adminUserBadge').style.display = 'flex';
+        initAdminMap();
       }
     }
 
@@ -1102,9 +1109,7 @@
         const data = await res.json();
         if (data.success && data.token) {
           localStorage.setItem('admin_token', data.token);
-          document.getElementById('modalAdminLogin').style.display = 'none';
-          document.getElementById('adminUserBadge').style.display = 'flex';
-          initAdminMap();
+          checkAdminAuth();
         } else {
           document.getElementById('loginError').textContent = data.message || 'Credenciales inválidas';
           document.getElementById('loginError').style.display = 'block';
@@ -1133,8 +1138,6 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       checkAdminAuth();
-      // Inicializar el mapa y datos de la central
-      initAdminMap();
     });
   </script>
 
