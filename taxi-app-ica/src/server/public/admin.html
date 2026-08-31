@@ -683,6 +683,10 @@
       loadActiveRides();
       loadTariffConfig();
       loadDriversWithDocs();
+
+      // Refresco automático de telemetría y radar de choferes cada 4s
+      setInterval(loadFleetDrivers, 4000);
+      setInterval(loadActiveRides, 6000);
     }
 
     async function loadFleetDrivers() {
@@ -691,11 +695,15 @@
         const data = await res.json();
         if (data.drivers && mapAdmin) {
           data.drivers.forEach(d => {
+            const lat = Number(d.latitude || (d.current_location && d.current_location.latitude) || -14.06777);
+            const lng = Number(d.longitude || (d.current_location && d.current_location.longitude) || -75.72861);
             const color = d.status === 'online' || d.status === 'available' ? '#10b981' : d.status === 'busy' ? '#f59e0b' : '#64748b';
+            const plate = d.plate_number || (d.vehicle && d.vehicle.plate_number) || 'Y1A-452';
+
             if (driverMarkers[d.id]) {
-              driverMarkers[d.id].setLatLng([d.latitude || -14.0677, d.longitude || -75.7286]);
+              driverMarkers[d.id].setLatLng([lat, lng]);
             } else {
-              const marker = L.marker([d.latitude || -14.0677, d.longitude || -75.7286], {
+              const marker = L.marker([lat, lng], {
                 icon: L.divIcon({
                   className: 'admin-marker',
                   html: `<div style="background:${color}; color:#000; font-size:14px; text-align:center; width:26px; height:26px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 10px ${color}; display:flex; align-items:center; justify-content:center;">🚗</div>`,
@@ -704,7 +712,7 @@
                 })
               }).addTo(mapAdmin);
 
-              marker.bindPopup(`<strong>${d.full_name}</strong><br>Placa: ${d.vehicle?.plate_number || 'Y1A-452'}<br>Estado: <strong>${d.status.toUpperCase()}</strong>`);
+              marker.bindPopup(`<strong>${d.full_name}</strong><br>Placa: <strong>${plate}</strong><br>Estado: <span style="color:${color}; font-weight:800;">${(d.status || 'ONLINE').toUpperCase()}</span>`);
               driverMarkers[d.id] = marker;
             }
           });

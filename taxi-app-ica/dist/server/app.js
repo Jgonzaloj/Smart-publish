@@ -330,7 +330,14 @@ app.get('/api/admin/metrics', authMiddleware(['admin']), (req, res) => {
     });
 });
 app.get('/api/drivers', (req, res) => {
-    const drivers = dispatchService.findNearbyAvailableDrivers(-14.06777, -75.72861, 50.0);
+    const drivers = db.prepare(`
+    SELECT u.id, u.phone, u.full_name, u.rating_avg,
+           d.status, d.current_lat as latitude, d.current_lng as longitude, d.current_address,
+           v.plate_number, v.brand, v.model, v.color
+    FROM drivers d
+    JOIN users u ON d.user_id = u.id
+    LEFT JOIN vehicles v ON d.user_id = v.driver_id
+  `).all();
     res.json({ success: true, drivers });
 });
 app.get('/api/admin/drivers-with-docs', authMiddleware(['admin']), (req, res) => {
@@ -665,18 +672,41 @@ io.on('connection', (socket) => {
     socket.on('driver:location', (data) => {
         const { driver_id, lat, lng, ride_id } = data;
         dispatchService.updateDriverLocation(driver_id, lat, lng);
+        try {
+            db.prepare('UPDATE drivers SET current_lat = ?, current_lng = ?, last_location_update = CURRENT_TIMESTAMP WHERE user_id = ?').run(lat, lng, driver_id);
+        }
+        catch (e) { }
         if (ride_id) {
             io.to(`ride_${ride_id}`).emit(`ride_update_${ride_id}`, { type: 'DRIVER_GPS', lat, lng, driver_id });
         }
         io.to('admin_room').emit('driver_gps_update', { driver_id, lat, lng });
+        io.emit('driver_gps_update', { driver_id, lat, lng });
+    });
+    socket.on('driver_location', (data) => {
+        const { driver_id, lat, lng, ride_id } = data;
+        dispatchService.updateDriverLocation(driver_id, lat, lng);
+        try {
+            db.prepare('UPDATE drivers SET current_lat = ?, current_lng = ?, last_location_update = CURRENT_TIMESTAMP WHERE user_id = ?').run(lat, lng, driver_id);
+        }
+        catch (e) { }
+        if (ride_id) {
+            io.to(`ride_${ride_id}`).emit(`ride_update_${ride_id}`, { type: 'DRIVER_GPS', lat, lng, driver_id });
+        }
+        io.to('admin_room').emit('driver_gps_update', { driver_id, lat, lng });
+        io.emit('driver_gps_update', { driver_id, lat, lng });
     });
     socket.on('driver_move', (data) => {
         const { driver_id, lat, lng, ride_id } = data;
         dispatchService.updateDriverLocation(driver_id, lat, lng);
+        try {
+            db.prepare('UPDATE drivers SET current_lat = ?, current_lng = ?, last_location_update = CURRENT_TIMESTAMP WHERE user_id = ?').run(lat, lng, driver_id);
+        }
+        catch (e) { }
         if (ride_id) {
             io.to(`ride_${ride_id}`).emit(`ride_update_${ride_id}`, { type: 'DRIVER_GPS', lat, lng, driver_id });
         }
         io.to('admin_room').emit('driver_gps_update', { driver_id, lat, lng });
+        io.emit('driver_gps_update', { driver_id, lat, lng });
     });
 });
 // Iniciar Servidor
