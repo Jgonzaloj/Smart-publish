@@ -823,8 +823,7 @@
       const name = localStorage.getItem('passenger_name') || 'Pasajero';
       const badge = document.getElementById('passengerProfileBadge');
       if (phone) {
-        badge.innerHTML = `👤 ${name.split(' ')[0]} &bull; 📱 ${phone.slice(-4)}`;
-        badge.title = 'Clic para cambiar de cuenta o cerrar sesión';
+        badge.innerHTML = `👤 ${name.split(' ')[0]} &bull; 📱 ${phone.slice(-4)} <span onclick="logoutPassenger(); event.stopPropagation();" style="color:#f87171; margin-left:6px; font-weight:800;" title="Cerrar sesión">[ Salir ]</span>`;
       } else {
         badge.innerHTML = `📱 Ingresar`;
       }
