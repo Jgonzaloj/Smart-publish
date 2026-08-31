@@ -341,7 +341,7 @@
           <div style="font-weight: 700; font-size: 0.92rem; color: #fff; margin-bottom: 8px;">
             🚖 Carreras y Despacho en Vivo
           </div>
-          <table>
+          <table class="table-responsive-cards">
             <thead>
               <tr>
                 <th>Hora</th>
@@ -398,7 +398,7 @@
     <!-- TAB 2: GESTIÓN DE CONDUCTORES Y DOCUMENTOS -->
     <div id="tabDriversContent" style="display: none;">
       <div class="table-container">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px;">
           <div>
             <h2 style="font-size: 1.1rem; color: #fff;">Auditoría y Acreditación de Flota (Ica)</h2>
             <p style="font-size: 0.78rem; color: var(--text-muted);">Revisión de Tarjeta de Propiedad, SOAT, Revisión Técnica y Licencias</p>
@@ -408,7 +408,7 @@
           </button>
         </div>
 
-        <table>
+        <table class="table-responsive-cards">
           <thead>
             <tr>
               <th>Conductor</th>
@@ -736,34 +736,37 @@
       tbody.innerHTML = drivers.map(d => `
         <tr>
           <td>
-            <div style="font-weight:700; color:#fff;">${d.full_name}</div>
-            <div style="font-size:0.75rem; color:var(--text-muted);">📱 ${d.phone} &bull; DNI: ${d.dni || '45879632'}</div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-weight:700; color:#fff; font-size:0.95rem;">${d.full_name}</div>
+                <div style="font-size:0.75rem; color:var(--text-muted);">📱 ${d.phone} &bull; DNI: ${d.dni || '45879632'}</div>
+              </div>
+              <span class="badge-status ${d.doc_status || 'approved'}">
+                ${d.doc_status === 'pending' ? '🟡 PENDIENTE' : d.doc_status === 'rejected' ? '🔴 RECHAZADO' : '🟢 APROBADO'}
+              </span>
+            </div>
           </td>
           <td>
-            <div style="font-weight:800; color:var(--accent-action);">${d.plate_number || 'Y1A-452'}</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:2px;">🚗 Vehículo Registrado:</div>
+            <div style="font-weight:800; color:var(--accent-action); font-size:0.95rem;">${d.plate_number || 'Y1A-452'}</div>
             <div style="font-size:0.75rem; color:var(--text-muted);">${d.brand || 'Toyota'} ${d.model || 'Yaris'} &bull; ${d.color || 'Gris'}</div>
           </td>
           <td>
-            <div style="display:flex; flex-direction:column; gap:2px; font-size:0.75rem;">
-              <span>🚗 <strong>T. Propiedad:</strong> ${d.property_card || 'TP-OK'}</span>
+            <div style="display:flex; flex-direction:column; gap:3px; font-size:0.75rem; background:#0f172a; padding:8px 10px; border-radius:6px;">
+              <span>📄 <strong>T. Propiedad:</strong> ${d.property_card || 'TP-OK'}</span>
               <span>🛡️ <strong>SOAT:</strong> ${d.soat_number || 'SOAT-OK'} (Vence: ${d.soat_expiry || '2027'})</span>
               <span>🔧 <strong>R. Técnica:</strong> ${d.technical_review_number || 'REV-OK'} (Vence: ${d.technical_review_expiry || '2026'})</span>
               <span>🪪 <strong>Licencia:</strong> ${d.license_number || 'A-IIa'}</span>
             </div>
           </td>
           <td>
-            <span class="badge-status ${d.doc_status || 'approved'}">
-              ${d.doc_status === 'pending' ? '🟡 PENDIENTE' : d.doc_status === 'rejected' ? '🔴 RECHAZADO' : '🟢 APROBADO'}
-            </span>
-          </td>
-          <td>
-            <div style="display:flex; gap:6px;">
-              <button class="pill-btn" onclick="openAuditModal('${d.id}')" style="font-size:0.72rem; padding:4px 8px;">
-                👁️ Ver Docs
+            <div style="display:flex; gap:8px; width:100%; margin-top:4px;">
+              <button class="pill-btn" onclick="openAuditModal('${d.id}')" style="flex:1; font-size:0.78rem; padding:8px; background:rgba(20,184,166,0.15); border-color:var(--accent-action); color:#5eead4; text-align:center;">
+                👁️ Auditar Documentos
               </button>
               ${d.doc_status !== 'approved' ? `
-                <button class="pill-btn" onclick="approveDriver('${d.id}')" style="background:rgba(16,185,129,0.2); border-color:#10b981; color:#6ee7b7; font-size:0.72rem; padding:4px 8px;">
-                  ✓ Aprobar
+                <button class="pill-btn" onclick="approveDriver('${d.id}')" style="flex:1; background:rgba(16,185,129,0.2); border-color:#10b981; color:#6ee7b7; font-size:0.78rem; padding:8px; text-align:center;">
+                  ✓ Aprobar Chofer
                 </button>
               ` : ''}
             </div>
@@ -778,7 +781,7 @@
 
       document.getElementById('auditDriverTitle').textContent = `Auditoría: ${d.full_name} (${d.plate_number})`;
       document.getElementById('auditContentBody').innerHTML = `
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+        <div class="audit-docs-grid">
           <div style="background:var(--bg-surface); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
               <strong style="color:#fff; font-size:0.85rem;">🚗 Tarjeta de Propiedad</strong>
