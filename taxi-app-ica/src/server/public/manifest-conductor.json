@@ -1,7 +1,7 @@
 {
-  "name": "Taxi Ica — Conductor",
-  "short_name": "Chofer Ica",
-  "description": "App oficial para conductores de taxi en Ica con Smart Dispatch y alertas de demanda",
+  "name": "BL Nueva Visión 42 — Conductor",
+  "short_name": "BL 42 Chofer",
+  "description": "App oficial para conductores de taxi BL Nueva Visión 42 en Ica",
   "start_url": "/conductor",
   "display": "standalone",
   "background_color": "#0F172A",
@@ -9,9 +9,9 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23F59E0B'/><text y='.9em' font-size='80' x='10'>🚗</text></svg>",
+      "src": "/logo.png",
       "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

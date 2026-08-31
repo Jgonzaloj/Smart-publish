@@ -729,7 +729,7 @@ io.on('connection', (socket) => {
 // Iniciar Servidor
 server.listen(config.PORT, () => {
     console.log(`\n=============================================================`);
-    console.log(`🚖 [TAXI APP ICA] Servidor Seguro de Producción Activo`);
+    console.log(`🚖 [BL NUEVA VISIÓN 42] Servidor Seguro de Producción Activo`);
     console.log(`🌐 Hub Central:          http://${config.HOST}:${config.PORT}`);
     console.log(`📱 App Pasajero:         http://${config.HOST}:${config.PORT}/pasajero`);
     console.log(`🚗 App Conductor:        http://${config.HOST}:${config.PORT}/conductor`);

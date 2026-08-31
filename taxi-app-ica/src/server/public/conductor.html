@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Smart Mobility Ica — Conductor</title>
+  <title>BL Nueva Visión 42 — App Conductor</title>
+  <link rel="icon" type="image/png" href="/logo.png">
   <link rel="manifest" href="/manifest-conductor.json">
   <meta name="theme-color" content="#0F766E">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Chofer Ica">
+  <meta name="apple-mobile-web-app-title" content="BL Nueva Visión 42">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="/shared.css">
   <style>
@@ -94,8 +95,8 @@
     <!-- Header (100% Chofer Aislado) -->
     <header class="phone-header">
       <div class="brand-badge">
-        <span>🚗</span>
-        <span style="font-size: 0.95rem; font-weight: 800;">Taxi Ica</span>
+        <img src="/logo.png" alt="BL 42" class="brand-logo-img" />
+        <span style="font-size: 0.92rem; font-weight: 800; white-space: nowrap;">BL 42</span>
       </div>
       <div class="header-actions">
         <!-- Toggle En Servicio (Prioritario y siempre 100% completo) -->
@@ -957,8 +958,8 @@
   <!-- MODAL DE AUTENTICACIÓN TELEFÓNICA CON OTP (CONDUCTOR) -->
   <div id="modalDriverAuth" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.94); backdrop-filter: blur(12px); z-index: 3000; align-items: center; justify-content: center; padding: 16px;">
     <div class="modal-card" style="background: #1e293b; border: 1.5px solid var(--warning-amber); border-radius: var(--radius-lg); width: 100%; max-width: 380px; padding: 22px 18px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
-      <div style="font-size: 2.2rem; margin-bottom: 6px;">🚗</div>
-      <h3 style="font-size: 1.25rem; color: #fff; margin: 0 0 4px;">Acceso Conductor Taxi Ica</h3>
+      <img src="/logo.png" alt="BL Nueva Visión 42" class="brand-logo-large" />
+      <h3 style="font-size: 1.25rem; color: #fff; margin: 0 0 4px;">Acceso Conductor BL 42</h3>
       <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0 0 16px;">Ingresa tu número de celular registrado para iniciar servicio</p>
 
       <div id="driverAuthError" style="display: none; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 8px; border-radius: 6px; font-size: 0.75rem; margin-bottom: 12px;"></div>
