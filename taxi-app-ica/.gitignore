@@ -1,0 +1,9 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+blob-report/
+storage/*.sqlite*
+.env
+.DS_Store
+Thumbs.db

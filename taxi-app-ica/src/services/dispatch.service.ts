@@ -4,6 +4,9 @@ import { GeoService } from './geo.service.js';
 import { TariffService } from './tariff.service.js';
 import { CandidateService } from './dispatch/candidate.service.js';
 import { ScoredDriverCandidate } from './dispatch/matching.service.js';
+import { AssignmentService } from './dispatch/assignment.service.js';
+import { DriverPresenceService } from './driver/driver-presence.service.js';
+import { TripStateService } from './trip/trip-state.service.js';
 import { RideRequest, RideStatus, Driver, LocationPoint, PaymentMethod, DriverBid } from '../types/index.js';
 
 export interface DispatchResult {
@@ -177,31 +180,43 @@ export class DispatchService {
     return this.activeBids.get(rideId) || [];
   }
 
+  private assignmentService = new AssignmentService();
+  private presenceService = new DriverPresenceService();
+
   /**
-   * Pasajero Acepta la Oferta de un Conductor Específico
+   * Pasajero Acepta la Oferta de un Conductor Específico (Con Protección Atómica de Concurrencia)
    */
   acceptDriverBid(rideId: string, driverId: string, agreedFare?: number): RideRequest | null {
     const finalFare = agreedFare || this.getRideById(rideId)?.estimated_fare || 10;
-    const stmt = this.db.prepare(`
-      UPDATE rides 
-      SET driver_id = @driverId, estimated_fare = @finalFare, negotiated_fare = @finalFare, status = 'ACCEPTED', accepted_at = CURRENT_TIMESTAMP
-      WHERE id = @rideId AND status = 'REQUESTED'
-    `);
-    const result = stmt.run({ rideId, driverId, finalFare });
-    if (result.changes === 0) return null;
+    const result = this.assignmentService.assignDriverAtomically(
+      rideId,
+      driverId,
+      finalFare,
+      (id: string) => this.getRideById(id)
+    );
+
+    if (!result.success) return null;
 
     this.activeBids.delete(rideId);
-    this.db.prepare("UPDATE drivers SET status = 'busy' WHERE user_id = ?").run(driverId);
-    return this.getRideById(rideId);
+    return result.ride || null;
   }
 
   acceptRide(rideId: string, driverId: string): RideRequest | null {
     return this.acceptDriverBid(rideId, driverId);
   }
 
+  /**
+   * Transición Segura de Estados con Validación Formal (TripStateService)
+   */
   updateRideStatus(rideId: string, newStatus: RideStatus): RideRequest | null {
     const current = this.getRideById(rideId);
     if (!current) return null;
+
+    // Validación formal contra transiciones inválidas (ej. COMPLETED -> SEARCHING)
+    if (!TripStateService.isValidTransition(current.status as any, newStatus as any)) {
+      console.warn(`Transición rechazada: ${current.status} -> ${newStatus}`);
+      return null;
+    }
 
     let updateSql = 'UPDATE rides SET status = ?';
     const params: any[] = [newStatus];
@@ -219,7 +234,7 @@ export class DispatchService {
 
     if (newStatus === 'COMPLETED' || newStatus === 'PAID' || newStatus === 'CANCELLED') {
       if (current.driver_id) {
-        this.db.prepare("UPDATE drivers SET status = 'online' WHERE user_id = ?").run(current.driver_id);
+        this.presenceService.releaseDriver(current.driver_id);
       }
     }
 

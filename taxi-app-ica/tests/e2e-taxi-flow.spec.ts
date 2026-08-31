@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Ecosistema Taxi App Ica - Smart Dispatch & Negociación', () => {
+  test.beforeEach(async ({ request }) => {
+    await request.post('http://localhost:4000/api/drivers/drv_mario_1/status', { data: { status: 'online' } });
+    await request.post('http://localhost:4000/api/drivers/drv_jorge_2/status', { data: { status: 'online' } });
+  });
+
   test('Flujo 1: Asignación Rápida Auto-Match (Smart Match Score #1)', async ({ browser }) => {
     const passengerContext = await browser.newContext({ viewport: { width: 440, height: 900 } });
     const passengerPage = await passengerContext.newPage();

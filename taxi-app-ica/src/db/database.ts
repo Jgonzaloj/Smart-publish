@@ -33,6 +33,28 @@ function initSchema(db: Database.Database): void {
     const schemaSql = fs.readFileSync(targetPath, 'utf8');
     db.exec(schemaSql);
   }
+  migrateSchema(db);
+}
+
+function migrateSchema(db: Database.Database): void {
+  const columns = [
+    { table: 'tariff_rules', col: 'min_offer_pct', type: 'REAL DEFAULT 0.75' },
+    { table: 'tariff_rules', col: 'max_offer_pct', type: 'REAL DEFAULT 1.40' },
+    { table: 'tariff_rules', col: 'peak_morning_factor', type: 'REAL DEFAULT 1.05' },
+    { table: 'tariff_rules', col: 'peak_evening_factor', type: 'REAL DEFAULT 1.15' },
+    { table: 'tariff_rules', col: 'night_factor', type: 'REAL DEFAULT 1.25' },
+    { table: 'tariff_rules', col: 'huacachina_factor', type: 'REAL DEFAULT 1.20' },
+    { table: 'tariff_rules', col: 'demand_multiplier', type: 'REAL DEFAULT 1.00' },
+    { table: 'tariff_rules', col: 'updated_at', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' },
+  ];
+
+  for (const c of columns) {
+    try {
+      db.exec(`ALTER TABLE ${c.table} ADD COLUMN ${c.col} ${c.type}`);
+    } catch {
+      // Columna ya existe
+    }
+  }
 }
 
 function seedInitialData(db: Database.Database): void {
