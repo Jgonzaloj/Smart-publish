@@ -98,7 +98,9 @@
         <span style="font-size: 1.05rem;">Taxi Ica</span>
         <span style="color: var(--accent-action); font-size: 0.85rem; font-weight: 800;">CHOFER</span>
       </div>
-      <div style="display: flex; align-items: center; gap: 8px;">
+        <button id="btnDriverAccountBadge" class="pill-btn" onclick="openDriverAuthModal()" style="padding: 4px 8px; font-size: 0.72rem; background: rgba(20,184,166,0.15); border-color: var(--accent-action); color: #5eead4;">
+          📱 Ingresar
+        </button>
         <button class="pill-btn" onclick="openDriverDocsModal()" style="padding: 4px 10px; font-size: 0.75rem; background: var(--bg-surface); border-color: var(--accent-action); color: #fff;">
           📋 Mis Docs
         </button>
@@ -710,14 +712,171 @@
       }
     });
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch((err) => console.log('SW register error', err));
+    // ====================================================
+    // AUTENTICACIÓN TELEFÓNICA CON OTP (CONDUCTOR)
+    // ====================================================
+    let tempDriverPhone = '';
+
+    function updateDriverProfileUI() {
+      const phone = localStorage.getItem('driver_phone');
+      const name = localStorage.getItem('driver_name') || 'Carlos R.';
+      const badge = document.getElementById('btnDriverAccountBadge');
+      if (phone) {
+        badge.innerHTML = `👤 ${name.split(' ')[0]} &bull; 📱 ${phone.slice(-4)}`;
+        badge.title = 'Clic para cambiar de cuenta o cerrar sesión';
+      } else {
+        badge.innerHTML = `📱 Ingresar`;
+      }
+    }
+
+    function openDriverAuthModal() {
+      document.getElementById('modalDriverAuth').style.display = 'flex';
+      document.getElementById('authStepDriverPhone').style.display = 'block';
+      document.getElementById('authStepDriverOtp').style.display = 'none';
+      document.getElementById('driverAuthError').style.display = 'none';
+    }
+
+    function closeDriverAuthModal() {
+      document.getElementById('modalDriverAuth').style.display = 'none';
+    }
+
+    async function handleRequestDriverOtp(e) {
+      e.preventDefault();
+      const phone = document.getElementById('inputDriverLoginPhone').value.trim();
+      const errEl = document.getElementById('driverAuthError');
+
+      if (!phone || phone.length < 9) {
+        errEl.textContent = 'Ingrese un número celular válido de 9 dígitos';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/phone-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, role: 'driver' })
+        });
+        const data = await res.json();
+        if (data.success) {
+          tempDriverPhone = phone;
+          document.getElementById('authStepDriverPhone').style.display = 'none';
+          document.getElementById('authStepDriverOtp').style.display = 'block';
+          document.getElementById('otpDriverTargetDisplay').textContent = `+51 ${phone}`;
+          errEl.style.display = 'none';
+          document.getElementById('inputDriverOtp').value = '';
+          document.getElementById('inputDriverOtp').focus();
+        } else {
+          errEl.textContent = data.message || 'Error al generar código';
+          errEl.style.display = 'block';
+        }
+      } catch (err) {
+        errEl.textContent = 'Error conectando con el servidor';
+        errEl.style.display = 'block';
+      }
+    }
+
+    async function handleVerifyDriverOtp(e) {
+      e.preventDefault();
+      const code = document.getElementById('inputDriverOtp').value.trim();
+      const errEl = document.getElementById('driverAuthError');
+
+      if (!code || code.length < 6) {
+        errEl.textContent = 'Ingrese el código de 6 dígitos';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: tempDriverPhone, code })
+        });
+        const data = await res.json();
+        if (data.success && data.token) {
+          localStorage.setItem('driver_token', data.token);
+          localStorage.setItem('driver_phone', tempDriverPhone);
+          if (data.user) {
+            localStorage.setItem('driver_name', data.user.name || 'Conductor Ica');
+            localStorage.setItem('driver_id', data.user.id);
+            DRIVER_ID = data.user.id;
+          }
+          updateDriverProfileUI();
+          closeDriverAuthModal();
+        } else {
+          errEl.textContent = data.message || 'Código inválido o vencido';
+          errEl.style.display = 'block';
+        }
+      } catch (err) {
+        errEl.textContent = 'Error al verificar el código';
+        errEl.style.display = 'block';
+      }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
       initMap();
       checkDemandRecommendation();
+      updateDriverProfileUI();
+      if (!localStorage.getItem('driver_phone')) {
+        openDriverAuthModal();
+      }
     });
   </script>
+
+  <!-- MODAL DE AUTENTICACIÓN TELEFÓNICA CON OTP (CONDUCTOR) -->
+  <div id="modalDriverAuth" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.94); backdrop-filter: blur(12px); z-index: 3000; align-items: center; justify-content: center; padding: 16px;">
+    <div class="modal-card" style="background: #1e293b; border: 1.5px solid var(--warning-amber); border-radius: var(--radius-lg); width: 100%; max-width: 380px; padding: 22px 18px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
+      <div style="font-size: 2.2rem; margin-bottom: 6px;">🚗</div>
+      <h3 style="font-size: 1.25rem; color: #fff; margin: 0 0 4px;">Acceso Conductor Taxi Ica</h3>
+      <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0 0 16px;">Ingresa tu número de celular registrado para iniciar servicio</p>
+
+      <div id="driverAuthError" style="display: none; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 8px; border-radius: 6px; font-size: 0.75rem; margin-bottom: 12px;"></div>
+
+      <!-- PASO 1: Ingreso de Celular -->
+      <div id="authStepDriverPhone">
+        <form onsubmit="handleRequestDriverOtp(event)">
+          <div style="text-align: left; margin-bottom: 16px;">
+            <label style="font-size: 0.72rem; color: #94a3b8; font-weight: 700;">Celular Registrado (Perú)</label>
+            <div style="display: flex; gap: 6px; margin-top: 4px;">
+              <span style="background: #0f172a; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 8px; font-size: 0.85rem; color: #94a3b8; display: flex; align-items: center;">🇵🇪 +51</span>
+              <input type="tel" id="inputDriverLoginPhone" class="form-input" placeholder="956 789 012" maxlength="9" required style="flex: 1; padding: 10px; background: #0f172a; border: 1px solid var(--border-color); border-radius: 8px; color: #fff; font-size: 1rem; font-weight: 700; letter-spacing: 1px;" />
+            </div>
+          </div>
+          <button type="submit" class="btn-primary" style="width: 100%; padding: 12px; font-size: 0.9rem; border-radius: var(--radius-md); background: var(--warning-amber); border-color: #d97706; color: #000; font-weight: 800;">
+            📲 Enviar Código OTP de Ingreso
+          </button>
+        </form>
+        <div style="margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+          <p style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 8px;">¿Eres nuevo chofer en la ciudad de Ica?</p>
+          <button type="button" onclick="closeDriverAuthModal(); openDriverDocsModal();" class="pill-btn" style="width: 100%; padding: 10px; font-size: 0.82rem; background: rgba(20,184,166,0.15); border-color: var(--accent-action); color: #5eead4;">
+            📝 Registrarme y Subir Documentos
+          </button>
+        </div>
+      </div>
+
+      <!-- PASO 2: Verificación OTP -->
+      <div id="authStepDriverOtp" style="display: none;">
+        <p style="font-size: 0.78rem; color: #6ee7b7; margin-bottom: 12px;">
+          Código de 6 dígitos enviado a <strong id="otpDriverTargetDisplay">+51 9XX XXX XXX</strong>
+        </p>
+        <form onsubmit="handleVerifyDriverOtp(event)">
+          <div style="margin-bottom: 16px;">
+            <input type="text" id="inputDriverOtp" class="form-input" placeholder="••••••" maxlength="6" required style="text-align: center; font-size: 1.6rem; letter-spacing: 8px; font-weight: 800; padding: 10px; width: 100%; background: #0f172a; border: 1.5px solid var(--warning-amber); border-radius: 8px; color: #fbbf24;" />
+          </div>
+          <button type="submit" class="btn-primary" style="width: 100%; padding: 12px; font-size: 0.9rem; border-radius: var(--radius-md); background: var(--warning-amber); border-color: #d97706; color: #000; font-weight: 800;">
+            ✓ Verificar e Iniciar Servicio
+          </button>
+          <button type="button" onclick="openDriverAuthModal()" style="background: none; border: none; color: #94a3b8; font-size: 0.75rem; margin-top: 10px; cursor: pointer;">
+            ← Cambiar número de celular
+          </button>
+        </form>
+      </div>
+
+      <div style="margin-top: 14px; font-size: 0.7rem; color: var(--text-dim);">
+        Sistema de Transporte Seguro &bull; Municipalidad Provincial de Ica
+      </div>
+    </div>
+  </div>
 </body>
 </html>

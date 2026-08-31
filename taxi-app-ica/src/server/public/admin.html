@@ -31,25 +31,29 @@
       gap: 12px;
       margin-bottom: 14px;
     }
-    @media (max-width: 960px) {
-      .grid-admin {
-        grid-template-columns: 1fr;
-      }
-      .metrics-row {
-        grid-template-columns: 1fr 1fr;
-      }
+    .tariff-form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 10px;
     }
-    @media (max-width: 500px) {
-      .metrics-row {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-      }
-      .metric-card {
-        padding: 10px 12px;
-      }
-      .metric-val {
-        font-size: 1.3rem;
-      }
+    @media (max-width: 1024px) {
+      .admin-layout { padding: 8px !important; }
+      .grid-admin { grid-template-columns: 1fr !important; }
+      .metrics-row { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+      #mapAdmin { height: 320px !important; }
+      #demandHeatmapContainer { grid-template-columns: 1fr !important; }
+      .tariff-form-grid { grid-template-columns: 1fr 1fr !important; }
+    }
+    @media (max-width: 650px) {
+      .metrics-row { grid-template-columns: 1fr !important; }
+      header { flex-direction: column !important; align-items: stretch !important; padding: 12px !important; gap: 10px !important; }
+      .admin-nav-tabs { flex-direction: column !important; }
+      .tab-btn { text-align: center !important; }
+      .tariff-form-grid { grid-template-columns: 1fr !important; }
+      .legend-box { flex-wrap: wrap !important; font-size: 0.68rem !important; justify-content: center !important; }
+      .metric-card { padding: 10px 12px !important; }
+      .metric-val { font-size: 1.35rem !important; }
     }
     .metric-card {
       background: var(--bg-card);
