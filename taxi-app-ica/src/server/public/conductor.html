@@ -209,6 +209,7 @@
         ✕ RECHAZAR VIAJE
       </button>
     </div>
+  </div><!-- /phone-viewport -->
   </div><!-- /driverAppMain -->
 
   <!-- MODAL: MIS DOCUMENTOS / REGISTRO DE CONDUCTOR (DISPONIBLE ANTES Y DESPUÉS DEL LOGIN) -->
@@ -355,7 +356,7 @@
     let timerInterval = null;
     let tripStep = 0;
 
-    const DRIVER_ID = 'drv_mario_1';
+    let DRIVER_ID = localStorage.getItem('driver_id') || 'drv_mario_1';
     let driverPos = [-14.06820, -75.72910];
 
     socket.on('connect', () => {
@@ -363,6 +364,10 @@
     });
 
     function initMap() {
+      if (map) {
+        map.invalidateSize();
+        return;
+      }
       map = L.map('mapDriver', { zoomControl: false }).setView(driverPos, 14);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -902,12 +907,14 @@
       }
 
       try {
+        console.log('handleVerifyDriverOtp sending payload:', { phone: verifyPhone, code });
         const res = await fetch('/api/auth/verify-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone: verifyPhone, code })
         });
         const data = await res.json();
+        console.log('handleVerifyDriverOtp response data:', data);
         if (data.success && data.token) {
           localStorage.setItem('driver_token', data.token);
           localStorage.setItem('driver_phone', verifyPhone);
@@ -916,7 +923,13 @@
             localStorage.setItem('driver_id', data.user.id);
             DRIVER_ID = data.user.id;
           }
-          checkDriverAuth();
+          const authModal = document.getElementById('modalDriverAuth');
+          if (authModal) authModal.style.display = 'none';
+          const app = document.getElementById('driverAppMain');
+          if (app) app.style.display = 'block';
+          updateDriverProfileUI();
+          initMap();
+          checkDemandRecommendation();
         } else {
           errEl.textContent = data.message || 'Código inválido o vencido';
           errEl.style.display = 'block';

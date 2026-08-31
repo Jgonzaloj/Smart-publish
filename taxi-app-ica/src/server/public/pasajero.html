@@ -315,6 +315,10 @@
     let currentDestPoint = { lat: -14.08745, lng: -75.76332, name: 'Laguna de Huacachina (Oasis)' };
 
     function initMap() {
+      if (map) {
+        map.invalidateSize();
+        return;
+      }
       map = L.map('mapPassenger', { zoomControl: false }).setView([-14.06777, -75.72861], 13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -1040,7 +1044,13 @@
           localStorage.setItem('passenger_phone', verifyPhone);
           localStorage.setItem('passenger_name', verifyName);
           localStorage.setItem('passenger_id', data.user.id);
-          checkPassengerAuth();
+          const modal = document.getElementById('modalPassengerAuth');
+          if (modal) modal.style.display = 'none';
+          const app = document.getElementById('passengerAppMain');
+          if (app) app.style.display = 'block';
+          updatePassengerProfileUI();
+          initMap();
+          loadLandmarks();
         } else {
           errEl.textContent = data.message || 'Código inválido o vencido';
           errEl.style.display = 'block';

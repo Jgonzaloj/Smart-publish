@@ -610,13 +610,14 @@ app.post('/api/auth/verify-otp', (req, res) => {
     `).run(userId, cleanPhone, fullName, userRole);
         if (userRole === 'driver') {
             db.prepare(`
-        INSERT INTO drivers (user_id, status, current_lat, current_lng, current_address, wallet_balance)
+        INSERT OR IGNORE INTO drivers (user_id, status, current_lat, current_lng, current_address, wallet_balance)
         VALUES (?, 'online', -14.06777, -75.72861, 'Plaza de Armas de Ica', 50.00)
       `).run(userId);
+            const uniquePlate = 'Y1A-' + (Math.floor(100 + Math.random() * 900));
             db.prepare(`
-        INSERT INTO vehicles (id, driver_id, plate_number, brand, model, color, year)
-        VALUES (?, ?, 'Y1A-452', 'Toyota', 'Yaris', 'Gris', 2022)
-      `).run(`veh_${cleanPhone}`, userId);
+        INSERT OR IGNORE INTO vehicles (id, driver_id, plate_number, brand, model, color, year)
+        VALUES (?, ?, ?, 'Toyota', 'Yaris', 'Gris', 2022)
+      `).run(`veh_${cleanPhone}`, userId, uniquePlate);
         }
         user = { id: userId, phone: cleanPhone, role: userRole, full_name: fullName };
     }
