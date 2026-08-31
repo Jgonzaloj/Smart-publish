@@ -40,8 +40,15 @@ function seedInitialData(db: Database.Database): void {
   const tariffCount = db.prepare('SELECT count(*) as count FROM tariff_rules').get() as { count: number };
   if (tariffCount.count === 0) {
     db.prepare(`
-      INSERT INTO tariff_rules (id, name, base_fare, price_per_km, price_per_min, min_fare, night_multiplier, tourist_zone_surcharge)
-      VALUES ('tariff_ica_standard', 'Tarifa Urbana Estándar Ica', @base_fare, @price_per_km, @price_per_min, @min_fare, @night_multiplier, @huacachina_surcharge)
+      INSERT INTO tariff_rules (
+        id, name, base_fare, price_per_km, price_per_min, min_fare,
+        min_offer_pct, max_offer_pct, peak_morning_factor, peak_evening_factor,
+        night_factor, huacachina_factor, demand_multiplier
+      ) VALUES (
+        'tariff_ica_standard', 'Motor de Tarifas Inteligente Ica', @base_fare, @price_per_km, @price_per_min, @min_fare,
+        @min_offer_pct, @max_offer_pct, @peak_morning_factor, @peak_evening_factor,
+        @night_factor, @huacachina_factor, @demand_multiplier
+      )
     `).run(config.DEFAULT_TARIFF);
   }
 

@@ -1,5 +1,5 @@
 -- ==============================================================================
--- SCHEMA OFICIAL: TAXI APP ICA (ECOSISTEMA PASAJERO, CONDUCTOR, ADMIN, PAGOS)
+-- SCHEMA OFICIAL V2: MARKETPLACE DE MOVILIDAD TAXI ICA (PRICE INTELLIGENCE ENGINE)
 -- ==============================================================================
 
 -- 1. Usuarios (Pasajeros, Conductores, Admins)
@@ -71,9 +71,11 @@ CREATE TABLE IF NOT EXISTS rides (
     estimated_fare REAL NOT NULL,
     final_fare REAL,
     negotiated_fare REAL,
+    passenger_initial_offer REAL,
     payment_method TEXT DEFAULT 'cash' CHECK(payment_method IN ('cash', 'yape', 'wallet')),
     status TEXT DEFAULT 'REQUESTED' CHECK(status IN ('REQUESTED', 'ACCEPTED', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED', 'PAID', 'CANCELLED')),
     sos_triggered INTEGER DEFAULT 0,
+    bids_count INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     accepted_at DATETIME,
     started_at DATETIME,
@@ -82,7 +84,24 @@ CREATE TABLE IF NOT EXISTS rides (
     FOREIGN KEY(driver_id) REFERENCES drivers(user_id)
 );
 
--- 6. Transacciones de Pagos (Efectivo & Yape)
+-- 6. Historial de Inteligencia de Precios (Price Intelligence Engine)
+CREATE TABLE IF NOT EXISTS price_intelligence_log (
+    id TEXT PRIMARY KEY,
+    ride_id TEXT NOT NULL,
+    origin_name TEXT NOT NULL,
+    dest_name TEXT NOT NULL,
+    distance_km REAL NOT NULL,
+    duration_minutes INTEGER NOT NULL,
+    system_recommended_fare REAL NOT NULL,
+    passenger_offer REAL NOT NULL,
+    final_agreed_fare REAL NOT NULL,
+    total_bids INTEGER DEFAULT 1,
+    hour_of_day INTEGER NOT NULL,
+    day_of_week INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 7. Transacciones de Pagos (Efectivo & Yape)
 CREATE TABLE IF NOT EXISTS payments (
     id TEXT PRIMARY KEY,
     ride_id TEXT UNIQUE NOT NULL,
@@ -96,7 +115,7 @@ CREATE TABLE IF NOT EXISTS payments (
     FOREIGN KEY(ride_id) REFERENCES rides(id)
 );
 
--- 7. Calificaciones y Reseñas
+-- 8. Calificaciones y Reseñas
 CREATE TABLE IF NOT EXISTS ratings (
     id TEXT PRIMARY KEY,
     ride_id TEXT NOT NULL,
@@ -108,15 +127,20 @@ CREATE TABLE IF NOT EXISTS ratings (
     FOREIGN KEY(ride_id) REFERENCES rides(id)
 );
 
--- 8. Tarifas y Reglas Dinámicas de Ica
+-- 9. Motor de Tarifas Inteligente Configurable desde Admin
 CREATE TABLE IF NOT EXISTS tariff_rules (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    base_fare REAL NOT NULL,
-    price_per_km REAL NOT NULL,
-    price_per_min REAL NOT NULL,
-    min_fare REAL NOT NULL,
-    night_multiplier REAL DEFAULT 1.25,
-    tourist_zone_surcharge REAL DEFAULT 3.50,
+    base_fare REAL DEFAULT 4.00,
+    price_per_km REAL DEFAULT 1.40,
+    price_per_min REAL DEFAULT 0.12,
+    min_fare REAL DEFAULT 6.00,
+    min_offer_pct REAL DEFAULT 0.75,
+    max_offer_pct REAL DEFAULT 1.40,
+    peak_morning_factor REAL DEFAULT 1.05,
+    peak_evening_factor REAL DEFAULT 1.15,
+    night_factor REAL DEFAULT 1.25,
+    huacachina_factor REAL DEFAULT 1.20,
+    demand_multiplier REAL DEFAULT 1.00,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

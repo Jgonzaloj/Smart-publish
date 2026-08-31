@@ -15,17 +15,22 @@ export const config = {
     name: 'Plaza de Armas de Ica',
   },
 
-  // Tarifas estándar en Ica (Soles)
+  // Parámetros por defecto del Motor de Tarifas Inteligente V2
   DEFAULT_TARIFF: {
-    base_fare: 6.00,       // Tarifa base estándar urbana en Ica
-    price_per_km: 1.80,    // S/ 1.80 por kilómetro
-    price_per_min: 0.30,   // S/ 0.30 por minuto
-    min_fare: 6.00,        // Mínimo de viaje urbano
-    night_multiplier: 1.25,// 25% extra de 22:00 a 05:00
-    huacachina_surcharge: 3.50, // Recargo turístico hacia el Oasis de Huacachina
+    base_fare: 4.00,             // S/ 4.00 Base
+    price_per_km: 1.40,          // S/ 1.40 por km
+    price_per_min: 0.12,         // S/ 0.12 por minuto
+    min_fare: 6.00,              // S/ 6.00 Tarifa mínima de viaje
+    min_offer_pct: 0.75,         // Oferta mínima permitida al pasajero (75% del sugerido)
+    max_offer_pct: 1.40,         // Oferta máxima sugerida (140%)
+    peak_morning_factor: 1.05,   // 06:00 - 09:00 (+5%)
+    peak_evening_factor: 1.15,   // 17:00 - 21:00 (+15%)
+    night_factor: 1.25,          // 21:00 - 06:00 (+25%)
+    huacachina_factor: 1.20,     // Recargo turístico Oasis Huacachina (+20%)
+    demand_multiplier: 1.00,     // Factor dinámico de demanda en vivo
   },
 
-  // Comisión por viaje (10% para el conductor)
+  // Comisión por viaje (10% para la plataforma)
   COMMISSION_RATE: 0.10,
 
   // Rutas de almacenamiento

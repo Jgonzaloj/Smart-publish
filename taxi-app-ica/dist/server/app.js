@@ -42,6 +42,19 @@ app.post('/api/tariff/estimate', (req, res) => {
     const estimate = tariffService.calculateFare(origin, destination);
     res.json({ success: true, estimate });
 });
+app.post('/api/tariff/evaluate', (req, res) => {
+    const { offer_fare, recommended_fare } = req.body;
+    const evaluation = tariffService.evaluateOfferProbability(Number(offer_fare), Number(recommended_fare));
+    res.json({ success: true, evaluation });
+});
+app.get('/api/admin/tariffs', (req, res) => {
+    const rules = tariffService.getTariffRule();
+    res.json({ success: true, rules });
+});
+app.post('/api/admin/tariffs', (req, res) => {
+    tariffService.updateTariffRule(req.body);
+    res.json({ success: true, message: 'Tarifas del motor inteligente actualizadas correctamente', rules: tariffService.getTariffRule() });
+});
 // ==============================================================================
 // 2. ENDPOINTS DEL PASAJERO
 // ==============================================================================
@@ -148,6 +161,36 @@ app.post('/api/rides/:id/pay', (req, res) => {
         return res.status(404).json({ success: false, message: 'Viaje no encontrado' });
     const payment = paymentService.processRidePayment(ride.id, amount || ride.estimated_fare, method || 'cash', yape_code);
     dispatchService.updateRideStatus(ride.id, 'PAID');
+    // Registrar en el Price Intelligence Engine de Ica para aprendizaje histórico
+    try {
+        const now = new Date();
+        db.prepare(`
+      INSERT INTO price_intelligence_log (
+        id, ride_id, origin_name, dest_name, distance_km, duration_minutes,
+        system_recommended_fare, passenger_offer, final_agreed_fare, total_bids,
+        hour_of_day, day_of_week
+      ) VALUES (
+        'pil_' || substr(hex(randomblob(4)), 1, 8), @ride_id, @origin_name, @dest_name, @distance_km, @duration_minutes,
+        @system_recommended_fare, @passenger_offer, @final_agreed_fare, @total_bids,
+        @hour_of_day, @day_of_week
+      )
+    `).run({
+            ride_id: ride.id,
+            origin_name: ride.origin.address,
+            dest_name: ride.destination.address,
+            distance_km: ride.distance_km,
+            duration_minutes: ride.duration_minutes,
+            system_recommended_fare: ride.estimated_fare,
+            passenger_offer: ride.negotiated_fare || ride.estimated_fare,
+            final_agreed_fare: payment.amount,
+            total_bids: 1,
+            hour_of_day: now.getHours(),
+            day_of_week: now.getDay(),
+        });
+    }
+    catch (err) {
+        console.error('Error logging price intelligence:', err);
+    }
     io.emit(`ride_update_${ride.id}`, { ride: dispatchService.getRideById(ride.id), status: 'PAID', payment });
     res.json({ success: true, payment });
 });

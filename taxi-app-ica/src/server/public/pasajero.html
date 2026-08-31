@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Taxi Ica — App Pasajero (inDrive & Map Selector)</title>
+  <title>Taxi Ica — Marketplace de Movilidad (Price Intelligence)</title>
   <link rel="stylesheet" href="/shared.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -11,15 +11,15 @@
   <style>
     .map-floating-hint {
       position: absolute;
-      top: 60px;
+      top: 58px;
       left: 14px;
       right: 14px;
-      background: rgba(17, 24, 39, 0.92);
-      border: 1px solid var(--primary);
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid var(--accent-cyan);
       color: #fff;
-      padding: 8px 12px;
+      padding: 6px 12px;
       border-radius: var(--radius-full);
-      font-size: 0.76rem;
+      font-size: 0.75rem;
       font-weight: 700;
       text-align: center;
       z-index: 1000;
@@ -30,145 +30,48 @@
       justify-content: center;
       gap: 6px;
     }
-    .map-picker-tabs {
+    .probability-badge {
+      padding: 6px 10px;
+      border-radius: var(--radius-md);
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-align: center;
+      margin-top: 4px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .prob-high { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid #10b981; }
+    .prob-med { background: rgba(245, 158, 11, 0.2); color: #fde047; border: 1px solid var(--primary); }
+    .prob-low { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444; }
+
+    .quick-offer-chips {
       display: flex;
       gap: 6px;
-      margin-bottom: 8px;
+      margin-top: 6px;
     }
-    .tab-picker {
+    .chip-offer {
       flex: 1;
-      padding: 6px 8px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border-color);
+      padding: 5px;
       background: var(--bg-surface);
-      color: var(--text-muted);
-      font-size: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-size: 0.76rem;
       font-weight: 700;
       cursor: pointer;
       text-align: center;
       transition: all 0.2s;
     }
-    .tab-picker.active-origin {
-      background: rgba(16, 185, 129, 0.2);
-      border-color: #10b981;
-      color: #6ee7b7;
+    .chip-offer.recommended {
+      border-color: var(--accent-cyan);
+      background: rgba(6, 182, 212, 0.15);
+      color: #67e8f9;
     }
-    .tab-picker.active-dest {
-      background: rgba(245, 158, 11, 0.2);
+    .chip-offer:hover {
       border-color: var(--primary);
-      color: #fde047;
-    }
-    .fare-counter {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--bg-surface);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      padding: 6px 12px;
-      margin: 8px 0;
-    }
-    .btn-step {
-      width: 40px;
-      height: 40px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      color: #fff;
-      font-size: 1.4rem;
-      font-weight: 800;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-    .btn-step:hover {
-      background: rgba(245, 158, 11, 0.2);
-      border-color: var(--primary);
-      color: var(--primary);
-    }
-    .fare-price-big {
-      font-size: 1.7rem;
-      font-weight: 800;
-      color: var(--primary);
-      font-family: var(--font-heading);
-      text-align: center;
-    }
-    .driver-offer-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      padding: 10px 12px;
-      margin-bottom: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      animation: slide-up 0.3s ease;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-    }
-    @keyframes slide-up {
-      from { transform: translateY(15px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-    .driver-card-matched {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: var(--bg-surface);
-      padding: 12px;
-      border-radius: var(--radius-md);
-      margin-bottom: 12px;
-      border: 1px solid var(--border-color);
-    }
-    .driver-avatar {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: #f59e0b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.4rem;
-    }
-    .payment-pill {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-    .pill-btn {
-      flex: 1;
-      padding: 7px 10px;
-      background: var(--bg-surface);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-sm);
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 0.8rem;
-      font-weight: 600;
-      text-align: center;
-      transition: all 0.2s;
-    }
-    .pill-btn.active {
-      background: rgba(245, 158, 11, 0.2);
-      border-color: var(--primary);
-      color: #fff;
-    }
-    .pill-btn.active-yape {
-      background: rgba(116, 34, 132, 0.3);
-      border-color: #9a2cb0;
-      color: #fff;
-    }
-    .status-banner {
-      background: #1e293b;
-      padding: 8px 12px;
-      border-radius: var(--radius-md);
-      font-weight: 700;
-      font-size: 0.85rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -176,7 +79,7 @@
   <div class="phone-viewport">
     <header class="phone-header">
       <div class="brand-badge">
-        <span>🚖</span> Taxi Ica <span class="badge-tag" style="background: rgba(245, 158, 11, 0.2); color: var(--primary);">inDrive</span>
+        <span>🚖</span> Taxi Ica <span class="badge-tag" style="background: rgba(6, 182, 212, 0.15); color: #67e8f9; border-color: #06b6d4;">Motor V2</span>
       </div>
       <button id="btnSosHeader" class="pill-btn" onclick="triggerSos()" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fca5a5; display: none;">
         🚨 SOS
@@ -188,56 +91,67 @@
       <span>👆 Toca en el mapa para marcar tu Destino</span>
     </div>
 
-    <!-- Map View of Ica -->
+    <!-- Map View of Ica (Protagonista 75%) -->
     <div id="mapPassenger" class="map-view"></div>
 
-    <!-- Bottom Sheet 1: Route & Offer Bidding -->
-    <div id="panelRequest" class="bottom-sheet" style="max-height: 75%;">
+    <!-- Bottom Sheet 1: Route & Smart Pricing Negotiation -->
+    <div id="panelRequest" class="bottom-sheet" style="max-height: 80%;">
       <!-- Mode Tabs: Click on Map Mode -->
-      <div class="map-picker-tabs">
-        <div class="tab-picker" id="tabSetOrigin" onclick="setClickMode('origin')">
+      <div class="map-picker-tabs" style="display: flex; gap: 6px; margin-bottom: 6px;">
+        <div class="tab-picker" id="tabSetOrigin" onclick="setClickMode('origin')" style="flex: 1; padding: 5px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-muted); font-size: 0.72rem; font-weight: 700; cursor: pointer; text-align: center;">
           📍 Mover Origen
         </div>
-        <div class="tab-picker active-dest" id="tabSetDest" onclick="setClickMode('dest')">
+        <div class="tab-picker" id="tabSetDest" onclick="setClickMode('dest')" style="flex: 1; padding: 5px 8px; border-radius: var(--radius-sm); border: 1px solid var(--accent-cyan); background: rgba(6, 182, 212, 0.2); color: #67e8f9; font-size: 0.72rem; font-weight: 700; cursor: pointer; text-align: center;">
           🏁 Elegir Destino en Mapa
         </div>
       </div>
 
-      <div style="margin-bottom: 6px;">
-        <label style="font-size: 0.72rem; color: #6ee7b7; font-weight: 700;">📍 Punto de Recogida (Origen)</label>
-        <select id="selectOrigin" class="input-select" style="margin-bottom: 6px;"></select>
+      <div style="margin-bottom: 4px;">
+        <label style="font-size: 0.7rem; color: #6ee7b7; font-weight: 700;">📍 Punto de Recogida (Origen)</label>
+        <select id="selectOrigin" class="input-select" style="margin: 2px 0 6px; padding: 8px 10px; font-size: 0.85rem;"></select>
       </div>
 
-      <div style="margin-bottom: 6px;">
-        <label style="font-size: 0.72rem; color: #fde047; font-weight: 700;">🏁 Punto de Llegada (Destino)</label>
-        <select id="selectDestination" class="input-select" style="margin-bottom: 6px;"></select>
+      <div style="margin-bottom: 4px;">
+        <label style="font-size: 0.7rem; color: #fde047; font-weight: 700;">🏁 Punto de Llegada (Destino)</label>
+        <select id="selectDestination" class="input-select" style="margin: 2px 0 6px; padding: 8px 10px; font-size: 0.85rem;"></select>
       </div>
 
-      <!-- Distance & Route Info -->
-      <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">
-        <span>Distancia: <strong style="color: #fff;" id="txtDistanceKm">4.8 km</strong></span>
-        <span>Tiempo estimado: <strong style="color: #fff;" id="txtDurationMin">12 min</strong></span>
+      <!-- Distance & Route Breakdown -->
+      <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px;">
+        <span>Distancia: <strong style="color: #fff;" id="txtDistanceKm">4.8 km</strong> &bull; <span id="txtDurationMin">12 min</span></span>
+        <span id="txtZoneTag" style="color: var(--primary); font-weight: 700;">Zona Urbana</span>
       </div>
 
-      <!-- inDrive Offer Counter -->
-      <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">Tu Oferta de Tarifa (Soles)</label>
-      <div class="fare-counter">
-        <button class="btn-step" onclick="adjustOffer(-1)">−</button>
+      <!-- inDrive Offer Counter with Smart Probability -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+        <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">TU OFERTA DE TARIFA</label>
+        <span style="font-size: 0.7rem; color: #67e8f9;">Recomendado: <strong id="lblRecommendedPrice">S/ 14.00</strong></span>
+      </div>
+
+      <div class="fare-counter" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 4px 12px; margin: 4px 0;">
+        <button class="btn-step" onclick="adjustOffer(-1)" style="width: 36px; height: 36px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: #fff; font-size: 1.3rem; font-weight: 800; cursor: pointer;">−</button>
         <div style="text-align: center;">
-          <div class="fare-price-big" id="offerPriceDisplay">S/ 8.00</div>
-          <div style="font-size: 0.68rem; color: var(--text-dim);" id="suggestedFareHint">Tarifa sugerida: S/ 8.00</div>
+          <div class="fare-price-big" id="offerPriceDisplay" style="font-size: 1.6rem; font-weight: 800; color: var(--primary);">S/ 14.00</div>
         </div>
-        <button class="btn-step" onclick="adjustOffer(1)">+</button>
+        <button class="btn-step" onclick="adjustOffer(1)" style="width: 36px; height: 36px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: #fff; font-size: 1.3rem; font-weight: 800; cursor: pointer;">+</button>
       </div>
 
-      <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">Método de Pago</label>
-      <div class="payment-pill">
-        <div class="pill-btn active" id="payCash" onclick="setPaymentMethod('cash')">💵 Efectivo</div>
-        <div class="pill-btn" id="payYape" onclick="setPaymentMethod('yape')">💜 Yape (QR / Cel)</div>
+      <!-- Semáforo de Probabilidad de Aceptación -->
+      <div id="probBadge" class="probability-badge prob-high">
+        <span id="probText">🟢 Alta probabilidad de encontrar conductor</span>
       </div>
 
-      <button id="btnRequestRide" class="btn-primary">
-        <span>🚀</span> Buscar Taxi con Mi Oferta
+      <!-- Quick Chips -->
+      <div class="quick-offer-chips" id="quickOfferChips"></div>
+
+      <!-- Payment Method -->
+      <div class="payment-pill" style="display: flex; gap: 8px; margin: 8px 0 10px;">
+        <div class="pill-btn active" id="payCash" onclick="setPaymentMethod('cash')" style="flex: 1; padding: 6px; font-size: 0.78rem; text-align: center;">💵 Efectivo</div>
+        <div class="pill-btn" id="payYape" onclick="setPaymentMethod('yape')" style="flex: 1; padding: 6px; font-size: 0.78rem; text-align: center;">💜 Yape (QR)</div>
+      </div>
+
+      <button id="btnRequestRide" class="btn-primary" style="padding: 12px 16px;">
+        <span>🚀</span> Solicitar Viaje en Ica
       </button>
     </div>
 
@@ -246,7 +160,7 @@
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <div>
           <div style="font-weight: 700; font-size: 0.95rem; color: #fff;">📡 Ofertas de Conductores</div>
-          <div style="font-size: 0.75rem; color: var(--text-muted);">Tu oferta: <strong style="color: var(--primary);" id="searchFarePrice">S/ 8.00</strong></div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">Tu oferta: <strong style="color: var(--primary);" id="searchFarePrice">S/ 14.00</strong></div>
         </div>
         <button class="pill-btn" onclick="cancelRide()" style="color: #f87171; border-color: rgba(239, 68, 68, 0.3);">
           Cancelar
@@ -263,13 +177,13 @@
 
     <!-- Bottom Sheet 3: Matched & In Progress -->
     <div id="panelMatched" class="bottom-sheet" style="display: none;">
-      <div class="status-banner" id="statusBanner">
+      <div class="status-banner" id="statusBanner" style="background: #1e293b; padding: 8px 12px; border-radius: var(--radius-md); font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
         <span id="statusText">🚗 Conductor en camino</span>
         <span id="statusTime" class="badge-tag" style="color: #6ee7b7; border-color: #10b981;">En camino</span>
       </div>
 
-      <div class="driver-card-matched">
-        <div class="driver-avatar">👨🏽‍✈️</div>
+      <div class="driver-card-matched" style="display: flex; align-items: center; gap: 12px; background: var(--bg-surface); padding: 12px; border-radius: var(--radius-md); margin-bottom: 12px; border: 1px solid var(--border-color);">
+        <div class="driver-avatar" style="width: 46px; height: 46px; border-radius: 50%; background: #06b6d4; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">👨🏽‍✈️</div>
         <div style="flex: 1;">
           <div id="driverName" style="font-weight: 700; font-size: 0.92rem; color: #fff;">Mario Huamán García</div>
           <div id="driverCar" style="font-size: 0.78rem; color: var(--text-muted);">Toyota Yaris &bull; Gris Plata</div>
@@ -279,7 +193,7 @@
         </div>
         <div style="text-align: right;">
           <div style="font-size: 0.7rem; color: var(--text-muted);">TARIFA ACORDADA</div>
-          <div style="font-size: 1.2rem; font-weight: 800; color: var(--primary);" id="matchedAgreedFare">S/ 8.00</div>
+          <div style="font-size: 1.2rem; font-weight: 800; color: var(--primary);" id="matchedAgreedFare">S/ 14.00</div>
         </div>
       </div>
 
@@ -291,7 +205,7 @@
 
       <div id="yapePaymentNotice" class="fare-box" style="display: none; background: rgba(116, 34, 132, 0.15); border-color: #742284; padding: 8px 12px;">
         <div style="font-size: 0.8rem;">💜 Pagarás con <strong>Yape</strong> al finalizar</div>
-        <div style="font-size: 1rem; font-weight: 800; color: #d8b4fe;" id="matchedFareYape">S/ 8.00</div>
+        <div style="font-size: 1rem; font-weight: 800; color: #d8b4fe;" id="matchedFareYape">S/ 14.00</div>
       </div>
     </div>
 
@@ -301,9 +215,9 @@
       <h3 style="font-size: 1.15rem; color: #fff;">¡Llegaste a tu destino!</h3>
       <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Viaje seguro completado con Taxi Ica</p>
 
-      <div class="fare-counter" style="flex-direction: column; padding: 12px;">
+      <div class="fare-counter" style="display: flex; flex-direction: column; padding: 12px; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
         <div style="font-size: 0.75rem; color: var(--text-muted);">Monto Final Acordado</div>
-        <div class="fare-price-big" id="finalFareDisplay">S/ 8.00</div>
+        <div class="fare-price-big" id="finalFareDisplay" style="font-size: 1.6rem; color: var(--primary);">S/ 14.00</div>
         <div id="paymentMethodConfirm" style="font-size: 0.78rem; font-weight: 700; color: var(--secondary);">Pago en Efectivo</div>
       </div>
 
@@ -330,9 +244,9 @@
     let landmarks = [];
     let currentRide = null;
     let selectedPayment = 'cash';
-    let currentOffer = 8.00;
-    let suggestedFare = 8.00;
-    let clickMode = 'dest'; // 'origin' or 'dest'
+    let currentOffer = 14.00;
+    let recommendedFare = 14.00;
+    let clickMode = 'dest';
 
     let currentOriginPoint = { lat: -14.06777, lng: -75.72861, name: 'Plaza de Armas de Ica' };
     let currentDestPoint = { lat: -14.08745, lng: -75.76332, name: 'Laguna de Huacachina (Oasis)' };
@@ -344,7 +258,6 @@
         attribution: '&copy; OpenStreetMap'
       }).addTo(map);
 
-      // 1. Marcador Origen (Verde) - Arrastrable
       markerOrigin = L.marker([currentOriginPoint.lat, currentOriginPoint.lng], {
         draggable: true,
         icon: L.divIcon({
@@ -355,18 +268,16 @@
         })
       }).addTo(map);
 
-      // 2. Marcador Destino (Dorado/Rojo) - Arrastrable
       markerDest = L.marker([currentDestPoint.lat, currentDestPoint.lng], {
         draggable: true,
         icon: L.divIcon({
           className: 'custom-icon-dest',
-          html: '<div style="background:#f59e0b; color:#000; font-size:16px; font-weight:800; text-align:center; width:30px; height:30px; border-radius:50%; border:3px solid #fff; box-shadow:0 0 14px #f59e0b; display:flex; align-items:center; justify-content:center;">🏁</div>',
+          html: '<div style="background:#06b6d4; color:#000; font-size:16px; font-weight:800; text-align:center; width:30px; height:30px; border-radius:50%; border:3px solid #fff; box-shadow:0 0 14px #06b6d4; display:flex; align-items:center; justify-content:center;">🏁</div>',
           iconSize: [30, 30],
           iconAnchor: [15, 15]
         })
       }).addTo(map);
 
-      // Eventos de arrastre
       markerOrigin.on('dragend', function (e) {
         const coord = e.target.getLatLng();
         currentOriginPoint.lat = coord.lat;
@@ -385,9 +296,8 @@
         updateRouteAndFare();
       });
 
-      // Evento de CLIC en cualquier punto del mapa de Ica
       map.on('click', function (e) {
-        if (currentRide) return; // No mover si ya hay viaje activo
+        if (currentRide) return;
         const lat = e.latlng.lat;
         const lng = e.latlng.lng;
 
@@ -395,7 +305,7 @@
           currentOriginPoint = { lat, lng, name: `Punto en Mapa (${lat.toFixed(4)}, ${lng.toFixed(4)})` };
           markerOrigin.setLatLng([lat, lng]);
           syncSelectWithPoint('selectOrigin', currentOriginPoint);
-          setClickMode('dest'); // Pasar automáticamente a fijar destino
+          setClickMode('dest');
         } else {
           currentDestPoint = { lat, lng, name: `Punto en Mapa (${lat.toFixed(4)}, ${lng.toFixed(4)})` };
           markerDest.setLatLng([lat, lng]);
@@ -415,12 +325,22 @@
       const hint = document.getElementById('mapHint');
 
       if (mode === 'origin') {
-        tabOrigin.className = 'tab-picker active-origin';
-        tabDest.className = 'tab-picker';
+        tabOrigin.style.borderColor = '#10b981';
+        tabOrigin.style.background = 'rgba(16, 185, 129, 0.2)';
+        tabOrigin.style.color = '#6ee7b7';
+
+        tabDest.style.borderColor = 'var(--border-color)';
+        tabDest.style.background = 'var(--bg-surface)';
+        tabDest.style.color = 'var(--text-muted)';
         hint.innerHTML = '<span>📍 Toca en el mapa para mover tu <strong>Punto de Recogida</strong></span>';
       } else {
-        tabOrigin.className = 'tab-picker';
-        tabDest.className = 'tab-picker active-dest';
+        tabOrigin.style.borderColor = 'var(--border-color)';
+        tabOrigin.style.background = 'var(--bg-surface)';
+        tabOrigin.style.color = 'var(--text-muted)';
+
+        tabDest.style.borderColor = '#06b6d4';
+        tabDest.style.background = 'rgba(6, 182, 212, 0.2)';
+        tabDest.style.color = '#67e8f9';
         hint.innerHTML = '<span>🏁 Toca en el mapa para fijar tu <strong>Destino</strong></span>';
       }
     }
@@ -436,7 +356,6 @@
         }
       }
       if (!found) {
-        // Añadir opción temporal de punto en mapa
         const opt = new Option(point.name, 'custom_point', true, true);
         select.add(opt);
       }
@@ -481,23 +400,20 @@
     }
 
     async function updateRouteAndFare() {
-      // 1. Dibujar línea de ruta entre Origen y Destino
       if (routePolyline) map.removeLayer(routePolyline);
 
       routePolyline = L.polyline([
         [currentOriginPoint.lat, currentOriginPoint.lng],
         [currentDestPoint.lat, currentDestPoint.lng]
       ], {
-        color: '#f59e0b',
+        color: '#06b6d4',
         weight: 4,
         opacity: 0.85,
         dashArray: '8, 8'
       }).addTo(map);
 
-      // Ajustar vista del mapa para ver ambos puntos
       map.fitBounds(routePolyline.getBounds(), { padding: [40, 40] });
 
-      // 2. Calcular tarifa con el backend
       const res = await fetch('/api/tariff/estimate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -508,18 +424,60 @@
       });
       const data = await res.json();
       if (data.success) {
-        suggestedFare = data.estimate.estimated_fare;
-        currentOffer = suggestedFare;
-        document.getElementById('offerPriceDisplay').textContent = `S/ ${currentOffer.toFixed(2)}`;
-        document.getElementById('suggestedFareHint').textContent = `Tarifa sugerida: S/ ${suggestedFare.toFixed(2)}`;
+        recommendedFare = data.estimate.recommended_fare;
+        currentOffer = recommendedFare;
+        document.getElementById('lblRecommendedPrice').textContent = `S/ ${recommendedFare.toFixed(2)}`;
         document.getElementById('txtDistanceKm').textContent = `${data.estimate.distance_km} km`;
         document.getElementById('txtDurationMin').textContent = `${data.estimate.duration_minutes} min`;
+        document.getElementById('txtZoneTag').textContent = data.estimate.active_factors.zone_label;
+
+        renderQuickChips(recommendedFare);
+        evaluateOfferProbability();
       }
     }
 
-    function adjustOffer(amount) {
-      currentOffer = Math.max(5.00, currentOffer + amount);
+    function renderQuickChips(base) {
+      const chipsContainer = document.getElementById('quickOfferChips');
+      const val1 = Math.max(6, base - 2);
+      const val2 = Math.max(6, base - 1);
+      const val3 = base;
+      const val4 = base + 2;
+
+      chipsContainer.innerHTML = `
+        <div class="chip-offer" onclick="setOfferPrice(${val1})">S/ ${val1.toFixed(0)}</div>
+        <div class="chip-offer" onclick="setOfferPrice(${val2})">S/ ${val2.toFixed(0)}</div>
+        <div class="chip-offer recommended" onclick="setOfferPrice(${val3})">S/ ${val3.toFixed(0)} ⭐</div>
+        <div class="chip-offer" onclick="setOfferPrice(${val4})">S/ ${val4.toFixed(0)}</div>
+      `;
+    }
+
+    function setOfferPrice(price) {
+      currentOffer = price;
       document.getElementById('offerPriceDisplay').textContent = `S/ ${currentOffer.toFixed(2)}`;
+      evaluateOfferProbability();
+    }
+
+    function adjustOffer(amount) {
+      currentOffer = Math.max(6.00, currentOffer + amount);
+      document.getElementById('offerPriceDisplay').textContent = `S/ ${currentOffer.toFixed(2)}`;
+      evaluateOfferProbability();
+    }
+
+    async function evaluateOfferProbability() {
+      const res = await fetch('/api/tariff/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ offer_fare: currentOffer, recommended_fare: recommendedFare })
+      });
+      const data = await res.json();
+      if (data.success) {
+        const ev = data.evaluation;
+        const badge = document.getElementById('probBadge');
+        const text = document.getElementById('probText');
+
+        badge.className = `probability-badge ${ev.status === 'HIGH' ? 'prob-high' : ev.status === 'MEDIUM' ? 'prob-med' : 'prob-low'}`;
+        text.textContent = `${ev.message} (${ev.estimated_wait_time})`;
+      }
     }
 
     function setPaymentMethod(method) {
@@ -543,7 +501,7 @@
       const data = await res.json();
       if (data.success) {
         currentRide = data.ride;
-        document.getElementById('searchFarePrice').textContent = `S/ ${currentRide.estimated_fare.toFixed(2)}`;
+        document.getElementById('searchFarePrice').textContent = `S/ ${(currentRide.negotiated_fare || currentRide.estimated_fare).toFixed(2)}`;
         document.getElementById('panelRequest').style.display = 'none';
         document.getElementById('panelSearching').style.display = 'block';
         document.getElementById('mapHint').style.display = 'none';
@@ -577,14 +535,14 @@
       if (!bids || bids.length === 0) return;
 
       container.innerHTML = bids.map(b => `
-        <div class="driver-offer-card">
+        <div class="driver-offer-card" style="background:var(--bg-surface); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:10px 12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
           <div>
             <div style="font-weight:700; font-size:0.88rem; color:#fff;">${b.driver_name}</div>
             <div style="font-size:0.75rem; color:var(--text-muted);">${b.vehicle_model} &bull; a ${b.eta_minutes} min &bull; ⭐ ${b.driver_rating.toFixed(2)}</div>
           </div>
           <div style="text-align:right;">
             <div style="font-weight:800; font-size:1.15rem; color:var(--primary);">S/ ${b.offered_fare.toFixed(2)}</div>
-            <button class="pill-btn" onclick="acceptDriverBid('${b.driver_id}', ${b.offered_fare})" style="background:rgba(245,158,11,0.2); border-color:var(--primary); color:#fff; padding:4px 10px; font-size:0.75rem; margin-top:2px;">
+            <button class="pill-btn" onclick="acceptDriverBid('${b.driver_id}', ${b.offered_fare})" style="background:rgba(6,182,212,0.2); border-color:#06b6d4; color:#fff; padding:4px 10px; font-size:0.75rem; margin-top:2px;">
               Aceptar Oferta
             </button>
           </div>
@@ -616,18 +574,18 @@
         document.getElementById('driverPlate').textContent = ride.driver.vehicle?.plate_number || 'Y1A-452';
         document.getElementById('driverRating').textContent = ride.driver.rating_avg.toFixed(2);
       }
-      document.getElementById('matchedAgreedFare').textContent = `S/ ${(ride.estimated_fare).toFixed(2)}`;
+      document.getElementById('matchedAgreedFare').textContent = `S/ ${(ride.negotiated_fare || ride.estimated_fare).toFixed(2)}`;
 
       if (ride.payment_method === 'yape') {
         document.getElementById('yapePaymentNotice').style.display = 'flex';
-        document.getElementById('matchedFareYape').textContent = `S/ ${ride.estimated_fare.toFixed(2)}`;
+        document.getElementById('matchedFareYape').textContent = `S/ ${(ride.negotiated_fare || ride.estimated_fare).toFixed(2)}`;
       }
 
       if (markerDriver) map.removeLayer(markerDriver);
       markerDriver = L.marker([ride.driver?.current_location?.latitude || -14.0682, ride.driver?.current_location?.longitude || -75.7291], {
         icon: L.divIcon({
           className: 'custom-icon-taxi',
-          html: '<div style="background:#000; color:#f59e0b; font-size:20px; text-align:center; width:28px; height:28px; border-radius:50%; border:2px solid #f59e0b; box-shadow:0 0 12px #f59e0b;">🚖</div>',
+          html: '<div style="background:#000; color:#06b6d4; font-size:20px; text-align:center; width:28px; height:28px; border-radius:50%; border:2px solid #06b6d4; box-shadow:0 0 12px #06b6d4;">🚖</div>',
           iconSize: [28, 28],
           iconAnchor: [14, 14]
         })
@@ -640,7 +598,7 @@
       document.getElementById('btnSosHeader').style.display = 'none';
       document.getElementById('panelCompleted').style.display = 'block';
 
-      document.getElementById('finalFareDisplay').textContent = `S/ ${(ride.final_fare || ride.estimated_fare).toFixed(2)}`;
+      document.getElementById('finalFareDisplay').textContent = `S/ ${(ride.final_fare || ride.negotiated_fare || ride.estimated_fare).toFixed(2)}`;
       document.getElementById('paymentMethodConfirm').textContent = ride.payment_method === 'yape' ? '💜 Pago con Yape' : '💵 Pago en Efectivo';
 
       if (ride.payment_method === 'yape') {

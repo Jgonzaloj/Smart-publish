@@ -28,7 +28,7 @@ export class DispatchService {
     const passengerPhone = passenger?.phone || '956000000';
     const passengerRating = passenger?.rating_avg || 4.9;
 
-    const estimatedFare = data.negotiated_fare || fareResult.estimated_fare;
+    const estimatedFare = data.negotiated_fare || fareResult.recommended_fare;
 
     const stmt = this.db.prepare(`
       INSERT INTO rides (

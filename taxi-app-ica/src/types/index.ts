@@ -70,12 +70,18 @@ export interface Driver extends User {
 export interface TariffRule {
   id: string;
   name: string;
-  base_fare: number;       // S/ 6.00 base
-  price_per_km: number;    // S/ 1.80 por km
-  price_per_min: number;   // S/ 0.30 por min
-  min_fare: number;        // S/ 6.00 tarifa mínima
-  night_multiplier: number;// 1.20 (22:00 - 05:00)
-  tourist_zone_surcharge: number; // S/ 3.00 para Huacachina
+  base_fare: number;             // S/ 4.00 base
+  price_per_km: number;          // S/ 1.40 por km
+  price_per_min: number;         // S/ 0.12 por min
+  min_fare: number;              // S/ 6.00 tarifa mínima
+  min_offer_pct: number;         // 0.75 (75%)
+  max_offer_pct: number;         // 1.40 (140%)
+  peak_morning_factor: number;   // 1.05
+  peak_evening_factor: number;   // 1.15
+  night_factor: number;          // 1.25
+  huacachina_factor: number;     // 1.20
+  demand_multiplier: number;     // 1.00
+  updated_at?: string;
 }
 
 export interface DriverBid {
