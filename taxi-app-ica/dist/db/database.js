@@ -39,6 +39,12 @@ function migrateSchema(db) {
         { table: 'tariff_rules', col: 'huacachina_factor', type: 'REAL DEFAULT 1.20' },
         { table: 'tariff_rules', col: 'demand_multiplier', type: 'REAL DEFAULT 1.00' },
         { table: 'tariff_rules', col: 'updated_at', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' },
+        { table: 'driver_documents', col: 'technical_review_number', type: 'TEXT DEFAULT "REV-2026-ICA"' },
+        { table: 'driver_documents', col: 'technical_review_expiry', type: 'DATE DEFAULT "2026-12-31"' },
+        { table: 'driver_documents', col: 'property_card_photo', type: 'TEXT DEFAULT "tarjeta_propiedad.jpg"' },
+        { table: 'driver_documents', col: 'soat_photo', type: 'TEXT DEFAULT "soat_digital.pdf"' },
+        { table: 'driver_documents', col: 'technical_review_photo', type: 'TEXT DEFAULT "cert_rev_tecnica.pdf"' },
+        { table: 'users', col: 'dni', type: 'TEXT DEFAULT "45879632"' },
     ];
     for (const c of columns) {
         try {

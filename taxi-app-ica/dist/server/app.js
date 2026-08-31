@@ -294,10 +294,88 @@ app.get('/api/drivers', (req, res) => {
     const drivers = dispatchService.findNearbyAvailableDrivers(-14.06777, -75.72861, 50.0);
     res.json({ success: true, drivers });
 });
+// Endpoint para obtener conductores con todos sus documentos adjuntos (Auditoría Admin)
+app.get('/api/admin/drivers-with-docs', (req, res) => {
+    const drivers = db.prepare(`
+    SELECT u.id, u.full_name, u.phone, u.email, u.rating_avg, u.total_rides, u.dni,
+           d.status, d.wallet_balance, d.current_address,
+           v.plate_number, v.brand, v.model, v.color, v.year,
+           doc.license_number, doc.license_expiry, doc.soat_number, doc.soat_expiry, doc.property_card,
+           doc.technical_review_number, doc.technical_review_expiry,
+           doc.property_card_photo, doc.soat_photo, doc.technical_review_photo,
+           doc.status as doc_status, doc.reviewed_at, doc.review_notes
+    FROM users u
+    JOIN drivers d ON u.id = d.user_id
+    LEFT JOIN vehicles v ON d.user_id = v.driver_id
+    LEFT JOIN driver_documents doc ON d.user_id = doc.driver_id
+    ORDER BY u.created_at DESC
+  `).all();
+    res.json({ success: true, drivers });
+});
+// Endpoint de Registro de Conductores (Conductor o Admin)
+app.post('/api/drivers/register', (req, res) => {
+    const { full_name, phone, email, dni, plate_number, brand, model, color, year, soat_number, soat_expiry, license_number, license_expiry, technical_review_number, technical_review_expiry, property_card, auto_approve, } = req.body;
+    if (!full_name || !phone || !plate_number) {
+        return res.status(400).json({ success: false, message: 'Nombre, teléfono y placa son obligatorios' });
+    }
+    const userId = `drv_${Date.now()}`;
+    const initialStatus = auto_approve ? 'online' : 'offline';
+    const docStatus = auto_approve ? 'approved' : 'pending';
+    try {
+        const insertUser = db.prepare(`
+      INSERT INTO users (id, phone, full_name, email, role, rating_avg, total_rides, dni)
+      VALUES (?, ?, ?, ?, 'driver', 5.0, 0, ?)
+    `);
+        insertUser.run(userId, phone, full_name, email || `${phone}@taxi.ica.pe`, dni || '45879632');
+        const insertDriver = db.prepare(`
+      INSERT INTO drivers (user_id, status, current_lat, current_lng, current_address, wallet_balance)
+      VALUES (?, ?, -14.06777, -75.72861, 'Plaza de Armas de Ica', 50.00)
+    `);
+        insertDriver.run(userId, initialStatus);
+        const insertVehicle = db.prepare(`
+      INSERT INTO vehicles (id, driver_id, plate_number, brand, model, color, year)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+        insertVehicle.run(`veh_${Date.now()}`, userId, plate_number.toUpperCase(), brand || 'Toyota', model || 'Yaris', color || 'Gris', year || 2022);
+        const insertDocs = db.prepare(`
+      INSERT INTO driver_documents (
+        driver_id, license_number, license_expiry, soat_number, soat_expiry, property_card,
+        technical_review_number, technical_review_expiry,
+        property_card_photo, soat_photo, technical_review_photo,
+        status, reviewed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+        insertDocs.run(userId, license_number || `Q-${dni || '45879632'}`, license_expiry || '2028-12-31', soat_number || `SOAT-${plate_number.toUpperCase()}`, soat_expiry || '2027-06-30', property_card || `TP-${plate_number.toUpperCase()}`, technical_review_number || `REV-${plate_number.toUpperCase()}`, technical_review_expiry || '2026-12-31', 'tarjeta_propiedad_digital.pdf', 'soat_digital_la_positiva.pdf', 'certificado_revision_farenet.pdf', docStatus, auto_approve ? new Date().toISOString() : null);
+        io.emit('admin_event', {
+            type: 'DRIVER_REGISTERED',
+            driver: { id: userId, full_name, plate_number, status: initialStatus, docStatus }
+        });
+        res.json({
+            success: true,
+            message: auto_approve
+                ? '✅ Conductor registrado y habilitado inmediatamente'
+                : '📋 Solicitud de conductor enviada con éxito. En espera de revisión por la central de Ica.',
+            driver_id: userId
+        });
+    }
+    catch (error) {
+        console.error('Error registrando conductor:', error);
+        res.status(500).json({ success: false, message: error.message || 'Error al registrar conductor' });
+    }
+});
 app.post('/api/drivers/:id/approve', (req, res) => {
     db.prepare('UPDATE driver_documents SET status = "approved", reviewed_at = CURRENT_TIMESTAMP WHERE driver_id = ?').run(req.params.id);
     db.prepare('UPDATE drivers SET status = "online" WHERE user_id = ?').run(req.params.id);
+    io.emit('admin_event', { type: 'DRIVER_APPROVED', driver_id: req.params.id });
     res.json({ success: true, message: 'Conductor aprobado correctamente' });
+});
+app.post('/api/drivers/:id/reject', (req, res) => {
+    const { reason } = req.body;
+    db.prepare('UPDATE driver_documents SET status = "rejected", reviewed_at = CURRENT_TIMESTAMP, review_notes = ? WHERE driver_id = ?')
+        .run(reason || 'Documentos no legibles o vencidos', req.params.id);
+    db.prepare('UPDATE drivers SET status = "offline" WHERE user_id = ?').run(req.params.id);
+    io.emit('admin_event', { type: 'DRIVER_REJECTED', driver_id: req.params.id });
+    res.json({ success: true, message: 'Solicitud rechazada con observaciones' });
 });
 // ==============================================================================
 // RUTAS DE LAS VISTAS FRONTEND (PWA MÓVIL & ADMIN)
