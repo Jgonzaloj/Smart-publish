@@ -115,6 +115,12 @@
         </span>
       </div>
 
+      <!-- Reference Range Box (Recomendación de Auditoría para Negociación) -->
+      <div style="background: rgba(15, 23, 42, 0.7); border: 1px dashed rgba(20, 184, 166, 0.4); border-radius: var(--radius-md); padding: 6px 12px; margin: 4px 0 8px; font-size: 0.75rem; color: #94a3b8; display: flex; justify-content: space-between; align-items: center;">
+        <span>🎯 Rango de tarifa justa:</span>
+        <strong id="lblRangeRef" style="color: #5eead4; font-size: 0.85rem;">S/ 11.00 &ndash; S/ 16.00</strong>
+      </div>
+
       <!-- Transparent Dual Pricing Box (PDF Page 7) -->
       <div class="dual-pricing-box" id="dualPricingBox">
         <div class="price-card active-rec" id="cardRecPrice" onclick="selectSuggestedPrice('REC')">
@@ -369,7 +375,7 @@
         biddingControls.style.display = 'none';
       } else {
         btnIcon.textContent = '💰';
-        btnLabel.textContent = 'Solicitar y Negociar Tarifa (inDrive)';
+        btnLabel.textContent = 'Solicitar y Negociar Tarifa Libre';
         biddingControls.style.display = 'block';
       }
     }
@@ -459,6 +465,7 @@
 
         document.getElementById('lblPriceRec').textContent = `S/ ${recommendedFare.toFixed(2)}`;
         document.getElementById('lblPriceEco').textContent = `S/ ${ecoPrice.toFixed(2)}`;
+        document.getElementById('lblRangeRef').textContent = `S/ ${ecoPrice.toFixed(2)} – S/ ${data.estimate.max_suggested_fare.toFixed(2)}`;
         document.getElementById('txtDistanceKm').textContent = `${data.estimate.distance_km} km`;
         document.getElementById('txtDurationMin').textContent = `${data.estimate.duration_minutes} min`;
         document.getElementById('txtZoneTag').textContent = data.estimate.active_factors.zone_label;

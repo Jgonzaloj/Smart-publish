@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS driver_documents (
     soat_number TEXT NOT NULL,
     soat_expiry DATE NOT NULL,
     property_card TEXT NOT NULL,
-    criminal_records_approved INTEGER DEFAULT 1,
+    criminal_records_approved INTEGER DEFAULT 0,
     status TEXT DEFAULT 'approved' CHECK(status IN ('pending', 'approved', 'rejected')),
     reviewed_at DATETIME,
     review_notes TEXT,
@@ -72,16 +72,31 @@ CREATE TABLE IF NOT EXISTS rides (
     final_fare REAL,
     negotiated_fare REAL,
     passenger_initial_offer REAL,
-    payment_method TEXT DEFAULT 'cash' CHECK(payment_method IN ('cash', 'yape', 'wallet')),
+    payment_method TEXT DEFAULT 'cash' CHECK(payment_method IN ('cash', 'yape', 'plin', 'wallet')),
     status TEXT DEFAULT 'REQUESTED' CHECK(status IN ('REQUESTED', 'ACCEPTED', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED', 'PAID', 'CANCELLED')),
     sos_triggered INTEGER DEFAULT 0,
     bids_count INTEGER DEFAULT 0,
+    expires_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     accepted_at DATETIME,
     started_at DATETIME,
     completed_at DATETIME,
     FOREIGN KEY(passenger_id) REFERENCES users(id),
     FOREIGN KEY(driver_id) REFERENCES drivers(user_id)
+);
+
+-- 5.1 Pujas y Contraofertas Persistidas en BD con TTL (Hallazgo Crítico #3)
+CREATE TABLE IF NOT EXISTS ride_bids (
+    id TEXT PRIMARY KEY,
+    ride_id TEXT NOT NULL,
+    driver_id TEXT NOT NULL,
+    offered_fare REAL NOT NULL,
+    eta_minutes INTEGER NOT NULL,
+    status TEXT DEFAULT 'PENDING' CHECK(status IN ('PENDING', 'ACCEPTED', 'REJECTED', 'EXPIRED')),
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(ride_id) REFERENCES rides(id) ON DELETE CASCADE,
+    FOREIGN KEY(driver_id) REFERENCES drivers(user_id) ON DELETE CASCADE
 );
 
 -- 6. Historial de Inteligencia de Precios (Price Intelligence Engine)
@@ -101,7 +116,7 @@ CREATE TABLE IF NOT EXISTS price_intelligence_log (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 7. Transacciones de Pagos (Efectivo & Yape)
+-- 7. Transacciones de Pagos (Efectivo, Yape & Plin)
 CREATE TABLE IF NOT EXISTS payments (
     id TEXT PRIMARY KEY,
     ride_id TEXT UNIQUE NOT NULL,
@@ -115,7 +130,7 @@ CREATE TABLE IF NOT EXISTS payments (
     FOREIGN KEY(ride_id) REFERENCES rides(id)
 );
 
--- 8. Calificaciones y Reseñas
+-- 8. Calificaciones y Reseñas con Recálculo Automático (Hallazgo Alto #5)
 CREATE TABLE IF NOT EXISTS ratings (
     id TEXT PRIMARY KEY,
     ride_id TEXT NOT NULL,
@@ -126,6 +141,15 @@ CREATE TABLE IF NOT EXISTS ratings (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(ride_id) REFERENCES rides(id)
 );
+
+-- Trigger para recalcular rating_avg en cada calificación
+CREATE TRIGGER IF NOT EXISTS trg_recalculate_user_rating
+AFTER INSERT ON ratings
+BEGIN
+  UPDATE users
+  SET rating_avg = ROUND((SELECT AVG(score) FROM ratings WHERE reviewee_id = NEW.reviewee_id), 2)
+  WHERE id = NEW.reviewee_id;
+END;
 
 -- 9. Motor de Tarifas Inteligente Configurable desde Admin
 CREATE TABLE IF NOT EXISTS tariff_rules (

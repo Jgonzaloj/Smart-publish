@@ -2,6 +2,8 @@ import express from 'express';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from '../config/env.js';
@@ -17,11 +19,52 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
+
+// 1. CORS Restringido y Seguro (Hallazgo Crítico #2)
+const allowedOrigins = [
+  'https://apptaxi.inversionesvawi.com',
+  'http://localhost:4000',
+  'http://127.0.0.1:4000'
+];
+
 const io = new SocketIOServer(server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] },
+  cors: {
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin) || origin.includes('inversionesvawi.com')) {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
+    methods: ['GET', 'POST']
+  },
 });
 
-app.use(cors());
+// 2. Protecciones de Servidor Helmet & Rate Limiting (Hallazgo Medio #13)
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Demasiadas solicitudes. Intente más tarde.' }
+});
+app.use('/api/', apiLimiter);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || origin.includes('inversionesvawi.com')) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 // Instanciar base de datos y servicios

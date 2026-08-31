@@ -54,8 +54,16 @@ export class TariffService {
     const timeFare = durationMinutes * rules.price_per_min; // S/ 0.12/min
     const subtotal = baseFare + distanceFare + timeFare;
 
-    // 2. Factor Horario
-    const hour = requestedTime.getHours();
+    // 2. Factor Horario (Zona Horaria Explícita America/Lima - Hallazgo Medio #14)
+    let hour = requestedTime.getHours();
+    try {
+      const icaHourStr = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Lima',
+        hour: 'numeric',
+        hour12: false
+      }).format(requestedTime);
+      hour = parseInt(icaHourStr, 10);
+    } catch {}
     let timeFactor = 1.00;
     let timeLabel = 'Tarifa Regular Diurna';
 

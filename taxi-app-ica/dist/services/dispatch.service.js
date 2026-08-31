@@ -85,7 +85,7 @@ export class DispatchService {
         return this.candidateService.findAndRankCandidates(ride.origin.latitude, ride.origin.longitude, 5.0, 4);
     }
     /**
-     * Conductor envía una Contraoferta
+     * Conductor envía una Contraoferta (Persistida en Base de Datos con TTL - Hallazgo Crítico #3)
      */
     submitDriverBid(rideId, driverId, offeredFare) {
         const ride = this.getRideById(rideId);
@@ -104,8 +104,25 @@ export class DispatchService {
             return null;
         const distanceToOrigin = this.geoService.calculateDistanceKm(driverRow.current_lat, driverRow.current_lng, ride.origin.latitude, ride.origin.longitude);
         const etaMinutes = this.geoService.estimateDurationMinutes(distanceToOrigin);
+        const bidId = `bid_${uuidv4().substring(0, 8)}`;
+        const expiresAt = new Date(Date.now() + 3 * 60 * 1000).toISOString(); // 3 min TTL
+        // Persistir en SQLite
+        try {
+            this.db.prepare(`
+        INSERT INTO ride_bids (id, ride_id, driver_id, offered_fare, eta_minutes, status, expires_at)
+        VALUES (?, ?, ?, ?, ?, 'PENDING', ?)
+      `).run(bidId, rideId, driverId, offeredFare, etaMinutes, expiresAt);
+        }
+        catch {
+            // Si ya existía puja previa de este chofer, actualizarla
+            this.db.prepare(`
+        UPDATE ride_bids 
+        SET offered_fare = ?, eta_minutes = ?, status = 'PENDING', expires_at = ?
+        WHERE ride_id = ? AND driver_id = ?
+      `).run(offeredFare, etaMinutes, expiresAt, rideId, driverId);
+        }
         const bid = {
-            id: `bid_${uuidv4().substring(0, 8)}`,
+            id: bidId,
             ride_id: rideId,
             driver_id: driverId,
             driver_name: driverRow.full_name,
@@ -117,6 +134,7 @@ export class DispatchService {
             eta_minutes: etaMinutes,
             created_at: new Date().toISOString(),
         };
+        // Caché en memoria para lectura rápida
         const currentList = this.activeBids.get(rideId) || [];
         const updatedList = currentList.filter(b => b.driver_id !== driverId);
         updatedList.push(bid);
@@ -124,6 +142,35 @@ export class DispatchService {
         return bid;
     }
     getBidsForRide(rideId) {
+        try {
+            const rows = this.db.prepare(`
+        SELECT rb.*, u.full_name as driver_name, u.rating_avg as driver_rating, u.phone as driver_phone,
+               v.brand, v.model, v.plate_number
+        FROM ride_bids rb
+        JOIN users u ON rb.driver_id = u.id
+        LEFT JOIN vehicles v ON rb.driver_id = v.driver_id
+        WHERE rb.ride_id = ? AND rb.status = 'PENDING'
+        ORDER BY rb.created_at DESC
+      `).all(rideId);
+            if (rows && rows.length > 0) {
+                return rows.map(r => ({
+                    id: r.id,
+                    ride_id: r.ride_id,
+                    driver_id: r.driver_id,
+                    driver_name: r.driver_name,
+                    driver_rating: Number(r.driver_rating || 5.0),
+                    driver_phone: r.driver_phone,
+                    vehicle_model: `${r.brand || 'Toyota'} ${r.model || 'Yaris'}`,
+                    vehicle_plate: r.plate_number || 'Y1A-452',
+                    offered_fare: r.offered_fare,
+                    eta_minutes: r.eta_minutes,
+                    created_at: r.created_at,
+                }));
+            }
+        }
+        catch {
+            // Fallback a memoria si la tabla aún no migró
+        }
         return this.activeBids.get(rideId) || [];
     }
     assignmentService = new AssignmentService();
@@ -136,6 +183,12 @@ export class DispatchService {
         const result = this.assignmentService.assignDriverAtomically(rideId, driverId, finalFare, (id) => this.getRideById(id));
         if (!result.success)
             return null;
+        // Actualizar estado de las pujas en BD
+        try {
+            this.db.prepare(`UPDATE ride_bids SET status = 'ACCEPTED' WHERE ride_id = ? AND driver_id = ?`).run(rideId, driverId);
+            this.db.prepare(`UPDATE ride_bids SET status = 'REJECTED' WHERE ride_id = ? AND driver_id != ?`).run(rideId, driverId);
+        }
+        catch { }
         this.activeBids.delete(rideId);
         return result.ride || null;
     }

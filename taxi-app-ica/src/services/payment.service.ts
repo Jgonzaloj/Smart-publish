@@ -41,6 +41,14 @@ export class PaymentService {
           SET wallet_balance = wallet_balance - ? 
           WHERE user_id = ?
         `).run(commissionAmount, ride.driver_id);
+
+        // Control de Tope de Deuda y Suspensión Automática (Hallazgo Alto #8)
+        const MAX_ALLOWED_DEBT = -30.00;
+        const dRow = this.db.prepare('SELECT wallet_balance FROM drivers WHERE user_id = ?').get(ride.driver_id) as any;
+        if (dRow && dRow.wallet_balance < MAX_ALLOWED_DEBT) {
+          this.db.prepare("UPDATE drivers SET status = 'suspended' WHERE user_id = ?").run(ride.driver_id);
+          console.warn(`[SEGURIDAD] Conductor ${ride.driver_id} suspendido automáticamente por deuda.`);
+        }
       } else if (method === 'yape' || method === 'plin') {
         // En Yape o Plin, se acredita la ganancia neta en la billetera
         this.db.prepare(`
