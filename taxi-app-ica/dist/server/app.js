@@ -171,6 +171,30 @@ app.post('/api/rides/:id/status', (req, res) => {
     io.emit('admin_event', { type: `RIDE_${status}`, ride });
     res.json({ success: true, ride });
 });
+app.post('/api/rides/:id/arrive', (req, res) => {
+    const ride = dispatchService.updateRideStatus(req.params.id, 'ARRIVED');
+    if (!ride)
+        return res.status(400).json({ success: false, message: 'No se pudo registrar llegada' });
+    io.emit(`ride_update_${ride.id}`, { ride, status: 'ARRIVED' });
+    io.emit('admin_event', { type: 'RIDE_ARRIVED', ride });
+    res.json({ success: true, ride });
+});
+app.post('/api/rides/:id/start', (req, res) => {
+    const ride = dispatchService.updateRideStatus(req.params.id, 'IN_PROGRESS');
+    if (!ride)
+        return res.status(400).json({ success: false, message: 'No se pudo iniciar el viaje' });
+    io.emit(`ride_update_${ride.id}`, { ride, status: 'IN_PROGRESS' });
+    io.emit('admin_event', { type: 'RIDE_IN_PROGRESS', ride });
+    res.json({ success: true, ride });
+});
+app.post('/api/rides/:id/complete', (req, res) => {
+    const ride = dispatchService.updateRideStatus(req.params.id, 'COMPLETED');
+    if (!ride)
+        return res.status(400).json({ success: false, message: 'No se pudo completar el viaje' });
+    io.emit(`ride_update_${ride.id}`, { ride, status: 'COMPLETED' });
+    io.emit('admin_event', { type: 'RIDE_COMPLETED', ride });
+    res.json({ success: true, ride });
+});
 app.post('/api/drivers/location', (req, res) => {
     const { driver_id, lat, lng, address } = req.body;
     dispatchService.updateDriverLocation(driver_id, lat, lng, address);

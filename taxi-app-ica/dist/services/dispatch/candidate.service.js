@@ -58,10 +58,10 @@ export class CandidateService {
         }
         // Ordenar por Match Score DESCENDENTE (El mejor primero)
         candidates.sort((a, b) => b.match_score - a.match_score);
-        // Asignar Ranking y Oleadas (Wave 1 = Top 3, Wave 2 = 4 a 6)
+        // Asignar Ranking y Oleadas (Ola 1 = Top 3, Ola 2 = 4 a 6, Ola 3 = 7 a 11)
         return candidates.slice(0, limit).map((c, index) => {
             c.rank = index + 1;
-            c.wave = index < 3 ? 1 : 2;
+            c.wave = index < 3 ? 1 : index < 6 ? 2 : 3;
             return c;
         });
     }

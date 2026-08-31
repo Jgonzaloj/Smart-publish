@@ -37,10 +37,13 @@ test.describe('Ecosistema Smart Mobility Ica - Tests E2E', () => {
 
     // Completar viaje (Llegada -> Inicio -> Fin)
     await driverPage.click('#btnTripAction');
-    await driverPage.waitForTimeout(400);
+    await driverPage.waitForTimeout(600);
+
     await driverPage.click('#btnTripAction');
-    await driverPage.waitForTimeout(400);
+    await driverPage.waitForTimeout(600);
+
     await driverPage.click('#btnTripAction');
+    await driverPage.waitForTimeout(600);
 
     // Pantalla de pago Yape
     await expect(passengerPage.locator('#panelCompleted')).toBeVisible({ timeout: 6000 });

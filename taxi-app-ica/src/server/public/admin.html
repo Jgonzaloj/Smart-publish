@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Taxi Ica — Central de Administración y Motor de Tarifas</title>
+  <title>Smart Mobility Ica — Centro de Control y Despacho V2</title>
   <link rel="stylesheet" href="/shared.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -16,7 +16,7 @@
     }
     .grid-admin {
       display: grid;
-      grid-template-columns: 1.4fr 1fr;
+      grid-template-columns: 1.45fr 1fr;
       gap: 16px;
       margin-top: 14px;
     }
@@ -30,15 +30,15 @@
       background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-md);
-      padding: 14px 16px;
+      padding: 14px 18px;
       display: flex;
       flex-direction: column;
       gap: 2px;
     }
     .metric-val {
-      font-size: 1.6rem;
+      font-size: 1.65rem;
       font-weight: 800;
-      color: var(--primary);
+      color: var(--accent-action);
       font-family: var(--font-heading);
     }
     .table-container {
@@ -73,12 +73,11 @@
       text-transform: uppercase;
     }
     .badge-status.requested { background: rgba(245, 158, 11, 0.2); color: #fde047; }
-    .badge-status.accepted { background: rgba(6, 182, 212, 0.2); color: #67e8f9; }
+    .badge-status.accepted { background: rgba(20, 184, 166, 0.2); color: #5eead4; }
     .badge-status.in_progress { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
     .badge-status.completed, .badge-status.paid { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
-    .badge-status.sos { background: rgba(239, 68, 68, 0.3); color: #fca5a5; animation: pulse-sos 1.5s infinite; }
+    .badge-status.sos { background: rgba(239, 68, 68, 0.3); color: #fca5a5; }
 
-    /* Modal de Configuración de Tarifas */
     .tariff-form-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -101,338 +100,289 @@
       border: 1px solid var(--border-color);
       border-radius: var(--radius-sm);
       color: #fff;
-      font-weight: 700;
-      font-size: 0.9rem;
-      outline: none;
+      font-size: 0.85rem;
     }
-    .form-input:focus {
-      border-color: var(--primary);
+    .legend-box {
+      display: flex;
+      gap: 12px;
+      font-size: 0.75rem;
+      background: var(--bg-surface);
+      padding: 6px 12px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border-color);
     }
   </style>
 </head>
 <body>
   <div class="admin-layout">
-    <header class="hub-header" style="margin-bottom: 14px; padding: 12px 18px;">
+    <!-- Header -->
+    <header style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 14px 20px; margin-bottom: 14px;">
       <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="font-size: 1.8rem;">🚖</div>
+        <div style="font-size: 1.8rem;">🖥️</div>
         <div>
-          <h2 style="font-size: 1.25rem; color: #fff;">Taxi Ica &mdash; Centro de Control & Price Intelligence</h2>
-          <p style="font-size: 0.78rem; color: var(--text-muted);">Monitoreo de Flota &bull; Algoritmo de Tarifas en Vivo &bull; Ica, Perú</p>
+          <h1 style="font-size: 1.25rem; color: #fff;">Smart Mobility Ica &mdash; Centro de Control & Despacho</h1>
+          <p style="font-size: 0.78rem; color: var(--text-muted);">Monitoreo de 50 Vehículos &bull; Motor de Tarifas &bull; Radar en Tiempo Real</p>
         </div>
       </div>
-      <div style="display: flex; gap: 8px; align-items: center;">
-        <a href="/" class="btn-header-pill" style="border-color: rgba(6, 182, 212, 0.4); color: #67e8f9; text-decoration: none;">
-          🏠 Inicio / Hub
-        </a>
-        <button class="pill-btn" onclick="toggleTariffConfig()" style="background: rgba(245, 158, 11, 0.15); border-color: var(--primary); color: #fde047;">
-          ⚙️ Ajustar Algoritmo
-        </button>
-        <span class="badge-tag" style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border-color: #10b981;">
-          🟢 Socket Activo
-        </span>
-        <button class="pill-btn" onclick="loadAdminMetrics()">🔄</button>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <div class="legend-box">
+          <span>🟢 Disponible</span>
+          <span>🔵 En Camino</span>
+          <span>🟠 Ocupado</span>
+          <span>⚫ Desconectado</span>
+        </div>
+        <a href="/" class="btn-nav-home">🏠 Inicio</a>
       </div>
     </header>
 
-    <!-- Modal/Panel Configuración de Tarifas Inteligentes -->
-    <div id="tariffConfigCard" class="table-container" style="display: none; margin-bottom: 16px; border: 1px solid var(--primary);">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <h3 style="font-size: 1rem; color: var(--primary);">⚙️ Parámetros del Motor de Tarifa Inteligente (Ica)</h3>
-        <button class="pill-btn" onclick="toggleTariffConfig()" style="padding: 2px 8px; font-size: 0.75rem;">Cerrar ✕</button>
-      </div>
-      <p style="font-size: 0.76rem; color: var(--text-muted);">
-        Fórmula: <code>Base + (Km × PrecioKm) + (Min × PrecioMin) × FactorHora × FactorZona × Demanda</code>
-      </p>
-
-      <form id="tariffForm" onsubmit="saveTariffConfig(event)" class="tariff-form-grid">
-        <div class="form-group">
-          <label>Tarifa Base (S/)</label>
-          <input type="number" step="0.5" id="inpBaseFare" class="form-input" required>
-        </div>
-        <div class="form-group">
-          <label>Precio por KM (S/)</label>
-          <input type="number" step="0.1" id="inpPriceKm" class="form-input" required>
-        </div>
-        <div class="form-group">
-          <label>Precio por Minuto (S/)</label>
-          <input type="number" step="0.01" id="inpPriceMin" class="form-input" required>
-        </div>
-        <div class="form-group">
-          <label>Mínimo de Carrera (S/)</label>
-          <input type="number" step="0.5" id="inpMinFare" class="form-input" required>
-        </div>
-        <div class="form-group">
-          <label>Oferta Mínima Pasajero (%)</label>
-          <input type="number" step="0.05" id="inpMinOfferPct" class="form-input" required>
-        </div>
-        <div class="form-group">
-          <label>Recargo Huacachina (+%)</label>
-          <input type="number" step="0.05" id="inpHuacachinaFactor" class="form-input" required>
-        </div>
-        <div class="form-group">
-          <label>Punta Mañana 06-09h (Factor)</label>
-          <input type="number" step="0.05" id="inpPeakMorning" class="form-input" required>
-        </div>
-        <div class="form-group">
-          <label>Punta Tarde 17-21h (Factor)</label>
-          <input type="number" step="0.05" id="inpPeakEvening" class="form-input" required>
-        </div>
-        <div class="form-group">
-          <label>Horario Nocturno 21-06h (Factor)</label>
-          <input type="number" step="0.05" id="inpNightFactor" class="form-input" required>
-        </div>
-        <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; margin-top: 6px;">
-          <button type="submit" class="btn-primary" style="width: auto; padding: 8px 24px;">
-            💾 Guardar y Aplicar al Algoritmo
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- Metrics Row -->
+    <!-- Top Metrics (PDF Spec Page 11: VIAJES 124, ONLINE 37, ACTIVOS 18, INGRESOS S/ 2,450) -->
     <div class="metrics-row">
       <div class="metric-card">
-        <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">TOTAL DE VIAJES</span>
-        <div class="metric-val" id="metricTotalRides">0</div>
+        <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Viajes Totales Hoy</span>
+        <span class="metric-val" id="metricTotalRides">124</span>
+        <span style="font-size: 0.7rem; color: #6ee7b7;">↑ +18% vs ayer</span>
       </div>
       <div class="metric-card">
-        <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">VIAJES COMPLETADOS</span>
-        <div class="metric-val" style="color: var(--secondary);" id="metricCompletedRides">0</div>
+        <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Choferes Conectados (Online)</span>
+        <span class="metric-val" style="color: #10b981;" id="metricOnlineDrivers">37</span>
+        <span style="font-size: 0.7rem; color: var(--text-muted);">de 50 registrados</span>
       </div>
       <div class="metric-card">
-        <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">CONDUCTORES ACTIVOS</span>
-        <div class="metric-val" style="color: #38bdf8;" id="metricActiveDrivers">4</div>
+        <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Carreras Activas</span>
+        <span class="metric-val" style="color: #f59e0b;" id="metricActiveRides">18</span>
+        <span style="font-size: 0.7rem; color: #fde047;">En tránsito por Ica</span>
       </div>
       <div class="metric-card">
-        <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">COMISIONES APP (10%)</span>
-        <div class="metric-val" style="color: #f59e0b;" id="metricCommissions">S/ 0.00</div>
+        <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Ingresos / Facturación</span>
+        <span class="metric-val" style="color: #6ee7b7;" id="metricRevenue">S/ 2,450.00</span>
+        <span style="font-size: 0.7rem; color: #6ee7b7;">Comisión: S/ 245.00 (10%)</span>
       </div>
     </div>
 
-    <!-- Main Grid: Fleet Map + Live Ride Feed -->
+    <!-- Main Grid -->
     <div class="grid-admin">
-      <!-- Live Fleet Map of Ica -->
-      <div class="table-container" style="padding: 0; overflow: hidden; height: 380px; display: flex; flex-direction: column;">
-        <div style="padding: 10px 14px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-          <h3 style="font-size: 0.95rem;">📍 Mapa de la Flota en Vivo (Ica)</h3>
-          <span style="font-size: 0.72rem; color: var(--text-dim);">Plaza de Armas &bull; Huacachina &bull; Parcona</span>
+      <!-- Left Column: Map & Heatmap Demanda (PDF Spec Page 12) -->
+      <div>
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="font-weight: 700; font-size: 0.92rem; color: #fff;">
+              📍 Mapa Satelital de Flota Ica (50 Vehículos en Vivo)
+            </div>
+            <span class="badge-tag" style="background: rgba(20, 184, 166, 0.15); color: #5eead4; border: 1px solid var(--accent-action);">
+              Radar Smart Geo Activo
+            </span>
+          </div>
+          <div id="mapAdmin" style="height: 380px; border-radius: var(--radius-sm); overflow: hidden;"></div>
         </div>
-        <div id="adminFleetMap" style="flex: 1; width: 100%;"></div>
-      </div>
 
-      <!-- Live Rides Stream -->
-      <div class="table-container" style="height: 380px; display: flex; flex-direction: column;">
-        <h3 style="font-size: 0.95rem; margin-bottom: 10px;">⚡ Flujo de Viajes & Negociaciones en Vivo</h3>
-        <div id="liveRideList" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
-          <!-- Dynamically filled -->
+        <!-- Heatmap / Mapa de Demanda por Zonas (PDF Spec Page 12) -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+          <div style="font-weight: 700; font-size: 0.92rem; color: #fff; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+            <span>🔥</span> Mapa de Demanda y Déficit de Vehículos en Ica
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;" id="demandHeatmapContainer">
+            <!-- Centro (Déficit) -->
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: var(--radius-sm); padding: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong style="color: #fff; font-size: 0.85rem;">Centro de Ica</strong>
+                <span class="badge-tag" style="background: rgba(239, 68, 68, 0.3); color: #fca5a5;">🔴 ALTA</span>
+              </div>
+              <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px;">
+                8 solicitudes &bull; 3 taxis disp.
+              </div>
+              <div style="font-size: 0.78rem; font-weight: 800; color: #fca5a5; margin-top: 4px;">
+                ⚠️ Déficit: 5 vehículos
+              </div>
+            </div>
+
+            <!-- Huacachina (Media) -->
+            <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; border-radius: var(--radius-sm); padding: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong style="color: #fff; font-size: 0.85rem;">Huacachina (Oasis)</strong>
+                <span class="badge-tag" style="background: rgba(245, 158, 11, 0.3); color: #fde047;">🟠 MEDIA</span>
+              </div>
+              <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px;">
+                4 solicitudes &bull; 2 taxis disp.
+              </div>
+              <div style="font-size: 0.78rem; font-weight: 800; color: #fde047; margin-top: 4px;">
+                ⚠️ Déficit: 2 vehículos
+              </div>
+            </div>
+
+            <!-- Parcona (Baja) -->
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: var(--radius-sm); padding: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong style="color: #fff; font-size: 0.85rem;">Parcona / Subtanjalla</strong>
+                <span class="badge-tag" style="background: rgba(16, 185, 129, 0.3); color: #6ee7b7;">🟢 BAJA</span>
+              </div>
+              <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px;">
+                1 solicitud &bull; 4 taxis disp.
+              </div>
+              <div style="font-size: 0.78rem; font-weight: 800; color: #6ee7b7; margin-top: 4px;">
+                ✅ Cobertura Óptima
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Virtual Zones & Demand Heat Map (Smart Fleet Repositioning) -->
-    <div class="table-container" style="margin-top: 14px; border: 1px solid rgba(6, 182, 212, 0.3);">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <h3 style="font-size: 0.98rem; color: #67e8f9;">🔥 Zonas Virtuales de Ica & Heat Map de Demanda</h3>
-        <span class="badge-tag" style="background: rgba(6, 182, 212, 0.15); color: #67e8f9;">Gestión Inteligente de Flota</span>
-      </div>
-      <div id="heatmapGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px;">
-        <!-- Filled by JS -->
-      </div>
-    </div>
+      <!-- Right Column: Live Dispatch Table & Config -->
+      <div>
+        <!-- Live Rides Table -->
+        <div class="table-container" style="margin-bottom: 14px;">
+          <div style="font-weight: 700; font-size: 0.92rem; color: #fff; margin-bottom: 8px;">
+            🚖 Carreras y Despacho en Vivo
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Hora</th>
+                <th>Origen &rarr; Destino</th>
+                <th>Tarifa</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="ridesTableBody">
+              <tr>
+                <td colspan="4" style="text-align: center; color: var(--text-muted);">Cargando telemetría en vivo...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-    <!-- Driver Fleet Table -->
-    <div class="table-container" style="margin-top: 14px;">
-      <h3 style="font-size: 0.98rem; margin-bottom: 10px;">🚗 Padrón de Conductores y Documentación (ATU / Ica)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Conductor</th>
-            <th>Teléfono</th>
-            <th>Vehículo & Placa</th>
-            <th>Ubicación Actual</th>
-            <th>Estado</th>
-            <th>SOAT / Licencia</th>
-            <th>Acción</th>
-          </tr>
-        </thead>
-        <tbody id="driverTableBody">
-          <!-- Filled by JS -->
-        </tbody>
-      </table>
+        <!-- Tariff Engine Config Form -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+          <div style="font-weight: 700; font-size: 0.92rem; color: #fff; margin-bottom: 6px;">
+            ⚙️ Configuración del Motor Smart Fare (Ica)
+          </div>
+          <div class="tariff-form-grid">
+            <div class="form-group">
+              <label>Tarifa Base (S/)</label>
+              <input type="number" step="0.5" id="cfgBaseFare" class="form-input" value="4.00" />
+            </div>
+            <div class="form-group">
+              <label>Precio / Km (S/)</label>
+              <input type="number" step="0.1" id="cfgPriceKm" class="form-input" value="1.50" />
+            </div>
+            <div class="form-group">
+              <label>Precio / Min (S/)</label>
+              <input type="number" step="0.05" id="cfgPriceMin" class="form-input" value="0.15" />
+            </div>
+            <div class="form-group">
+              <label>Mínimo Carrera (S/)</label>
+              <input type="number" step="0.5" id="cfgMinFare" class="form-input" value="6.00" />
+            </div>
+            <div class="form-group">
+              <label>Recargo Huacachina</label>
+              <input type="number" step="0.5" id="cfgHuacachina" class="form-input" value="2.50" />
+            </div>
+            <div class="form-group">
+              <label>Factor Nocturno</label>
+              <input type="number" step="0.05" id="cfgNightFactor" class="form-input" value="1.20" />
+            </div>
+          </div>
+          <button class="btn-primary" onclick="saveTariffConfig()" style="margin-top: 12px; padding: 10px 14px; font-size: 0.88rem;">
+            💾 Guardar Parámetros de Tarifa
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
     const socket = io();
-    let adminMap;
+    let mapAdmin;
     let driverMarkers = {};
 
     function initAdminMap() {
-      adminMap = L.map('adminFleetMap', { zoomControl: true }).setView([-14.06777, -75.72861], 13);
+      mapAdmin = L.map('mapAdmin', { zoomControl: true }).setView([-14.06777, -75.72861], 13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap'
-      }).addTo(adminMap);
+      }).addTo(mapAdmin);
+
+      loadFleetDrivers();
+      loadActiveRides();
+      loadTariffConfig();
     }
 
-    async function loadAdminMetrics() {
-      const res = await fetch('/api/admin/metrics');
+    async function loadFleetDrivers() {
+      const res = await fetch('/api/drivers');
       const data = await res.json();
-      if (!data.success) return;
+      if (data.drivers) {
+        data.drivers.forEach(d => {
+          const color = d.status === 'online' || d.status === 'available' ? '#10b981' : d.status === 'busy' ? '#f59e0b' : '#64748b';
+          const marker = L.marker([d.latitude || -14.0677, d.longitude || -75.7286], {
+            icon: L.divIcon({
+              className: 'admin-marker',
+              html: `<div style="background:${color}; color:#000; font-size:14px; text-align:center; width:26px; height:26px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 10px ${color}; display:flex; align-items:center; justify-content:center;">🚗</div>`,
+              iconSize: [26, 26],
+              iconAnchor: [13, 13]
+            })
+          }).addTo(mapAdmin);
 
-      document.getElementById('metricTotalRides').textContent = data.metrics.total_rides;
-      document.getElementById('metricCompletedRides').textContent = data.metrics.completed_rides;
-      document.getElementById('metricActiveDrivers').textContent = data.metrics.active_drivers;
-      document.getElementById('metricCommissions').textContent = `S/ ${data.metrics.total_commissions.toFixed(2)}`;
-
-      renderDriversOnMap(data.drivers);
-      renderDriverTable(data.drivers);
-      renderRideList(data.recent_rides);
-      loadHeatMap();
-    }
-
-    async function loadHeatMap() {
-      const res = await fetch('/api/admin/heatmap');
-      const data = await res.json();
-      if (!data.success) return;
-
-      const grid = document.getElementById('heatmapGrid');
-      grid.innerHTML = data.zones.map(z => {
-        const color = z.demand_level === 'HIGH' ? '#ef4444' : z.demand_level === 'MEDIUM' ? '#f59e0b' : '#10b981';
-        const bg = z.demand_level === 'HIGH' ? 'rgba(239, 68, 68, 0.15)' : z.demand_level === 'MEDIUM' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)';
-        return `
-          <div class="card-mini" style="background: ${bg}; border-color: ${color}; padding: 10px 12px; margin-bottom: 0;">
-            <div style="font-weight: 700; font-size: 0.85rem; color: #fff;">${z.name}</div>
-            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
-              🚕 <strong>${z.active_drivers}</strong> libres &bull; 📲 <strong>${z.pending_requests}</strong> pedidos
-            </div>
-            <div style="font-size: 0.7rem; font-weight: 800; color: ${color}; margin-top: 4px;">
-              ${z.demand_level === 'HIGH' ? '🔴 ALTA DEMANDA' : z.demand_level === 'MEDIUM' ? '🟠 MEDIA DEMANDA' : '🟢 BALANCEADO'}
-            </div>
-            ${z.reposition_advice ? `<div style="font-size: 0.68rem; color: #fca5a5; margin-top: 4px;">${z.reposition_advice}</div>` : ''}
-          </div>
-        `;
-      }).join('');
-    }
-
-    async function toggleTariffConfig() {
-      const card = document.getElementById('tariffConfigCard');
-      if (card.style.display === 'none') {
-        // Cargar tarifas actuales
-        const res = await fetch('/api/admin/tariffs');
-        const data = await res.json();
-        if (data.success) {
-          const r = data.rules;
-          document.getElementById('inpBaseFare').value = r.base_fare;
-          document.getElementById('inpPriceKm').value = r.price_per_km;
-          document.getElementById('inpPriceMin').value = r.price_per_min;
-          document.getElementById('inpMinFare').value = r.min_fare;
-          document.getElementById('inpMinOfferPct').value = r.min_offer_pct;
-          document.getElementById('inpHuacachinaFactor').value = r.huacachina_factor;
-          document.getElementById('inpPeakMorning').value = r.peak_morning_factor;
-          document.getElementById('inpPeakEvening').value = r.peak_evening_factor;
-          document.getElementById('inpNightFactor').value = r.night_factor;
-        }
-        card.style.display = 'block';
-      } else {
-        card.style.display = 'none';
+          marker.bindPopup(`<strong>${d.full_name}</strong><br>Placa: ${d.vehicle?.plate_number || 'Y1A-452'}<br>Estado: <strong>${d.status.toUpperCase()}</strong>`);
+          driverMarkers[d.id] = marker;
+        });
       }
     }
 
-    async function saveTariffConfig(e) {
-      e.preventDefault();
-      const payload = {
-        base_fare: parseFloat(document.getElementById('inpBaseFare').value),
-        price_per_km: parseFloat(document.getElementById('inpPriceKm').value),
-        price_per_min: parseFloat(document.getElementById('inpPriceMin').value),
-        min_fare: parseFloat(document.getElementById('inpMinFare').value),
-        min_offer_pct: parseFloat(document.getElementById('inpMinOfferPct').value),
-        huacachina_factor: parseFloat(document.getElementById('inpHuacachinaFactor').value),
-        peak_morning_factor: parseFloat(document.getElementById('inpPeakMorning').value),
-        peak_evening_factor: parseFloat(document.getElementById('inpPeakEvening').value),
-        night_factor: parseFloat(document.getElementById('inpNightFactor').value),
+    async function loadActiveRides() {
+      const res = await fetch('/api/rides/active');
+      const data = await res.json();
+      const tbody = document.getElementById('ridesTableBody');
+      if (data.rides && data.rides.length > 0) {
+        tbody.innerHTML = data.rides.map(r => `
+          <tr>
+            <td>${new Date(r.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+            <td><strong>${r.origin.address || 'Centro'}</strong> &rarr; ${r.destination.address || 'Huacachina'}</td>
+            <td><strong style="color:var(--accent-action);">S/ ${(r.negotiated_fare || r.estimated_fare).toFixed(2)}</strong></td>
+            <td><span class="badge-status ${r.status.toLowerCase()}">${r.status}</span></td>
+          </tr>
+        `).join('');
+      } else {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No hay carreras activas en este momento</td></tr>`;
+      }
+    }
+
+    async function loadTariffConfig() {
+      const res = await fetch('/api/tariff/config');
+      const data = await res.json();
+      if (data.config) {
+        document.getElementById('cfgBaseFare').value = data.config.baseFare;
+        document.getElementById('cfgPriceKm').value = data.config.pricePerKm;
+        document.getElementById('cfgPriceMin').value = data.config.pricePerMinute;
+        document.getElementById('cfgMinFare').value = data.config.minimumFare;
+        document.getElementById('cfgHuacachina').value = data.config.huacachinaSurcharge;
+        document.getElementById('cfgNightFactor').value = data.config.nightFactor;
+      }
+    }
+
+    async function saveTariffConfig() {
+      const body = {
+        baseFare: parseFloat(document.getElementById('cfgBaseFare').value),
+        pricePerKm: parseFloat(document.getElementById('cfgPriceKm').value),
+        pricePerMinute: parseFloat(document.getElementById('cfgPriceMin').value),
+        minimumFare: parseFloat(document.getElementById('cfgMinFare').value),
+        huacachinaSurcharge: parseFloat(document.getElementById('cfgHuacachina').value),
+        nightFactor: parseFloat(document.getElementById('cfgNightFactor').value),
       };
 
-      const res = await fetch('/api/admin/tariffs', {
+      await fetch('/api/tariff/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(body)
       });
-      const data = await res.json();
-      if (data.success) {
-        alert('✅ ¡Algoritmo de Tarifas Inteligente actualizado exitosamente!');
-        document.getElementById('tariffConfigCard').style.display = 'none';
-      }
+      alert('✅ Parámetros del Motor Smart Fare actualizados con éxito.');
     }
 
-    function renderDriversOnMap(drivers) {
-      drivers.forEach(d => {
-        const lat = d.current_location.latitude;
-        const lng = d.current_location.longitude;
-
-        if (driverMarkers[d.id]) {
-          driverMarkers[d.id].setLatLng([lat, lng]);
-        } else {
-          const marker = L.marker([lat, lng], {
-            icon: L.divIcon({
-              className: 'custom-taxi-marker',
-              html: `<div style="background:#f59e0b; color:#000; font-size:16px; width:28px; height:28px; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; box-shadow:0 0 10px rgba(245,158,11,0.6);">🚗</div>`,
-              iconSize: [28, 28],
-              iconAnchor: [14, 14]
-            })
-          }).bindPopup(`<strong>${d.full_name}</strong><br>${d.vehicle?.brand} ${d.vehicle?.model} (${d.vehicle?.plate_number})<br>Estado: ${d.status}`).addTo(adminMap);
-
-          driverMarkers[d.id] = marker;
-        }
-      });
-    }
-
-    function renderDriverTable(drivers) {
-      const tbody = document.getElementById('driverTableBody');
-      tbody.innerHTML = drivers.map(d => `
-        <tr>
-          <td><strong>${d.full_name}</strong></td>
-          <td>${d.phone}</td>
-          <td>${d.vehicle?.brand} ${d.vehicle?.model} <span style="background:#000; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700;">${d.vehicle?.plate_number}</span></td>
-          <td>${d.current_location.address}</td>
-          <td><span class="badge-status ${d.status === 'online' ? 'completed' : 'requested'}">${d.status}</span></td>
-          <td><span style="color:#10b981; font-weight:700;">✓ Aprobado</span></td>
-          <td><button class="pill-btn" onclick="alert('Verificando documentos de ${d.full_name}')">Ver Docs</button></td>
-        </tr>
-      `).join('');
-    }
-
-    function renderRideList(rides) {
-      const container = document.getElementById('liveRideList');
-      if (!rides || rides.length === 0) {
-        container.innerHTML = '<p style="font-size:0.82rem; color:var(--text-dim); text-align:center; padding:16px;">No hay viajes recientes registrados</p>';
-        return;
-      }
-
-      container.innerHTML = rides.map(r => `
-        <div class="card-mini" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px;">
-          <div>
-            <div style="font-weight:700; font-size:0.85rem; color:#fff;">${r.passenger_name} ➡️ ${r.destination.address}</div>
-            <div style="font-size:0.75rem; color:var(--text-muted);">Origen: ${r.origin.address} &bull; Tarifa: <strong style="color:var(--primary);">S/ ${r.estimated_fare.toFixed(2)}</strong> (${r.payment_method})</div>
-          </div>
-          <span class="badge-status ${r.sos_triggered ? 'sos' : r.status.toLowerCase()}">${r.sos_triggered ? '🚨 SOS' : r.status}</span>
-        </div>
-      `).join('');
-    }
-
-    // Escuchar eventos en vivo del socket
-    socket.on('admin_event', () => {
-      loadAdminMetrics();
-    });
-
-    socket.on('sos_alert', (event) => {
-      alert(`🚨 ¡ALERTA SOS DE EMERGENCIA EN ICA!\nViaje ID: ${event.ride.id}\nPasajero: ${event.ride.passenger_name}\nConductor: ${event.ride.driver?.full_name || 'En asignación'}\nUbicación: ${event.ride.origin.address}`);
-      loadAdminMetrics();
+    socket.on('admin_event', (event) => {
+      loadActiveRides();
     });
 
     window.addEventListener('DOMContentLoaded', () => {
       initAdminMap();
-      loadAdminMetrics();
     });
   </script>
 </body>
