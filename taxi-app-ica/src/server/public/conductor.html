@@ -196,80 +196,115 @@
           <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
             <div class="form-group">
               <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">Nombre Completo</label>
-              <input type="text" id="selfName" class="form-input" value="Carlos Quispe Morales" required />
+              <input type="text" id="selfName" class="form-input" placeholder="Nombre completo" required />
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
               <div class="form-group">
                 <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">Teléfono WhatsApp</label>
-                <input type="tel" id="selfPhone" class="form-input" value="956987111" required />
+                <input type="tel" id="selfPhone" class="form-input" placeholder="956987111" required />
               </div>
               <div class="form-group">
                 <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">DNI</label>
-                <input type="text" id="selfDni" class="form-input" value="45879632" required />
+                <input type="text" id="selfDni" class="form-input" placeholder="45879632" required />
               </div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
               <div class="form-group">
                 <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">Placa del Auto</label>
-                <input type="text" id="selfPlate" class="form-input" value="Y1A-452" required />
+                <input type="text" id="selfPlate" class="form-input" placeholder="Y1A-452" required />
               </div>
               <div class="form-group">
                 <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">Modelo / Color</label>
-                <input type="text" id="selfModel" class="form-input" value="Yaris Gris" required />
+                <input type="text" id="selfModel" class="form-input" placeholder="Yaris Gris" required />
               </div>
             </div>
           </div>
 
-          <h4 style="font-size: 0.8rem; color: var(--accent-action); margin-bottom: 8px; text-transform: uppercase;">Adjuntar Documentos</h4>
+          <h4 style="font-size: 0.8rem; color: var(--accent-action); margin-bottom: 8px; text-transform: uppercase;">
+            📁 Adjuntar Documentos Obligatorios
+          </h4>
           
-          <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
             <!-- 1. Tarjeta de Propiedad -->
-            <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <span style="font-size: 0.8rem; font-weight: 700; color: #fff;">🚗 Tarjeta de Propiedad</span>
-                <span class="badge-tag" style="background: rgba(16,185,129,0.2); color: #6ee7b7; font-size: 0.65rem;">✓ Validada</span>
+                <span id="badge_tp" class="badge-tag" style="background: rgba(16,185,129,0.2); color: #6ee7b7; font-size: 0.65rem;">✓ Validada</span>
               </div>
-              <input type="text" id="selfPropertyCard" class="form-input" value="TP-Y1A-452" style="margin: 4px 0 2px; font-size: 0.75rem;" />
-              <div style="font-size: 0.68rem; color: var(--text-muted);">📎 Archivo: tarjeta_propiedad_digital.pdf</div>
+              <input type="text" id="selfPropertyCard" class="form-input" placeholder="N° Partida Registral" style="margin-bottom: 6px; font-size: 0.78rem;" />
+              <input type="file" id="file_tp" accept="image/*,.pdf" style="display: none;" onchange="handleDocFileSelect(this, 'txt_file_tp')" />
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="pill-btn" onclick="document.getElementById('file_tp').click()" style="font-size: 0.72rem; padding: 4px 8px; background: rgba(20,184,166,0.15); border-color: var(--accent-action); color: #5eead4;">
+                  📎 Adjuntar Foto / PDF
+                </button>
+                <span id="txt_file_tp" style="font-size: 0.7rem; color: #94a3b8;">tarjeta_propiedad_digital.pdf</span>
+              </div>
             </div>
 
             <!-- 2. SOAT -->
-            <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <span style="font-size: 0.8rem; font-weight: 700; color: #fff;">🛡️ SOAT Vigente</span>
-                <span class="badge-tag" style="background: rgba(16,185,129,0.2); color: #6ee7b7; font-size: 0.65rem;">✓ Vigente 2027</span>
+                <span id="badge_soat" class="badge-tag" style="background: rgba(16,185,129,0.2); color: #6ee7b7; font-size: 0.65rem;">✓ Vigente</span>
               </div>
-              <input type="text" id="selfSoat" class="form-input" value="SOAT-LA-POSITIVA-998" style="margin: 4px 0 2px; font-size: 0.75rem;" />
-              <div style="font-size: 0.68rem; color: var(--text-muted);">📎 Archivo: soat_digital.pdf &bull; Vence: 2027-06-30</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+                <input type="text" id="selfSoat" class="form-input" placeholder="N° Póliza SOAT" style="font-size: 0.78rem;" />
+                <input type="date" id="selfSoatExpiry" class="form-input" style="font-size: 0.78rem;" value="2027-06-30" />
+              </div>
+              <input type="file" id="file_soat" accept="image/*,.pdf" style="display: none;" onchange="handleDocFileSelect(this, 'txt_file_soat')" />
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="pill-btn" onclick="document.getElementById('file_soat').click()" style="font-size: 0.72rem; padding: 4px 8px; background: rgba(20,184,166,0.15); border-color: var(--accent-action); color: #5eead4;">
+                  📎 Adjuntar Póliza Digital
+                </button>
+                <span id="txt_file_soat" style="font-size: 0.7rem; color: #94a3b8;">soat_digital.pdf</span>
+              </div>
             </div>
 
             <!-- 3. Revisión Técnica -->
-            <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <span style="font-size: 0.8rem; font-weight: 700; color: #fff;">🔧 Revisión Técnica (CITV)</span>
-                <span class="badge-tag" style="background: rgba(16,185,129,0.2); color: #6ee7b7; font-size: 0.65rem;">✓ Aprobada</span>
+                <span id="badge_rev" class="badge-tag" style="background: rgba(16,185,129,0.2); color: #6ee7b7; font-size: 0.65rem;">✓ Aprobada</span>
               </div>
-              <input type="text" id="selfRevTecnica" class="form-input" value="CITV-ICA-2026-88" style="margin: 4px 0 2px; font-size: 0.75rem;" />
-              <div style="font-size: 0.68rem; color: var(--text-muted);">📎 Archivo: certificado_citv.pdf &bull; Vence: 2026-12-31</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+                <input type="text" id="selfRevTecnica" class="form-input" placeholder="N° Certificado CITV" style="font-size: 0.78rem;" />
+                <input type="date" id="selfRevExpiry" class="form-input" style="font-size: 0.78rem;" value="2026-12-31" />
+              </div>
+              <input type="file" id="file_rev" accept="image/*,.pdf" style="display: none;" onchange="handleDocFileSelect(this, 'txt_file_rev')" />
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="pill-btn" onclick="document.getElementById('file_rev').click()" style="font-size: 0.72rem; padding: 4px 8px; background: rgba(20,184,166,0.15); border-color: var(--accent-action); color: #5eead4;">
+                  📎 Adjuntar Certificado CITV
+                </button>
+                <span id="txt_file_rev" style="font-size: 0.7rem; color: #94a3b8;">certificado_citv.pdf</span>
+              </div>
             </div>
 
             <!-- 4. Licencia de Conducir -->
-            <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.8rem; font-weight: 700; color: #fff;">🪪 Licencia de Conducir</span>
-                <span class="badge-tag" style="background: rgba(16,185,129,0.2); color: #6ee7b7; font-size: 0.65rem;">✓ Cat. A-IIa</span>
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 0.8rem; font-weight: 700; color: #fff;">🪪 Licencia de Conducir (Brevete)</span>
+                <span id="badge_lic" class="badge-tag" style="background: rgba(16,185,129,0.2); color: #6ee7b7; font-size: 0.65rem;">✓ Cat. A-IIa</span>
               </div>
-              <input type="text" id="selfLicense" class="form-input" value="Q-45879632" style="margin: 4px 0 2px; font-size: 0.75rem;" />
-              <div style="font-size: 0.68rem; color: var(--text-muted);">📎 MTC Perú: Habilitado para Servicio de Taxi</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+                <input type="text" id="selfLicense" class="form-input" placeholder="N° Licencia (Q-45879632)" style="font-size: 0.78rem;" />
+                <input type="date" id="selfLicExpiry" class="form-input" style="font-size: 0.78rem;" value="2028-12-31" />
+              </div>
+              <input type="file" id="file_lic" accept="image/*,.pdf" style="display: none;" onchange="handleDocFileSelect(this, 'txt_file_lic')" />
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="pill-btn" onclick="document.getElementById('file_lic').click()" style="font-size: 0.72rem; padding: 4px 8px; background: rgba(20,184,166,0.15); border-color: var(--accent-action); color: #5eead4;">
+                  📎 Adjuntar Foto de Brevete
+                </button>
+                <span id="txt_file_lic" style="font-size: 0.7rem; color: #94a3b8;">brevete_digital.pdf</span>
+              </div>
             </div>
           </div>
 
           <div style="display: flex; gap: 8px;">
             <button type="button" class="pill-btn" onclick="closeDriverDocsModal()" style="flex: 1; text-align: center;">Cerrar</button>
             <button type="submit" class="btn-primary" style="flex: 2; padding: 10px; font-size: 0.85rem;">
-              🚀 Actualizar / Enviar a Central
+              🚀 Subir Documentos a la Central
             </button>
           </div>
         </form>
@@ -508,31 +543,91 @@
       }
     }
 
-    function openDriverDocsModal() {
+    async function openDriverDocsModal() {
       document.getElementById('modalDriverDocs').style.display = 'flex';
+      try {
+        const res = await fetch(`/api/drivers/${DRIVER_ID}/profile`);
+        const data = await res.json();
+        if (data.success && data.driver) {
+          const d = data.driver;
+          document.getElementById('selfName').value = d.full_name || '';
+          document.getElementById('selfPhone').value = d.phone || '';
+          document.getElementById('selfDni').value = d.dni || '';
+          document.getElementById('selfPlate').value = d.plate_number || '';
+          document.getElementById('selfModel').value = `${d.model || 'Yaris'} ${d.color || 'Gris'}`;
+
+          // Documentos reales
+          document.getElementById('selfPropertyCard').value = d.property_card || '';
+          document.getElementById('txt_file_tp').textContent = d.property_card_photo || 'tarjeta_propiedad.pdf';
+
+          document.getElementById('selfSoat').value = d.soat_number || '';
+          document.getElementById('selfSoatExpiry').value = d.soat_expiry || '2027-06-30';
+          document.getElementById('txt_file_soat').textContent = d.soat_photo || 'soat_digital.pdf';
+
+          document.getElementById('selfRevTecnica').value = d.technical_review_number || '';
+          document.getElementById('selfRevExpiry').value = d.technical_review_expiry || '2026-12-31';
+          document.getElementById('txt_file_rev').textContent = d.technical_review_photo || 'revision_tecnica.pdf';
+
+          document.getElementById('selfLicense').value = d.license_number || '';
+          document.getElementById('selfLicExpiry').value = d.license_expiry || '2028-12-31';
+
+          // Badges de estado documental
+          const badgeTp = document.getElementById('badge_tp');
+          const badgeSoat = document.getElementById('badge_soat');
+          const badgeRev = document.getElementById('badge_rev');
+          const badgeLic = document.getElementById('badge_lic');
+
+          if (d.doc_status === 'approved') {
+            badgeTp.textContent = '✓ Validada';
+            badgeSoat.textContent = '✓ Vigente';
+            badgeRev.textContent = '✓ Aprobada';
+            badgeLic.textContent = '✓ Cat. A-IIa';
+          } else if (d.doc_status === 'rejected') {
+            badgeTp.textContent = '🔴 Observado';
+            badgeSoat.textContent = '🔴 Observado';
+            badgeRev.textContent = '🔴 Observado';
+            badgeLic.textContent = '🔴 Observado';
+          } else {
+            badgeTp.textContent = '🟡 En Revisión';
+            badgeSoat.textContent = '🟡 En Revisión';
+            badgeRev.textContent = '🟡 En Revisión';
+            badgeLic.textContent = '🟡 En Revisión';
+          }
+        }
+      } catch (err) {
+        console.warn('Error cargando perfil del conductor:', err);
+      }
     }
 
     function closeDriverDocsModal() {
       document.getElementById('modalDriverDocs').style.display = 'none';
     }
 
+    function handleDocFileSelect(input, labelId) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const sizeKb = (file.size / 1024).toFixed(0);
+        document.getElementById(labelId).innerHTML = `✅ <strong>${file.name}</strong> (${sizeKb} KB)`;
+        document.getElementById(labelId).style.color = '#6ee7b7';
+      }
+    }
+
     async function handleDriverRegisterSelf(e) {
       e.preventDefault();
       const body = {
-        full_name: document.getElementById('selfName').value,
-        phone: document.getElementById('selfPhone').value,
-        dni: document.getElementById('selfDni').value,
-        plate_number: document.getElementById('selfPlate').value,
-        brand: 'Toyota',
-        model: document.getElementById('selfModel').value,
         property_card: document.getElementById('selfPropertyCard').value,
+        property_card_photo: document.getElementById('txt_file_tp').textContent,
         soat_number: document.getElementById('selfSoat').value,
+        soat_expiry: document.getElementById('selfSoatExpiry').value,
+        soat_photo: document.getElementById('txt_file_soat').textContent,
         technical_review_number: document.getElementById('selfRevTecnica').value,
+        technical_review_expiry: document.getElementById('selfRevExpiry').value,
+        technical_review_photo: document.getElementById('txt_file_rev').textContent,
         license_number: document.getElementById('selfLicense').value,
-        auto_approve: false,
+        license_expiry: document.getElementById('selfLicExpiry').value,
       };
 
-      const res = await fetch('/api/drivers/register', {
+      const res = await fetch(`/api/drivers/${DRIVER_ID}/documents`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)

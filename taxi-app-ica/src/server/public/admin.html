@@ -449,42 +449,75 @@
           <div class="doc-card-grid">
             <!-- Tarjeta de Propiedad -->
             <div style="background: var(--bg-surface); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <label style="font-size: 0.78rem; font-weight: 700; color: #fff;">🚗 Tarjeta de Propiedad</label>
                 <span class="badge-tag" style="background: rgba(16,185,129,0.2); color: #6ee7b7; font-size: 0.65rem;">✓ Partida Registral</span>
               </div>
-              <input type="text" id="regPropertyCard" class="form-input" placeholder="N° Partida Registral (TP-Y1A-452)" style="margin: 6px 0 4px;" value="TP-Y1A-452" />
-              <div style="font-size: 0.7rem; color: #6ee7b7;">📎 Adjuntado: tarjeta_propiedad_digital.pdf</div>
+              <input type="text" id="regPropertyCard" class="form-input" placeholder="N° Partida Registral (TP-Y1A-452)" style="margin-bottom: 6px;" value="TP-Y1A-452" />
+              <input type="file" id="admin_file_tp" accept="image/*,.pdf" style="display: none;" onchange="handleAdminFileSelect(this, 'txt_admin_tp')" />
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="pill-btn" onclick="document.getElementById('admin_file_tp').click()" style="font-size: 0.72rem; padding: 4px 8px; background: rgba(20,184,166,0.15); border-color: var(--accent-action); color: #5eead4;">
+                  📎 Adjuntar Archivo
+                </button>
+                <span id="txt_admin_tp" style="font-size: 0.7rem; color: #6ee7b7;">tarjeta_propiedad_digital.pdf</span>
+              </div>
             </div>
 
             <!-- SOAT -->
             <div style="background: var(--bg-surface); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <label style="font-size: 0.78rem; font-weight: 700; color: #fff;">🛡️ SOAT Vigente</label>
                 <span class="badge-tag" style="background: rgba(16,185,129,0.2); color: #6ee7b7; font-size: 0.65rem;">✓ Vigente 2027</span>
               </div>
-              <input type="text" id="regSoatNumber" class="form-input" placeholder="N° Póliza SOAT" style="margin: 6px 0 4px;" value="SOAT-POSITIVA-889" />
-              <div style="font-size: 0.7rem; color: #6ee7b7;">📎 Adjuntado: soat_digital.pdf &bull; Vence: 2027-06-30</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+                <input type="text" id="regSoatNumber" class="form-input" placeholder="N° Póliza SOAT" value="SOAT-POSITIVA-889" />
+                <input type="date" id="regSoatExpiry" class="form-input" value="2027-06-30" />
+              </div>
+              <input type="file" id="admin_file_soat" accept="image/*,.pdf" style="display: none;" onchange="handleAdminFileSelect(this, 'txt_admin_soat')" />
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="pill-btn" onclick="document.getElementById('admin_file_soat').click()" style="font-size: 0.72rem; padding: 4px 8px; background: rgba(20,184,166,0.15); border-color: var(--accent-action); color: #5eead4;">
+                  📎 Adjuntar Póliza
+                </button>
+                <span id="txt_admin_soat" style="font-size: 0.7rem; color: #6ee7b7;">soat_digital.pdf</span>
+              </div>
             </div>
 
             <!-- Revisión Técnica -->
             <div style="background: var(--bg-surface); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <label style="font-size: 0.78rem; font-weight: 700; color: #fff;">🔧 Revisión Técnica (CITV)</label>
-                <span class="badge-tag" style="background: rgba(16,185,129,0.2); color: #6ee7b7; font-size: 0.65rem;">✓ Aprobada Farenet</span>
+                <span class="badge-tag" style="background: rgba(16,185,129,0.2); color: #6ee7b7; font-size: 0.65rem;">✓ Aprobada</span>
               </div>
-              <input type="text" id="regRevTecnica" class="form-input" placeholder="N° Certificado CITV" style="margin: 6px 0 4px;" value="REV-ICA-2026" />
-              <div style="font-size: 0.7rem; color: #6ee7b7;">📎 Adjuntado: revision_tecnica.pdf &bull; Vence: 2026-12-31</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+                <input type="text" id="regRevTecnica" class="form-input" placeholder="N° Certificado CITV" value="REV-ICA-2026" />
+                <input type="date" id="regRevExpiry" class="form-input" value="2026-12-31" />
+              </div>
+              <input type="file" id="admin_file_rev" accept="image/*,.pdf" style="display: none;" onchange="handleAdminFileSelect(this, 'txt_admin_rev')" />
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="pill-btn" onclick="document.getElementById('admin_file_rev').click()" style="font-size: 0.72rem; padding: 4px 8px; background: rgba(20,184,166,0.15); border-color: var(--accent-action); color: #5eead4;">
+                  📎 Adjuntar Certificado
+                </button>
+                <span id="txt_admin_rev" style="font-size: 0.7rem; color: #6ee7b7;">revision_tecnica.pdf</span>
+              </div>
             </div>
 
             <!-- Licencia de Conducir -->
             <div style="background: var(--bg-surface); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <label style="font-size: 0.78rem; font-weight: 700; color: #fff;">🪪 Licencia de Conducir (Brevete)</label>
                 <span class="badge-tag" style="background: rgba(16,185,129,0.2); color: #6ee7b7; font-size: 0.65rem;">✓ Cat. A-IIa</span>
               </div>
-              <input type="text" id="regLicense" class="form-input" placeholder="N° Licencia (Q-45879632)" style="margin: 6px 0 4px;" value="Q-45879632" />
-              <div style="font-size: 0.7rem; color: #6ee7b7;">📎 Categoría: A-IIa Profesional &bull; Vence: 2028-12-31</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+                <input type="text" id="regLicense" class="form-input" placeholder="N° Licencia" value="Q-45879632" />
+                <input type="date" id="regLicExpiry" class="form-input" value="2028-12-31" />
+              </div>
+              <input type="file" id="admin_file_lic" accept="image/*,.pdf" style="display: none;" onchange="handleAdminFileSelect(this, 'txt_admin_lic')" />
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="pill-btn" onclick="document.getElementById('admin_file_lic').click()" style="font-size: 0.72rem; padding: 4px 8px; background: rgba(20,184,166,0.15); border-color: var(--accent-action); color: #5eead4;">
+                  📎 Adjuntar Brevete
+                </button>
+                <span id="txt_admin_lic" style="font-size: 0.7rem; color: #6ee7b7;">brevete_digital.pdf</span>
+              </div>
             </div>
           </div>
         </div>
@@ -692,6 +725,15 @@
       alert(data.message || 'Solicitud rechazada');
       closeAuditModal();
       loadDriversWithDocs();
+    }
+
+    function handleAdminFileSelect(input, labelId) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const sizeKb = (file.size / 1024).toFixed(0);
+        document.getElementById(labelId).innerHTML = `✅ <strong>${file.name}</strong> (${sizeKb} KB)`;
+        document.getElementById(labelId).style.color = '#6ee7b7';
+      }
     }
 
     function openNewDriverModal() {
