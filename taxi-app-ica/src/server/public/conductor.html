@@ -170,7 +170,7 @@
       </button>
     </div>
 
-    <!-- Ride Offer Modal with BIG TOUCH BUTTONS (PDF Spec Pages 9, 10) -->
+    <!-- Ride Offer Modal with Point-to-Point Visuals and Bidding (PDF Spec Pages 9, 10) -->
     <div id="rideOfferModal" class="ride-offer-modal" style="display: none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <div style="display: flex; align-items: center; gap: 6px;">
@@ -180,15 +180,33 @@
         <span id="offerTimer" class="badge-tag" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444;">15s</span>
       </div>
 
-      <!-- Essential trip info (Page 10: Centro -> Huacachina, S/ 15, 850m) -->
+      <!-- Essential trip info (Punto a Punto Detallado) -->
       <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 10px 12px; margin-bottom: 10px;">
-        <div style="display: flex; justify-content: space-between; align-items: baseline;">
-          <div style="font-weight: 800; font-size: 1rem; color: #fff;" id="offerRouteDisplay">Centro &rarr; Huacachina</div>
-          <div style="font-size: 1.45rem; font-weight: 900; color: var(--accent-action);" id="offerFare">S/ 15.00</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Tarifa Solicitada:</span>
+          <div style="font-size: 1.5rem; font-weight: 900; color: var(--accent-action);" id="offerFare">S/ 15.00</div>
         </div>
-        <div style="display: flex; justify-content: space-between; font-size: 0.76rem; color: var(--text-muted); margin-top: 4px;">
-          <span id="offerDistanceDetail">📍 Recogida a 850 m &bull; 4.8 km total</span>
-          <span id="offerPaymentBadge" style="color: #d8b4fe; font-weight: 700;">💜 Yape</span>
+
+        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.82rem; border-left: 2px solid var(--accent-action); padding-left: 8px; margin-left: 2px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="color: #10b981;">🟢</span>
+              <strong style="color: #fff;" id="offerOriginName">Plaza de Armas de Ica</strong>
+            </div>
+            <div style="font-size: 0.7rem; color: #94a3b8; margin-left: 18px;" id="offerPickupDistance">📍 Recogida a 850 m de tu auto</div>
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="color: #f59e0b;">🏁</span>
+              <strong style="color: #fff;" id="offerDestName">Laguna de Huacachina</strong>
+            </div>
+            <div style="font-size: 0.7rem; color: #94a3b8; margin-left: 18px;" id="offerTripDistance">🏁 Recorrido: 4.8 km</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.76rem;">
+          <span style="color: var(--text-muted);">Método de Pago:</span>
+          <span id="offerPaymentBadge" style="color: #d8b4fe; font-weight: 800;">💜 Yape</span>
         </div>
       </div>
 
@@ -197,16 +215,24 @@
         ✓ ACEPTAR &bull; <span id="btnAcceptPrice">S/ 15.00</span>
       </button>
 
-      <!-- Quick Counter-Offers (Page 10) -->
+      <!-- Quick & Custom Counter-Offers (Page 10) -->
       <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; text-align: center; margin: 4px 0;">O Contraofertar:</div>
       <div class="counter-grid">
         <button class="btn-counter" id="counter1" onclick="sendCounterOffset(1)">S/ 16.00</button>
         <button class="btn-counter" id="counter2" onclick="sendCounterOffset(2)">S/ 17.00</button>
-        <button class="btn-counter" id="counter3" onclick="sendCounterOffset(4)">S/ 19.00</button>
+        <button class="btn-counter" id="counter3" onclick="sendCounterOffset(3)">S/ 18.00</button>
+      </div>
+
+      <!-- Custom Contraoferta Input -->
+      <div style="display: flex; gap: 6px; margin: 6px 0 8px;">
+        <input type="number" id="inputCustomBid" step="0.50" min="6" class="form-input" placeholder="Otro precio (ej: 8.50)" style="flex: 1; padding: 6px 10px; font-size: 0.85rem; text-align: center;" />
+        <button type="button" class="pill-btn" onclick="sendCustomBid()" style="background: rgba(20,184,166,0.2); border-color: var(--accent-action); color: #5eead4; font-weight: 800; font-size: 0.78rem; padding: 6px 12px;">
+          Enviar Oferta
+        </button>
       </div>
 
       <!-- BIG TOUCH BUTTON 2: REJECT (Page 10: [ RECHAZAR ]) -->
-      <button class="btn-reject-large" onclick="rejectOffer()" style="margin-top: 4px;">
+      <button class="btn-reject-large" onclick="rejectOffer()" style="margin-top: 2px;">
         ✕ RECHAZAR VIAJE
       </button>
     </div>
@@ -359,6 +385,27 @@
 
     let DRIVER_ID = localStorage.getItem('driver_id') || 'drv_mario_1';
     let driverPos = [-14.06820, -75.72910];
+    let offerMarkerOrigin = null;
+    let offerMarkerDest = null;
+    let offerRouteLine = null;
+
+    function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+      const R = 6371; // Radio de la Tierra en km
+      const dLat = (lat2 - lat1) * (Math.PI / 180);
+      const dLon = (lon2 - lon1) * (Math.PI / 180);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    function clearOfferMapLayers() {
+      if (offerMarkerOrigin && map) { map.removeLayer(offerMarkerOrigin); offerMarkerOrigin = null; }
+      if (offerMarkerDest && map) { map.removeLayer(offerMarkerDest); offerMarkerDest = null; }
+      if (offerRouteLine && map) { map.removeLayer(offerRouteLine); offerRouteLine = null; }
+    }
 
     socket.on('connect', () => {
       socket.emit('join_drivers');
@@ -458,16 +505,91 @@
 
     function showOfferModal(ride) {
       currentOffer = ride;
-      baseFare = ride.negotiated_fare || ride.estimated_fare || 15;
+      baseFare = Number(ride.negotiated_fare || ride.estimated_fare || 15);
+      
+      const oLat = Number(ride.origin?.latitude || -14.06777);
+      const oLng = Number(ride.origin?.longitude || -75.72861);
+      const dLat = Number(ride.destination?.latitude || -14.08745);
+      const dLng = Number(ride.destination?.longitude || -75.76332);
+      
+      // Distancia desde la posición del auto hasta el pasajero
+      const distKm = getDistanceFromLatLonInKm(driverPos[0], driverPos[1], oLat, oLng);
+      const distText = distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`;
+
       document.getElementById('offerFare').textContent = `S/ ${baseFare.toFixed(2)}`;
       document.getElementById('btnAcceptPrice').textContent = `S/ ${baseFare.toFixed(2)}`;
-      document.getElementById('offerRouteDisplay').textContent = `${ride.origin.address || 'Centro'} → ${ride.destination.address || 'Huacachina'}`;
-      document.getElementById('offerDistanceDetail').textContent = `📍 Recogida a 850 m &bull; ${ride.distance_km || 4.8} km`;
-      document.getElementById('offerPaymentBadge').textContent = ride.payment_method === 'yape' ? '💜 Yape (QR)' : '💵 Efectivo';
+      
+      const originName = ride.origin?.address || 'Punto de Recogida';
+      const destName = ride.destination?.address || 'Destino';
+      document.getElementById('offerOriginName').textContent = originName;
+      document.getElementById('offerPickupDistance').textContent = `📍 Recogida a ${distText} de tu auto`;
+      document.getElementById('offerDestName').textContent = destName;
+      document.getElementById('offerTripDistance').textContent = `🏁 Recorrido: ${ride.distance_km ? ride.distance_km + ' km' : 'Directo'}`;
 
+      const payBadge = document.getElementById('offerPaymentBadge');
+      if (payBadge) {
+        if (ride.payment_method === 'yape') {
+          payBadge.textContent = '💜 Yape (QR)';
+          payBadge.style.color = '#d8b4fe';
+        } else if (ride.payment_method === 'plin') {
+          payBadge.textContent = '🔵 Plin (QR)';
+          payBadge.style.color = '#93c5fd';
+        } else {
+          payBadge.textContent = '💵 Efectivo';
+          payBadge.style.color = '#6ee7b7';
+        }
+      }
+
+      // Contraofertas rápidas y campo personalizado
       document.getElementById('counter1').textContent = `S/ ${(baseFare + 1).toFixed(2)}`;
       document.getElementById('counter2').textContent = `S/ ${(baseFare + 2).toFixed(2)}`;
-      document.getElementById('counter3').textContent = `S/ ${(baseFare + 4).toFixed(2)}`;
+      document.getElementById('counter3').textContent = `S/ ${(baseFare + 3).toFixed(2)}`;
+      const inputBid = document.getElementById('inputCustomBid');
+      if (inputBid) inputBid.value = (baseFare + 1.5).toFixed(2);
+
+      // 📍 TRAZAR RUTA PUNTO A PUNTO EN EL MAPA DEL CONDUCTOR
+      if (map) {
+        clearOfferMapLayers();
+
+        offerMarkerOrigin = L.marker([oLat, oLng], {
+          icon: L.divIcon({
+            className: 'custom-icon-origin',
+            html: '<div style="background:#10b981; color:#000; font-size:16px; font-weight:800; text-align:center; width:32px; height:32px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 14px #10b981; display:flex; align-items:center; justify-content:center;">🟢</div>',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+          })
+        }).addTo(map).bindPopup(`<strong>🟢 Punto de Recogida:</strong><br>${originName}`);
+
+        offerMarkerDest = L.marker([dLat, dLng], {
+          icon: L.divIcon({
+            className: 'custom-icon-dest',
+            html: '<div style="background:#f59e0b; color:#000; font-size:16px; font-weight:800; text-align:center; width:32px; height:32px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 14px #f59e0b; display:flex; align-items:center; justify-content:center;">🏁</div>',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+          })
+        }).addTo(map).bindPopup(`<strong>🏁 Destino del Pasajero:</strong><br>${destName}`);
+
+        offerRouteLine = L.polyline([
+          [oLat, oLng],
+          [dLat, dLng]
+        ], {
+          color: '#f59e0b',
+          weight: 5,
+          opacity: 0.9,
+          dashArray: '8, 8'
+        }).addTo(map);
+
+        try {
+          const bounds = L.latLngBounds([
+            [oLat, oLng],
+            [dLat, dLng],
+            driverPos
+          ]);
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        } catch(err) {
+          console.warn('Map fit error', err);
+        }
+      }
 
       document.getElementById('rideOfferModal').style.display = 'block';
 
@@ -476,7 +598,7 @@
       clearInterval(timerInterval);
       timerInterval = setInterval(() => {
         timeLeft--;
-        timerElem.textContent = `${timeLeft}s`;
+        if (timerElem) timerElem.textContent = `${timeLeft}s`;
 
         if (timeLeft <= 0) {
           clearInterval(timerInterval);
@@ -486,8 +608,18 @@
     }
 
     function sendCounterOffset(offset) {
-      const base = currentOffer ? (currentOffer.negotiated_fare || currentOffer.estimated_fare || 15) : 15;
+      const base = currentOffer ? Number(currentOffer.negotiated_fare || currentOffer.estimated_fare || 15) : 15;
       sendCounterOffer(base + offset);
+    }
+
+    function sendCustomBid() {
+      const inputEl = document.getElementById('inputCustomBid');
+      const val = parseFloat(inputEl ? inputEl.value : '0');
+      if (val && val >= 6) {
+        sendCounterOffer(val);
+      } else {
+        alert('Por favor ingrese una tarifa válida de al menos S/ 6.00');
+      }
     }
 
     async function sendCounterOffer(amount) {
@@ -511,6 +643,7 @@
 
       socket.on(`ride_update_${currentOffer.id}`, (event) => {
         if (event.status === 'ACCEPTED' && event.ride.driver_id === DRIVER_ID) {
+          clearOfferMapLayers();
           document.getElementById('rideOfferModal').style.display = 'none';
           startTripFlow(event.ride);
         }
@@ -519,6 +652,7 @@
 
     async function acceptCurrentOffer() {
       clearInterval(timerInterval);
+      clearOfferMapLayers();
       const res = await fetch(`/api/rides/${currentOffer.id}/accept-bid`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -531,14 +665,12 @@
       if (data.success) {
         document.getElementById('rideOfferModal').style.display = 'none';
         startTripFlow(data.ride);
-      } else {
-        alert(data.message || 'El viaje ya fue tomado por otro conductor.');
-        document.getElementById('rideOfferModal').style.display = 'none';
       }
     }
 
     function rejectOffer() {
       clearInterval(timerInterval);
+      clearOfferMapLayers();
       document.getElementById('rideOfferModal').style.display = 'none';
       currentOffer = null;
     }

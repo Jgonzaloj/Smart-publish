@@ -167,15 +167,26 @@
         </div>
       </div>
 
-      <!-- Counter if mode BID is active -->
+      <!-- Flexible Price Offer & Custom Price Input -->
       <div id="biddingControls" style="display: none; margin: 8px 0;">
-        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 4px 12px;">
-          <button class="btn-step" onclick="adjustOffer(-1)" style="width: 32px; height: 32px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: #fff; font-size: 1.2rem; font-weight: 800; cursor: pointer;">−</button>
-          <div style="text-align: center;">
-            <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Tu Oferta Inicial</div>
-            <div class="fare-price-big" id="offerPriceDisplay" style="font-size: 1.3rem; font-weight: 800; color: var(--accent-action);">S/ 14.00</div>
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 8px 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Tu Oferta / Tarifa Libre:</span>
+            <span style="font-size: 0.72rem; color: #5eead4; font-weight: 700;">Mínimo: S/ 6.00</span>
           </div>
-          <button class="btn-step" onclick="adjustOffer(1)" style="width: 32px; height: 32px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: #fff; font-size: 1.2rem; font-weight: 800; cursor: pointer;">+</button>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+            <button type="button" class="btn-step" onclick="adjustOffer(-0.50)" style="padding: 6px 6px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: #fff; font-size: 0.78rem; font-weight: 800; cursor: pointer;">-0.50</button>
+            <button type="button" class="btn-step" onclick="adjustOffer(-0.10)" style="padding: 6px 6px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: #fff; font-size: 0.78rem; font-weight: 800; cursor: pointer;">-0.10</button>
+            
+            <div style="display: flex; align-items: center; gap: 2px; flex: 1; justify-content: center; background: #0f172a; border: 1.5px solid var(--accent-action); border-radius: var(--radius-md); padding: 4px 6px;">
+              <span style="font-weight: 800; color: var(--accent-action); font-size: 0.9rem;">S/</span>
+              <input type="number" id="inputCustomOffer" step="0.10" min="6" value="14.00" oninput="handleManualOfferInput(this.value)" style="width: 72px; background: transparent; border: none; color: #fff; font-weight: 800; font-size: 1.15rem; text-align: center; outline: none;" />
+            </div>
+
+            <button type="button" class="btn-step" onclick="adjustOffer(0.10)" style="padding: 6px 6px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: #fff; font-size: 0.78rem; font-weight: 800; cursor: pointer;">+0.10</button>
+            <button type="button" class="btn-step" onclick="adjustOffer(0.50)" style="padding: 6px 6px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: #fff; font-size: 0.78rem; font-weight: 800; cursor: pointer;">+0.50</button>
+          </div>
         </div>
       </div>
 
@@ -566,19 +577,38 @@
       const cardEco = document.getElementById('cardEcoPrice');
 
       if (type === 'REC') {
-        cardRec.className = 'price-card active-rec';
-        cardEco.className = 'price-card';
+        if (cardRec) cardRec.className = 'price-card active-rec';
+        if (cardEco) cardEco.className = 'price-card';
         setOfferPrice(recommendedFare);
       } else {
-        cardRec.className = 'price-card';
-        cardEco.className = 'price-card active-eco';
-        setOfferPrice(Math.max(6, recommendedFare - 2));
+        if (cardRec) cardRec.className = 'price-card';
+        if (cardEco) cardEco.className = 'price-card active-eco';
+        const ecoPrice = Math.max(6, Math.round((recommendedFare - 2) * 100) / 100);
+        setOfferPrice(ecoPrice);
       }
     }
 
     function setOfferPrice(price) {
-      currentOffer = Math.max(6, Math.round(price));
-      document.getElementById('offerPriceDisplay').textContent = `S/ ${currentOffer.toFixed(2)}`;
+      const val = parseFloat(price);
+      if (isNaN(val)) return;
+      currentOffer = Math.max(6, Math.round(val * 100) / 100);
+      const inputEl = document.getElementById('inputCustomOffer');
+      if (inputEl) inputEl.value = currentOffer.toFixed(2);
+      const displayEl = document.getElementById('offerPriceDisplay');
+      if (displayEl) displayEl.textContent = `S/ ${currentOffer.toFixed(2)}`;
+      const searchFare = document.getElementById('searchFarePrice');
+      if (searchFare) searchFare.textContent = `S/ ${currentOffer.toFixed(2)}`;
+    }
+
+    function handleManualOfferInput(val) {
+      const num = parseFloat(val);
+      if (!isNaN(num)) {
+        currentOffer = Math.max(6, Math.round(num * 100) / 100);
+        const displayEl = document.getElementById('offerPriceDisplay');
+        if (displayEl) displayEl.textContent = `S/ ${currentOffer.toFixed(2)}`;
+        const searchFare = document.getElementById('searchFarePrice');
+        if (searchFare) searchFare.textContent = `S/ ${currentOffer.toFixed(2)}`;
+      }
     }
 
     function adjustOffer(step) {
