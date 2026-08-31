@@ -624,14 +624,24 @@
 
     async function sendCounterOffer(amount) {
       clearInterval(timerInterval);
-      await fetch(`/api/rides/${currentOffer.id}/bid`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          driver_id: DRIVER_ID,
-          offered_fare: amount
-        })
-      });
+      const token = localStorage.getItem('driver_token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      try {
+        const res = await fetch(`/api/rides/${currentOffer.id}/bid`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            driver_id: DRIVER_ID,
+            offered_fare: amount
+          })
+        });
+        const data = await res.json();
+        console.log('Bid submitted:', data);
+      } catch (err) {
+        console.warn('Bid error', err);
+      }
 
       document.getElementById('rideOfferModal').innerHTML = `
         <div style="text-align:center; padding:16px;">

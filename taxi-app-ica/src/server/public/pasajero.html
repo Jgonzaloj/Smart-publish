@@ -167,8 +167,8 @@
         </div>
       </div>
 
-      <!-- Flexible Price Offer & Custom Price Input -->
-      <div id="biddingControls" style="display: none; margin: 8px 0;">
+      <!-- Flexible Price Offer & Custom Price Input (Siempre Visible) -->
+      <div id="biddingControls" style="display: block; margin: 8px 0;">
         <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 8px 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Tu Oferta / Tarifa Libre:</span>
@@ -461,20 +461,16 @@
 
       const btnIcon = document.getElementById('btnRequestIcon');
       const btnLabel = document.getElementById('btnRequestLabel');
-      const biddingControls = document.getElementById('biddingControls');
 
       if (mode === 'AUTO') {
         btnIcon.textContent = '⚡';
         btnLabel.textContent = 'Asignar Taxi Rápido (Auto-Match)';
-        biddingControls.style.display = 'none';
       } else if (mode === 'SELECT') {
         btnIcon.textContent = '👤';
         btnLabel.textContent = 'Ver TOP 3 Conductores Disponibles';
-        biddingControls.style.display = 'none';
       } else {
         btnIcon.textContent = '💰';
         btnLabel.textContent = 'Solicitar y Negociar Tarifa Libre';
-        biddingControls.style.display = 'block';
       }
     }
 
@@ -712,9 +708,16 @@
     function listenRideEvents(rideId) {
       socket.emit('join_ride', rideId);
 
-      socket.on(`ride_bid_${rideId}`, (event) => {
-        if (dispatchMode === 'BID') {
-          renderDriverBids(event.all_bids);
+      const handleBidEvent = (event) => {
+        console.log('Bid received in passenger app:', event);
+        const bids = event.all_bids || (event.bid ? [event.bid] : []);
+        renderDriverBids(bids);
+      };
+
+      socket.on(`ride_bid_${rideId}`, handleBidEvent);
+      socket.on('driver_bid_received', (event) => {
+        if (currentRide && event.ride_id === currentRide.id) {
+          handleBidEvent(event);
         }
       });
 
@@ -735,18 +738,32 @@
 
     function renderDriverBids(bids) {
       const container = document.getElementById('driverBidsContainer');
+      const reqPanel = document.getElementById('panelRequest');
+      const searchPanel = document.getElementById('panelSearching');
+      
+      if (reqPanel) reqPanel.style.display = 'none';
+      if (searchPanel) searchPanel.style.display = 'block';
+
       if (!bids || bids.length === 0) return;
 
+      const titleEl = document.getElementById('searchingTitle');
+      if (titleEl) titleEl.textContent = '🔔 ¡Contraofertas Entrantes de Choferes!';
+
       container.innerHTML = bids.map(b => `
-        <div class="driver-card-select">
+        <div class="driver-card-select" style="background: rgba(30, 41, 59, 0.95); border: 1.5px solid var(--accent-action); border-radius: var(--radius-md); padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
           <div>
-            <div style="font-weight:700; font-size:0.88rem; color:#fff;">${b.driver_name}</div>
-            <div style="font-size:0.75rem; color:var(--text-muted);">${b.vehicle} &bull; ⭐ ${b.rating}</div>
+            <div style="font-weight:800; font-size:0.95rem; color:#fff; display: flex; align-items: center; gap: 6px;">
+              <span>👨🏽‍✈️ ${b.driver_name || 'Conductor'}</span>
+              <span class="score-badge" style="background: rgba(20,184,166,0.2); color: #5eead4; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px;">Propuesta</span>
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-top: 2px;">
+              🚗 ${b.vehicle || 'Auto Ica'} &bull; ⭐ ${b.rating || '4.9'}
+            </div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:1.1rem; font-weight:800; color:var(--accent-action);">S/ ${b.offered_fare.toFixed(2)}</div>
-            <button class="pill-btn" onclick="acceptDriverBid('${b.driver_id}', ${b.offered_fare})" style="background:rgba(20,184,166,0.2); border-color:var(--accent-action); color:#5eead4; padding:4px 10px; font-size:0.75rem; margin-top:2px;">
-              Aceptar Oferta
+            <div style="font-size:1.25rem; font-weight:900; color:var(--accent-action);">S/ ${Number(b.offered_fare).toFixed(2)}</div>
+            <button class="pill-btn btn-accept-bid" onclick="acceptDriverBid('${b.driver_id}', ${b.offered_fare})" style="background: var(--accent-action); border-color: #0f766e; color: #000; font-weight: 800; padding: 6px 12px; font-size: 0.8rem; margin-top: 4px; cursor: pointer;">
+              ✓ Aceptar Oferta &bull; S/ ${Number(b.offered_fare).toFixed(2)}
             </button>
           </div>
         </div>
