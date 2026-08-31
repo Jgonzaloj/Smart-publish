@@ -185,9 +185,58 @@ h1, h2, h3, h4, .brand-font {
   white-space: nowrap;
 }
 
-@media (max-width: 420px) {
+.btn-icon-round {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: #fff;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+.btn-icon-round:hover {
+  border-color: var(--accent-action);
+  background: rgba(20, 184, 166, 0.2);
+}
+
+.status-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  background: rgba(16, 185, 129, 0.18);
+  border: 1.5px solid #10b981;
+  color: #6ee7b7;
+  white-space: nowrap;
+  flex-shrink: 0;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.status-toggle-btn.offline {
+  background: rgba(100, 116, 139, 0.2);
+  border-color: #64748b;
+  color: #94a3b8;
+}
+
+@media (max-width: 440px) {
   .phone-header {
     padding: 8px 10px !important;
+    gap: 4px !important;
+  }
+  .header-actions {
+    gap: 4px !important;
   }
   .brand-badge {
     font-size: 0.92rem !important;
@@ -196,8 +245,17 @@ h1, h2, h3, h4, .brand-font {
   .brand-badge .brand-role {
     display: none !important;
   }
+  .status-toggle-btn {
+    padding: 4px 8px !important;
+    font-size: 0.7rem !important;
+  }
+  .btn-icon-round {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 0.78rem !important;
+  }
   .header-user-pill {
-    max-width: 90px !important;
+    max-width: 85px !important;
     padding: 3px 6px !important;
     font-size: 0.68rem !important;
   }
