@@ -10,9 +10,10 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 4000,
-        DOMAIN: 'apptaxi.inversionesvawi.com',
-        ADMIN_USER: 'admin',
-        ADMIN_PASS: 'admin2026!'
+        DOMAIN: 'apptaxi.inversionesvawi.com'
+        // NOTA DE SEGURIDAD:
+        // Las credenciales de ADMIN_PASS y JWT_SECRET se leen desde las variables de entorno
+        // del sistema del servidor o archivo .env privado, nunca se almacenan en texto plano en este archivo.
       }
     }
   ]

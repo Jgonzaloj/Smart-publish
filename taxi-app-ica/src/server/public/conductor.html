@@ -346,6 +346,10 @@
     const DRIVER_ID = 'drv_mario_1';
     let driverPos = [-14.06820, -75.72910];
 
+    socket.on('connect', () => {
+      socket.emit('join_drivers');
+    });
+
     function initMap() {
       map = L.map('mapDriver', { zoomControl: false }).setView(driverPos, 14);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -509,15 +513,27 @@
       if (!activeRide) return;
 
       if (tripStep === 1) {
-        await fetch(`/api/rides/${activeRide.id}/arrive`, { method: 'POST' });
+        await fetch(`/api/rides/${activeRide.id}/arrive`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ driver_id: DRIVER_ID })
+        });
         tripStep = 2;
         updateTripButtonText();
       } else if (tripStep === 2) {
-        await fetch(`/api/rides/${activeRide.id}/start`, { method: 'POST' });
+        await fetch(`/api/rides/${activeRide.id}/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ driver_id: DRIVER_ID })
+        });
         tripStep = 3;
         updateTripButtonText();
       } else if (tripStep === 3) {
-        await fetch(`/api/rides/${activeRide.id}/complete`, { method: 'POST' });
+        await fetch(`/api/rides/${activeRide.id}/complete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ driver_id: DRIVER_ID })
+        });
         document.getElementById('driverActiveTrip').style.display = 'none';
         activeRide = null;
         tripStep = 0;

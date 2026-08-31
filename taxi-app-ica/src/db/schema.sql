@@ -14,6 +14,16 @@ CREATE TABLE IF NOT EXISTS users (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 1.1 Códigos OTP de Autenticación Telefónica con TTL (Seguridad Real)
+CREATE TABLE IF NOT EXISTS phone_otps (
+    phone TEXT PRIMARY KEY,
+    code TEXT NOT NULL,
+    role TEXT DEFAULT 'passenger',
+    attempts INTEGER DEFAULT 0,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 2. Conductores (Perfil extendido con ubicación en tiempo real y billetera)
 CREATE TABLE IF NOT EXISTS drivers (
     user_id TEXT PRIMARY KEY,

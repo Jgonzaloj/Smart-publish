@@ -584,7 +584,7 @@
       const res = await fetch(`/api/rides/${currentRide.id}/accept-bid`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ driver_id: driverId, agreed_fare: currentOffer })
+        body: JSON.stringify({ driver_id: driverId, agreed_fare: currentOffer, passenger_id: currentRide?.passenger_id || 'usr_passenger_demo' })
       });
       const data = await res.json();
       if (data.success) {
@@ -593,6 +593,8 @@
     }
 
     function listenRideEvents(rideId) {
+      socket.emit('join_ride', rideId);
+
       socket.on(`ride_bid_${rideId}`, (event) => {
         if (dispatchMode === 'BID') {
           renderDriverBids(event.all_bids);
@@ -638,7 +640,7 @@
       const res = await fetch(`/api/rides/${currentRide.id}/accept-bid`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ driver_id: driverId, agreed_fare: agreedFare })
+        body: JSON.stringify({ driver_id: driverId, agreed_fare: agreedFare, passenger_id: currentRide?.passenger_id || 'usr_passenger_demo' })
       });
       const data = await res.json();
       if (data.success) {

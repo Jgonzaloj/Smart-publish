@@ -1037,12 +1037,158 @@
       }
     }
 
+  <script>
+    const socket = io();
+    let mapAdmin;
+    let driverMarkers = {};
+    let currentDriversList = [];
+
+    // Helper para realizar peticiones autenticadas con JWT (Hallazgo Crítico #1 Resuelto)
+    async function authFetch(url, options = {}) {
+      const token = localStorage.getItem('admin_token');
+      const headers = Object.assign({}, options.headers || {});
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      try {
+        const res = await fetch(url, { ...options, headers });
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem('admin_token');
+          checkAdminAuth();
+        }
+        return res;
+      } catch (err) {
+        console.error('Error en petición autenticada:', err);
+        throw err;
+      }
+    }
+
+    socket.on('connect', () => {
+      socket.emit('join_admin');
+    });
+
+    function switchAdminTab(tab) {
+      if (tab === 'radar') {
+        document.getElementById('tabRadarContent').style.display = 'grid';
+        document.getElementById('tabDriversContent').style.display = 'none';
+        document.getElementById('tabRadarBtn').className = 'tab-btn active';
+        document.getElementById('tabDriversBtn').className = 'tab-btn';
+      } else {
+        document.getElementById('tabRadarContent').style.display = 'none';
+        document.getElementById('tabDriversContent').style.display = 'block';
+        document.getElementById('tabRadarBtn').className = 'tab-btn';
+        document.getElementById('tabDriversBtn').className = 'tab-btn active';
+        loadDriversWithDocs();
+      }
+    }
+
+    function initAdminMap() {
+      if (!mapAdmin) {
+        mapAdmin = L.map('mapAdmin', { zoomControl: true }).setView([-14.06777, -75.72861], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap'
+        }).addTo(mapAdmin);
+      }
+
+      loadFleetDrivers();
+      loadActiveRides();
+      loadTariffConfig();
+      loadDriversWithDocs();
+    }
+
+    async function loadFleetDrivers() {
+      const res = await authFetch('/api/drivers');
+      const data = await res.json();
+      if (data.drivers) {
+        data.drivers.forEach(d => {
+          const color = d.status === 'online' || d.status === 'available' ? '#10b981' : d.status === 'busy' ? '#f59e0b' : '#64748b';
+          const marker = L.marker([d.latitude || -14.0677, d.longitude || -75.7286], {
+            icon: L.divIcon({
+              className: 'admin-marker',
+              html: `<div style="background:${color}; color:#000; font-size:14px; text-align:center; width:26px; height:26px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 10px ${color}; display:flex; align-items:center; justify-content:center;">🚗</div>`,
+              iconSize: [26, 26],
+              iconAnchor: [13, 13]
+            })
+          }).addTo(mapAdmin);
+
+          marker.bindPopup(`<strong>${d.full_name}</strong><br>Placa: ${d.vehicle?.plate_number || 'Y1A-452'}<br>Estado: <strong>${d.status.toUpperCase()}</strong>`);
+          driverMarkers[d.id] = marker;
+        });
+      }
+    }
+
+    async function loadDriversWithDocs() {
+      const res = await authFetch('/api/admin/drivers-with-docs');
+      const data = await res.json();
+      if (data.success && data.drivers) {
+        currentDriversList = data.drivers;
+        renderDriversTable(data.drivers);
+      }
+    }
+
+    async function approveDriver(driverId) {
+      const res = await authFetch(`/api/drivers/${driverId}/approve`, { method: 'POST' });
+      const data = await res.json();
+      alert(data.message || 'Conductor aprobado');
+      closeAuditModal();
+      loadDriversWithDocs();
+      loadFleetDrivers();
+    }
+
+    async function rejectDriver(driverId) {
+      const reason = prompt('Ingrese el motivo del rechazo u observación de documentos:');
+      if (!reason) return;
+      const res = await authFetch(`/api/drivers/${driverId}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason })
+      });
+      const data = await res.json();
+      alert(data.message || 'Solicitud rechazada');
+      closeAuditModal();
+      loadDriversWithDocs();
+    }
+
+    async function handleCreateDriver(e) {
+      e.preventDefault();
+      const body = {
+        full_name: document.getElementById('regName').value,
+        phone: document.getElementById('regPhone').value,
+        dni: document.getElementById('regDni').value,
+        plate_number: document.getElementById('regPlate').value,
+        brand: document.getElementById('regBrand').value,
+        model: document.getElementById('regModel').value,
+        color: document.getElementById('regColor').value,
+        property_card: document.getElementById('regPropertyCard').value,
+        soat_number: document.getElementById('regSoatNumber').value,
+        technical_review_number: document.getElementById('regRevTecnica').value,
+        license_number: document.getElementById('regLicense').value,
+        auto_approve: true,
+      };
+
+      const res = await authFetch('/api/drivers/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        closeNewDriverModal();
+        loadDriversWithDocs();
+        loadFleetDrivers();
+      } else {
+        alert('Error: ' + data.message);
+      }
+    }
+
     async function loadActiveRides() {
-      const res = await fetch('/api/rides/active');
+      const res = await authFetch('/api/admin/metrics');
       const data = await res.json();
       const tbody = document.getElementById('ridesTableBody');
-      if (data.rides && data.rides.length > 0) {
-        tbody.innerHTML = data.rides.map(r => `
+      if (data.recent_rides && data.recent_rides.length > 0) {
+        tbody.innerHTML = data.recent_rides.map(r => `
           <tr>
             <td>${new Date(r.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
             <td><strong>${r.origin.address || 'Centro'}</strong> &rarr; ${r.destination.address || 'Huacachina'}</td>
@@ -1056,34 +1202,38 @@
     }
 
     async function loadTariffConfig() {
-      const res = await fetch('/api/tariff/config');
+      const res = await authFetch('/api/tariff/config');
       const data = await res.json();
       if (data.config) {
-        document.getElementById('cfgBaseFare').value = data.config.baseFare;
-        document.getElementById('cfgPriceKm').value = data.config.pricePerKm;
-        document.getElementById('cfgPriceMin').value = data.config.pricePerMinute;
-        document.getElementById('cfgMinFare').value = data.config.minimumFare;
-        document.getElementById('cfgHuacachina').value = data.config.huacachinaSurcharge;
-        document.getElementById('cfgNightFactor').value = data.config.nightFactor;
+        document.getElementById('cfgBaseFare').value = data.config.base_fare || data.config.baseFare || 4.0;
+        document.getElementById('cfgPriceKm').value = data.config.price_per_km || data.config.pricePerKm || 1.4;
+        document.getElementById('cfgPriceMin').value = data.config.price_per_min || data.config.pricePerMinute || 0.12;
+        document.getElementById('cfgMinFare').value = data.config.min_fare || data.config.minimumFare || 6.0;
+        document.getElementById('cfgHuacachina').value = data.config.huacachina_factor || data.config.huacachinaSurcharge || 1.20;
+        document.getElementById('cfgNightFactor').value = data.config.night_factor || data.config.nightFactor || 1.25;
       }
     }
 
     async function saveTariffConfig() {
       const body = {
-        baseFare: parseFloat(document.getElementById('cfgBaseFare').value),
-        pricePerKm: parseFloat(document.getElementById('cfgPriceKm').value),
-        pricePerMinute: parseFloat(document.getElementById('cfgPriceMin').value),
-        minimumFare: parseFloat(document.getElementById('cfgMinFare').value),
-        huacachinaSurcharge: parseFloat(document.getElementById('cfgHuacachina').value),
-        nightFactor: parseFloat(document.getElementById('cfgNightFactor').value),
+        base_fare: parseFloat(document.getElementById('cfgBaseFare').value),
+        price_per_km: parseFloat(document.getElementById('cfgPriceKm').value),
+        price_per_min: parseFloat(document.getElementById('cfgPriceMin').value),
+        min_fare: parseFloat(document.getElementById('cfgMinFare').value),
+        huacachina_factor: parseFloat(document.getElementById('cfgHuacachina').value),
+        night_factor: parseFloat(document.getElementById('cfgNightFactor').value),
       };
 
-      await fetch('/api/tariff/config', {
+      const res = await authFetch('/api/tariff/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      alert('✅ Parámetros del Motor Smart Fare actualizados con éxito.');
+      if (res.ok) {
+        alert('✅ Parámetros del Motor Smart Fare actualizados con éxito.');
+      } else {
+        alert('❌ Error al actualizar tarifas. Verifique permisos de administrador.');
+      }
     }
 
     // ==========================================
@@ -1093,6 +1243,7 @@
       const token = localStorage.getItem('admin_token');
       if (!token) {
         document.getElementById('modalAdminLogin').style.display = 'flex';
+        document.getElementById('adminUserBadge').style.display = 'none';
       } else {
         document.getElementById('modalAdminLogin').style.display = 'none';
         document.getElementById('adminUserBadge').style.display = 'flex';
@@ -1111,7 +1262,7 @@
           body: JSON.stringify({ username: u, password: p })
         });
         const data = await res.json();
-        if (data.success) {
+        if (data.success && data.token) {
           localStorage.setItem('admin_token', data.token);
           document.getElementById('modalAdminLogin').style.display = 'none';
           document.getElementById('adminUserBadge').style.display = 'flex';
@@ -1179,11 +1330,11 @@
       <form onsubmit="handleAdminLogin(event)">
         <div style="text-align: left; margin-bottom: 10px;">
           <label style="font-size: 0.75rem; color: #94a3b8; font-weight: 700;">Usuario</label>
-          <input type="text" id="loginUser" class="form-input" placeholder="admin" value="admin" required style="margin-top: 4px; padding: 10px;" />
+          <input type="text" id="loginUser" class="form-input" placeholder="admin" required style="margin-top: 4px; padding: 10px;" />
         </div>
         <div style="text-align: left; margin-bottom: 16px;">
           <label style="font-size: 0.75rem; color: #94a3b8; font-weight: 700;">Contraseña de Seguridad</label>
-          <input type="password" id="loginPass" class="form-input" placeholder="••••••••" value="admin2026!" required style="margin-top: 4px; padding: 10px;" />
+          <input type="password" id="loginPass" class="form-input" placeholder="••••••••" required style="margin-top: 4px; padding: 10px;" />
         </div>
         <button type="submit" class="btn-primary" style="width: 100%; padding: 12px; font-size: 0.9rem;">
           🔑 Iniciar Sesión en Central
