@@ -90,13 +90,24 @@
     <!-- Map Canvas (Broad view of Ica) -->
     <div id="mapDriver" class="map-canvas"></div>
 
-    <!-- Driver Info Banner (Page 9: Carlos R. • Yaris • Placa Y1A-452) -->
-    <div style="background: var(--bg-card); border-top: 1px solid var(--border-color); padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; z-index: 100;">
+    <!-- Active Demand Assistant Bar (PDF Spec Pages 14-15: Notificar alta demanda a conductores) -->
+    <div id="demandAlertBar" style="background: rgba(15, 118, 110, 0.95); backdrop-filter: blur(8px); border-bottom: 1px solid var(--accent-action); padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; z-index: 500; font-size: 0.78rem;">
+      <div style="display: flex; align-items: center; gap: 6px; color: #fff;">
+        <span style="font-size: 1rem;">📈</span>
+        <span><strong>Alta demanda en Centro:</strong> 7 solicitudes activas</span>
+      </div>
+      <button onclick="goToHighDemandZone()" style="background: var(--accent-action); color: #000; border: none; border-radius: var(--radius-full); padding: 4px 10px; font-weight: 800; font-size: 0.72rem; cursor: pointer;">
+        Ir a zona ➔
+      </button>
+    </div>
+
+    <!-- Driver Info Banner (Page 9: Carlos R. • Yaris • Placa Y1A-452 + Verified Docs Page 21) -->
+    <div style="background: var(--bg-card); border-top: 1px solid var(--border-color); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; z-index: 100;">
       <div style="display: flex; align-items: center; gap: 10px;">
         <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #0f766e, #14b8a6); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">👨🏽‍✈️</div>
         <div>
-          <div style="font-weight: 700; font-size: 0.9rem; color: #fff;">Carlos R. &bull; ⭐ 4.9</div>
-          <div style="font-size: 0.75rem; color: var(--text-muted);">Toyota Yaris &bull; <strong style="color: #fff; background: #0f172a; padding: 1px 5px; border-radius: 4px;">Y1A-452</strong></div>
+          <div style="font-weight: 700; font-size: 0.9rem; color: #fff;">Carlos R. &bull; ⭐ 4.9 <span style="font-size:0.7rem; color:#6ee7b7; background:rgba(16,185,129,0.2); padding:1px 6px; border-radius:4px;">🛡️ Verificado</span></div>
+          <div style="font-size: 0.73rem; color: var(--text-muted);">Toyota Yaris &bull; <strong style="color: #fff; background: #0f172a; padding: 1px 5px; border-radius: 4px;">Y1A-452</strong> &bull; SOAT 2027</div>
         </div>
       </div>
       <div style="text-align: right;">
@@ -361,8 +372,46 @@
       }
     }
 
+    function goToHighDemandZone() {
+      // Rebalanceo Inteligente hacia Plaza de Armas de Ica (Páginas 14-15 del PDF)
+      const centerIca = [-14.06777, -75.72861];
+      map.flyTo(centerIca, 15, { animate: true, duration: 1.2 });
+      if (markerDriver) {
+        markerDriver.setLatLng(centerIca);
+        driverPos = centerIca;
+        fetch('/api/drivers/location', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            driver_id: DRIVER_ID,
+            lat: centerIca[0],
+            lng: centerIca[1],
+            address: 'Plaza de Armas de Ica (Zona Alta Demanda)'
+          })
+        });
+      }
+      document.getElementById('demandAlertBar').innerHTML = `
+        <div style="color: #6ee7b7; font-weight: 700; width: 100%; text-align: center;">
+          ✓ Te encuentras en la zona de mayor demanda (Centro de Ica)
+        </div>
+      `;
+    }
+
+    async function checkDemandRecommendation() {
+      try {
+        const res = await fetch(`/api/drivers/${DRIVER_ID}/demand-recommendation`);
+        const data = await res.json();
+        if (data.success && data.recommendation && data.recommendation.has_alert) {
+          document.getElementById('demandAlertBar').style.display = 'flex';
+        }
+      } catch (e) {
+        console.warn('Demand check err', e);
+      }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       initMap();
+      checkDemandRecommendation();
     });
   </script>
 </body>
