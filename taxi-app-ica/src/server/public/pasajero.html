@@ -869,7 +869,19 @@
           document.getElementById('authStepOtp').style.display = 'block';
           document.getElementById('otpTargetPhoneDisplay').textContent = `+51 ${phone}`;
           errEl.style.display = 'none';
-          document.getElementById('inputPassengerOtp').value = '';
+          if (data.demo_code) {
+            document.getElementById('inputPassengerOtp').value = data.demo_code;
+            document.getElementById('passengerOtpNoticeBox').innerHTML = `
+              <div style="background: rgba(20,184,166,0.2); border: 1.5px solid var(--accent-action); color: #5eead4; padding: 10px; border-radius: 8px; margin-bottom: 14px; font-size: 0.82rem;">
+                📲 <strong>SMS Recibido (Simulador):</strong><br>
+                Tu código de acceso Taxi Ica es: <span style="font-size:1.3rem; font-weight:800; color:#fff; letter-spacing:3px;">${data.demo_code}</span>
+              </div>
+            `;
+            document.getElementById('passengerOtpNoticeBox').style.display = 'block';
+          } else {
+            document.getElementById('inputPassengerOtp').value = '';
+            document.getElementById('passengerOtpNoticeBox').style.display = 'none';
+          }
           document.getElementById('inputPassengerOtp').focus();
         } else {
           errEl.textContent = data.message || 'Error al generar código';
@@ -966,6 +978,7 @@
 
       <!-- PASO 2: Ingreso de Código OTP -->
       <div id="authStepOtp" style="display: none;">
+        <div id="passengerOtpNoticeBox" style="display: none;"></div>
         <p style="font-size: 0.78rem; color: #6ee7b7; margin-bottom: 12px;">
           Código de 6 dígitos enviado a <strong id="otpTargetPhoneDisplay">+51 9XX XXX XXX</strong>
         </p>

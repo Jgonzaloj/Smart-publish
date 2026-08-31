@@ -764,7 +764,19 @@
           document.getElementById('authStepDriverOtp').style.display = 'block';
           document.getElementById('otpDriverTargetDisplay').textContent = `+51 ${phone}`;
           errEl.style.display = 'none';
-          document.getElementById('inputDriverOtp').value = '';
+          if (data.demo_code) {
+            document.getElementById('inputDriverOtp').value = data.demo_code;
+            document.getElementById('driverOtpNoticeBox').innerHTML = `
+              <div style="background: rgba(245,158,11,0.2); border: 1.5px solid var(--warning-amber); color: #fde047; padding: 10px; border-radius: 8px; margin-bottom: 14px; font-size: 0.82rem;">
+                📲 <strong>SMS Recibido (Simulador):</strong><br>
+                Tu código de acceso Chofer es: <span style="font-size:1.3rem; font-weight:800; color:#fff; letter-spacing:3px;">${data.demo_code}</span>
+              </div>
+            `;
+            document.getElementById('driverOtpNoticeBox').style.display = 'block';
+          } else {
+            document.getElementById('inputDriverOtp').value = '';
+            document.getElementById('driverOtpNoticeBox').style.display = 'none';
+          }
           document.getElementById('inputDriverOtp').focus();
         } else {
           errEl.textContent = data.message || 'Error al generar código';
@@ -857,6 +869,7 @@
 
       <!-- PASO 2: Verificación OTP -->
       <div id="authStepDriverOtp" style="display: none;">
+        <div id="driverOtpNoticeBox" style="display: none;"></div>
         <p style="font-size: 0.78rem; color: #6ee7b7; margin-bottom: 12px;">
           Código de 6 dígitos enviado a <strong id="otpDriverTargetDisplay">+51 9XX XXX XXX</strong>
         </p>

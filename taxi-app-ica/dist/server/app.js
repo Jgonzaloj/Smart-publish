@@ -560,7 +560,8 @@ app.post('/api/auth/phone-otp', (req, res) => {
     console.log(`[SMS AUTH GATEWAY] Código OTP generado para +51 ${cleanPhone}: ${otpCode}`);
     res.json({
         success: true,
-        message: `Código de verificación de 6 dígitos enviado por SMS al +51 ${cleanPhone}. Válido por 5 minutos.`
+        message: `Código de verificación de 6 dígitos enviado por SMS al +51 ${cleanPhone}. Válido por 5 minutos.`,
+        demo_code: otpCode // Permite visualizar el código para pruebas hasta configurar proveedor SMS real
     });
 });
 app.post('/api/auth/verify-otp', (req, res) => {
