@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Smart Mobility Ica — Plataforma Oficial V2</title>
   <link rel="stylesheet" href="/shared.css">
   <style>
@@ -15,12 +15,37 @@
       background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-lg);
-      padding: 16px 26px;
+      padding: 16px 24px;
       display: flex;
+      flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 16px;
+      gap: 12px;
       box-shadow: var(--shadow-card);
+    }
+    .launcher-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .launcher-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      color: inherit;
+    }
+    .launcher-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--accent-action);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     }
     .grid-simulator {
       display: grid;
@@ -62,54 +87,113 @@
       border-radius: 4px;
       font-weight: 700;
     }
-    @media (max-width: 1400px) {
+    @media (max-width: 1200px) {
+      .launcher-grid {
+        grid-template-columns: 1fr;
+      }
       .grid-simulator {
         grid-template-columns: 1fr;
       }
       .frame-wrapper {
-        height: 750px;
+        height: 700px;
       }
     }
   </style>
 </head>
 <body>
   <div class="simulator-container">
+    <!-- Header -->
     <header class="simulator-header">
-      <div style="display: flex; align-items: center; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 14px;">
         <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #0f766e, #14b8a6); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; box-shadow: 0 4px 12px rgba(20,184,166,0.3);">
           🚕
         </div>
         <div>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <h1 style="font-size: 1.45rem; color: #fff; font-weight: 800;">Smart Mobility Ica</h1>
-            <span class="motor-badge">V2 SENIOR ARCHITECTURE</span>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <h1 style="font-size: 1.35rem; color: #fff; font-weight: 800; margin: 0;">Smart Mobility Ica</h1>
+            <span class="motor-badge">SISTEMA UNIFICADO V2</span>
           </div>
-          <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">
-            🧠 <strong>Smart Fare</strong> (Tarifa Inteligente) &bull; 🚕 <strong>Smart Dispatch</strong> (Despacho por Olas TOP 3) &bull; 📍 <strong>Smart Geo</strong> (Flota 50 Vehículos Ica)
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 3px 0 0;">
+            🧠 <strong>Smart Fare</strong> &bull; 🚕 <strong>Smart Dispatch</strong> &bull; 💳 <strong>Yape / Plin</strong> &bull; 📍 <strong>Flota 50 Taxis Ica</strong>
           </p>
         </div>
       </div>
-      <div style="display: flex; gap: 10px;">
-        <a href="/pasajero" target="_blank" class="btn-nav-home" style="border-color: rgba(20, 184, 166, 0.4); color: #5eead4;">
-          📱 Abrir Pasajero ↗
+
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a href="/pasajero" class="btn-nav-home" style="border-color: rgba(20, 184, 166, 0.4); color: #5eead4;">
+          📱 Pasajero ➔
         </a>
-        <a href="/conductor" target="_blank" class="btn-nav-home" style="border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7;">
-          🚗 Abrir Conductor ↗
+        <a href="/conductor" class="btn-nav-home" style="border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7;">
+          🚗 Conductor ➔
         </a>
-        <a href="/admin" target="_blank" class="btn-nav-home" style="border-color: rgba(245, 158, 11, 0.4); color: #fde047;">
-          🖥️ Abrir Panel Admin ↗
+        <a href="/admin" class="btn-nav-home" style="border-color: rgba(245, 158, 11, 0.4); color: #fde047;">
+          🖥️ Admin ➔
         </a>
       </div>
     </header>
 
-    <!-- 3 Simulators Grid -->
+    <!-- Unified Launcher Cards -->
+    <div class="launcher-grid">
+      <!-- 1. Pasajero -->
+      <a href="/pasajero" class="launcher-card" style="border-left: 4px solid var(--accent-action);">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 1.8rem;">📱</span>
+            <span class="badge-tag" style="background: rgba(20, 184, 166, 0.2); color: #5eead4;">App Pasajero</span>
+          </div>
+          <h3 style="font-size: 1.15rem; color: #fff; margin: 0 0 4px;">Pide tu Taxi en Ica</h3>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0 0 12px;">
+            Tarifa justa, GPS en vivo, botón de emergencia SOS y pagos instantáneos con Yape, Plin o Efectivo.
+          </p>
+        </div>
+        <div style="font-weight: 800; font-size: 0.85rem; color: var(--accent-action);">
+          Entrar como Pasajero &rarr;
+        </div>
+      </a>
+
+      <!-- 2. Conductor -->
+      <a href="/conductor" class="launcher-card" style="border-left: 4px solid #10b981;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 1.8rem;">🚗</span>
+            <span class="badge-tag" style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7;">App Conductor</span>
+          </div>
+          <h3 style="font-size: 1.15rem; color: #fff; margin: 0 0 4px;">Panel del Chofer</h3>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0 0 12px;">
+            Recibe carreras por cercanía, contraoferta en 1 toque, sube tus 4 documentos y recibe pagos directos.
+          </p>
+        </div>
+        <div style="font-weight: 800; font-size: 0.85rem; color: #6ee7b7;">
+          Entrar como Conductor &rarr;
+        </div>
+      </a>
+
+      <!-- 3. Admin -->
+      <a href="/admin" class="launcher-card" style="border-left: 4px solid #f59e0b;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 1.8rem;">🖥️</span>
+            <span class="badge-tag" style="background: rgba(245, 158, 11, 0.2); color: #fde047;">Centro de Control</span>
+          </div>
+          <h3 style="font-size: 1.15rem; color: #fff; margin: 0 0 4px;">Administración & Radar</h3>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0 0 12px;">
+            Monitoreo en vivo de 50 taxis en Ica, auditoría documental SUNARP/SOAT/CITV y configuración de tarifas.
+          </p>
+        </div>
+        <div style="font-weight: 800; font-size: 0.85rem; color: #fde047;">
+          Entrar como Administrador &rarr;
+        </div>
+      </a>
+    </div>
+
+    <!-- 3 Simulators Grid (Desktop Multi-Role View) -->
     <div class="grid-simulator">
       <!-- 1. Pasajero Mobile Frame -->
       <div class="frame-wrapper">
         <div class="frame-title">
-          <span>📱 1. App Pasajero (Smart Mobility)</span>
+          <span>📱 1. App Pasajero</span>
           <span class="badge-tag" style="background: rgba(20, 184, 166, 0.15); color: #5eead4; border: 1px solid var(--accent-action);">
-            Auto-Match & Negociación
+            Auto-Match & Yape/Plin
           </span>
         </div>
         <iframe src="/pasajero"></iframe>
@@ -118,9 +202,9 @@
       <!-- 2. Conductor Mobile Frame -->
       <div class="frame-wrapper">
         <div class="frame-title">
-          <span>🚗 2. App Conductor (Radar & Ofertas)</span>
+          <span>🚗 2. App Conductor</span>
           <span class="badge-tag" style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid #10b981;">
-            🟢 En Servicio & Botones Grandes
+            🟢 En Servicio & Documentos
           </span>
         </div>
         <iframe src="/conductor"></iframe>
@@ -129,9 +213,9 @@
       <!-- 3. Admin Control Center Frame -->
       <div class="frame-wrapper">
         <div class="frame-title">
-          <span>🖥️ 3. Centro de Control & Demanda</span>
+          <span>🖥️ 3. Centro de Control</span>
           <span class="badge-tag" style="background: rgba(245, 158, 11, 0.15); color: #fde047; border: 1px solid #f59e0b;">
-            Heatmap & 50 Vehículos
+            Radar 50 Vehículos & Auditoría
           </span>
         </div>
         <iframe src="/admin"></iframe>
