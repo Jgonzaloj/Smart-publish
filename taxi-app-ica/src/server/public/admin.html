@@ -2,8 +2,13 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Smart Mobility Ica — Centro de Control y Despacho V2</title>
+  <link rel="manifest" href="/manifest-admin.json">
+  <meta name="theme-color" content="#0F172A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Admin Ica">
   <link rel="stylesheet" href="/shared.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -12,7 +17,7 @@
     .admin-layout {
       max-width: 100%;
       margin: 0 auto;
-      padding: 16px;
+      padding: 14px;
     }
     .grid-admin {
       display: grid;
@@ -25,6 +30,26 @@
       grid-template-columns: repeat(4, 1fr);
       gap: 12px;
       margin-bottom: 14px;
+    }
+    @media (max-width: 960px) {
+      .grid-admin {
+        grid-template-columns: 1fr;
+      }
+      .metrics-row {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    @media (max-width: 500px) {
+      .metrics-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .metric-card {
+        padding: 10px 12px;
+      }
+      .metric-val {
+        font-size: 1.3rem;
+      }
     }
     .metric-card {
       background: var(--bg-card);
@@ -182,16 +207,31 @@
 </head>
 <body>
   <div class="admin-layout">
+    <!-- PWA Install Banner -->
+    <div id="pwaInstallBanner" style="display: none; background: linear-gradient(135deg, #1e293b, #0f766e); color: #fff; padding: 10px 14px; border-radius: var(--radius-md); margin-bottom: 12px; align-items: center; justify-content: space-between; border: 1.5px solid var(--accent-action); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.4rem;">🖥️</span>
+        <div>
+          <strong style="font-size: 0.85rem;">Instalar Panel Admin en Celular</strong>
+          <div style="font-size: 0.72rem; color: #94a3b8;">Monitorea flota y audita conductores desde tu móvil</div>
+        </div>
+      </div>
+      <button id="btnPwaInstall" class="pill-btn" style="background: var(--accent-action); color: #000; font-weight: 800; font-size: 0.78rem; padding: 6px 14px; border: none; cursor: pointer;">
+        Instalar
+      </button>
+    </div>
+
     <!-- Header -->
-    <header style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 14px 20px; margin-bottom: 14px;">
+    <header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 14px 20px; margin-bottom: 14px; gap: 10px;">
       <div style="display: flex; align-items: center; gap: 12px;">
         <div style="font-size: 1.8rem;">🖥️</div>
         <div>
-          <h1 style="font-size: 1.25rem; color: #fff;">Smart Mobility Ica &mdash; Centro de Control & Despacho</h1>
-          <p style="font-size: 0.78rem; color: var(--text-muted);">Monitoreo de 50 Vehículos &bull; Motor de Tarifas &bull; Gestión Documental de Flota</p>
+          <h1 style="font-size: 1.25rem; color: #fff; margin: 0;">Smart Mobility Ica &mdash; Centro de Control</h1>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin: 2px 0 0;">Monitoreo de 50 Vehículos &bull; Motor de Tarifas &bull; Gestión Documental</p>
         </div>
       </div>
-      <div style="display: flex; gap: 10px; align-items: center;">
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <a href="/" class="btn-nav-home">🏠 Inicio</a>
         <button class="pill-btn" onclick="openNewDriverModal()" style="background: var(--primary-teal); border-color: var(--accent-action); color: #fff; font-weight: 700;">
           + Agregar Conductor
         </button>
@@ -1047,6 +1087,30 @@
       loadActiveRides();
       loadDriversWithDocs();
     });
+
+    // Registro de PWA Service Worker e Instalación de Admin
+    let deferredPromptAdmin;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPromptAdmin = e;
+      const banner = document.getElementById('pwaInstallBanner');
+      if (banner) banner.style.display = 'flex';
+    });
+
+    document.getElementById('btnPwaInstall')?.addEventListener('click', async () => {
+      if (deferredPromptAdmin) {
+        deferredPromptAdmin.prompt();
+        const { outcome } = await deferredPromptAdmin.userChoice;
+        if (outcome === 'accepted') {
+          document.getElementById('pwaInstallBanner').style.display = 'none';
+        }
+        deferredPromptAdmin = null;
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch((err) => console.log('SW register error', err));
+    }
 
     window.addEventListener('DOMContentLoaded', () => {
       initAdminMap();
