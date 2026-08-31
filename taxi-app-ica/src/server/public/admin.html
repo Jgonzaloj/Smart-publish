@@ -231,6 +231,10 @@
         </div>
       </div>
       <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <div id="adminUserBadge" style="display: none; align-items: center; gap: 6px; background: rgba(20, 184, 166, 0.15); border: 1px solid var(--accent-action); padding: 4px 10px; border-radius: var(--radius-full); font-size: 0.75rem; color: #5eead4;">
+          <span>👤 Operador Central</span>
+          <button onclick="logoutAdmin()" style="background: transparent; border: none; color: #f87171; font-weight: 700; cursor: pointer; margin-left: 4px;">[ Salir ]</button>
+        </div>
         <a href="/" class="btn-nav-home">🏠 Inicio</a>
         <button class="pill-btn" onclick="openNewDriverModal()" style="background: var(--primary-teal); border-color: var(--accent-action); color: #fff; font-weight: 700;">
           + Agregar Conductor
@@ -241,7 +245,6 @@
           <span>🟠 Ocupado</span>
           <span>⚫ Desconectado</span>
         </div>
-        <a href="/" class="btn-nav-home">🏠 Inicio</a>
       </div>
     </header>
 
@@ -1083,6 +1086,50 @@
       alert('✅ Parámetros del Motor Smart Fare actualizados con éxito.');
     }
 
+    // ==========================================
+    // AUTENTICACIÓN Y SEGURIDAD DEL ADMIN
+    // ==========================================
+    function checkAdminAuth() {
+      const token = localStorage.getItem('admin_token');
+      if (!token) {
+        document.getElementById('modalAdminLogin').style.display = 'flex';
+      } else {
+        document.getElementById('modalAdminLogin').style.display = 'none';
+        document.getElementById('adminUserBadge').style.display = 'flex';
+      }
+    }
+
+    async function handleAdminLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('loginUser').value;
+      const p = document.getElementById('loginPass').value;
+
+      try {
+        const res = await fetch('/api/auth/admin-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p })
+        });
+        const data = await res.json();
+        if (data.success) {
+          localStorage.setItem('admin_token', data.token);
+          document.getElementById('modalAdminLogin').style.display = 'none';
+          document.getElementById('adminUserBadge').style.display = 'flex';
+          initAdminMap();
+        } else {
+          document.getElementById('loginError').textContent = data.message || 'Credenciales inválidas';
+          document.getElementById('loginError').style.display = 'block';
+        }
+      } catch (err) {
+        alert('Error al conectar con el servidor');
+      }
+    }
+
+    function logoutAdmin() {
+      localStorage.removeItem('admin_token');
+      window.location.reload();
+    }
+
     socket.on('admin_event', (event) => {
       loadActiveRides();
       loadDriversWithDocs();
@@ -1113,8 +1160,39 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      initAdminMap();
+      checkAdminAuth();
+      if (localStorage.getItem('admin_token')) {
+        initAdminMap();
+      }
     });
   </script>
+
+  <!-- Modal de Inicio de Sesión de Administrador -->
+  <div id="modalAdminLogin" class="modal-overlay" style="display: none; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(12px);">
+    <div class="modal-card" style="max-width: 400px; text-align: center; border: 1.5px solid var(--accent-action); box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
+      <div style="font-size: 2.4rem; margin-bottom: 8px;">🔒</div>
+      <h2 style="font-size: 1.3rem; color: #fff; margin: 0 0 6px;">Centro de Control Ica</h2>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0 0 16px;">Acceso restringido para operadores y administradores</p>
+
+      <div id="loginError" style="display: none; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 8px; border-radius: 6px; font-size: 0.78rem; margin-bottom: 12px;"></div>
+
+      <form onsubmit="handleAdminLogin(event)">
+        <div style="text-align: left; margin-bottom: 10px;">
+          <label style="font-size: 0.75rem; color: #94a3b8; font-weight: 700;">Usuario</label>
+          <input type="text" id="loginUser" class="form-input" placeholder="admin" value="admin" required style="margin-top: 4px; padding: 10px;" />
+        </div>
+        <div style="text-align: left; margin-bottom: 16px;">
+          <label style="font-size: 0.75rem; color: #94a3b8; font-weight: 700;">Contraseña de Seguridad</label>
+          <input type="password" id="loginPass" class="form-input" placeholder="••••••••" value="admin2026!" required style="margin-top: 4px; padding: 10px;" />
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%; padding: 12px; font-size: 0.9rem;">
+          🔑 Iniciar Sesión en Central
+        </button>
+      </form>
+      <div style="margin-top: 14px; font-size: 0.72rem; color: var(--text-dim);">
+        Smart Mobility Ica &bull; Subdominio Oficial: apptaxi.inversionesvawi.com
+      </div>
+    </div>
+  </div>
 </body>
 </html>

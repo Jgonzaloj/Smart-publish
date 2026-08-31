@@ -1,0 +1,20 @@
+# ==============================================================================
+# CONFIGURACIÓN CPANEL / APACHE / PASSENGER PARA TAXI ICA
+# Dominio: apptaxi.inversionesvawi.com
+# ==============================================================================
+
+RewriteEngine On
+
+# 1. Forzar HTTPS obligatorio (Requerido para GPS y Cámara en móviles)
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# 2. Redirección WebSocket (Socket.io)
+RewriteCond %{HTTP:Upgrade} websocket [NC]
+RewriteCond %{HTTP:Connection} upgrade [NC]
+RewriteRule ^/?(.*) "ws://127.0.0.1:4000/$1" [P,L]
+
+# 3. Proxy hacia la aplicación Node.js en puerto 4000
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ http://127.0.0.1:4000/$1 [P,L]
