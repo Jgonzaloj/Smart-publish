@@ -613,11 +613,38 @@
     </div>
   </div>
 
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
     let mapAdmin;
     let driverMarkers = {};
     let currentDriversList = [];
+
+    // Helper para realizar peticiones autenticadas con JWT
+    async function authFetch(url, options = {}) {
+      let token = localStorage.getItem('admin_token');
+      const headers = Object.assign({}, options.headers || {});
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      try {
+        const res = await fetch(url, { ...options, headers });
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem('admin_token');
+          checkAdminAuth();
+        }
+        return res;
+      } catch (err) {
+        console.error('Error en petición autenticada:', err);
+        throw err;
+      }
+    }
+
+    socket.on('connect', () => {
+      socket.emit('join_admin');
+    });
 
     function switchAdminTab(tab) {
       if (tab === 'radar') {
@@ -625,6 +652,9 @@
         document.getElementById('tabDriversContent').style.display = 'none';
         document.getElementById('tabRadarBtn').className = 'tab-btn active';
         document.getElementById('tabDriversBtn').className = 'tab-btn';
+        if (mapAdmin) {
+          setTimeout(() => mapAdmin.invalidateSize(), 200);
+        }
       } else {
         document.getElementById('tabRadarContent').style.display = 'none';
         document.getElementById('tabDriversContent').style.display = 'block';
@@ -635,11 +665,13 @@
     }
 
     function initAdminMap() {
-      mapAdmin = L.map('mapAdmin', { zoomControl: true }).setView([-14.06777, -75.72861], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap'
-      }).addTo(mapAdmin);
+      if (!mapAdmin) {
+        mapAdmin = L.map('mapAdmin', { zoomControl: true }).setView([-14.06777, -75.72861], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap'
+        }).addTo(mapAdmin);
+      }
 
       loadFleetDrivers();
       loadActiveRides();
@@ -648,37 +680,50 @@
     }
 
     async function loadFleetDrivers() {
-      const res = await fetch('/api/drivers');
-      const data = await res.json();
-      if (data.drivers) {
-        data.drivers.forEach(d => {
-          const color = d.status === 'online' || d.status === 'available' ? '#10b981' : d.status === 'busy' ? '#f59e0b' : '#64748b';
-          const marker = L.marker([d.latitude || -14.0677, d.longitude || -75.7286], {
-            icon: L.divIcon({
-              className: 'admin-marker',
-              html: `<div style="background:${color}; color:#000; font-size:14px; text-align:center; width:26px; height:26px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 10px ${color}; display:flex; align-items:center; justify-content:center;">🚗</div>`,
-              iconSize: [26, 26],
-              iconAnchor: [13, 13]
-            })
-          }).addTo(mapAdmin);
+      try {
+        const res = await authFetch('/api/drivers');
+        const data = await res.json();
+        if (data.drivers && mapAdmin) {
+          data.drivers.forEach(d => {
+            const color = d.status === 'online' || d.status === 'available' ? '#10b981' : d.status === 'busy' ? '#f59e0b' : '#64748b';
+            if (driverMarkers[d.id]) {
+              driverMarkers[d.id].setLatLng([d.latitude || -14.0677, d.longitude || -75.7286]);
+            } else {
+              const marker = L.marker([d.latitude || -14.0677, d.longitude || -75.7286], {
+                icon: L.divIcon({
+                  className: 'admin-marker',
+                  html: `<div style="background:${color}; color:#000; font-size:14px; text-align:center; width:26px; height:26px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 10px ${color}; display:flex; align-items:center; justify-content:center;">🚗</div>`,
+                  iconSize: [26, 26],
+                  iconAnchor: [13, 13]
+                })
+              }).addTo(mapAdmin);
 
-          marker.bindPopup(`<strong>${d.full_name}</strong><br>Placa: ${d.vehicle?.plate_number || 'Y1A-452'}<br>Estado: <strong>${d.status.toUpperCase()}</strong>`);
-          driverMarkers[d.id] = marker;
-        });
+              marker.bindPopup(`<strong>${d.full_name}</strong><br>Placa: ${d.vehicle?.plate_number || 'Y1A-452'}<br>Estado: <strong>${d.status.toUpperCase()}</strong>`);
+              driverMarkers[d.id] = marker;
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Error loading drivers', e);
       }
     }
 
     async function loadDriversWithDocs() {
-      const res = await fetch('/api/admin/drivers-with-docs');
-      const data = await res.json();
-      if (data.success && data.drivers) {
-        currentDriversList = data.drivers;
-        renderDriversTable(data.drivers);
+      try {
+        const res = await authFetch('/api/admin/drivers-with-docs');
+        const data = await res.json();
+        if (data.success && data.drivers) {
+          currentDriversList = data.drivers;
+          renderDriversTable(data.drivers);
+        }
+      } catch (e) {
+        console.warn('Error loading drivers with docs', e);
       }
     }
 
     function renderDriversTable(drivers) {
       const tbody = document.getElementById('driversTableBody');
+      if (!tbody) return;
       if (!drivers || drivers.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No hay conductores registrados</td></tr>`;
         return;
@@ -730,7 +775,6 @@
       document.getElementById('auditDriverTitle').textContent = `Auditoría: ${d.full_name} (${d.plate_number})`;
       document.getElementById('auditContentBody').innerHTML = `
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
-          <!-- Tarjeta de Propiedad -->
           <div style="background:var(--bg-surface); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
               <strong style="color:#fff; font-size:0.85rem;">🚗 Tarjeta de Propiedad</strong>
@@ -745,7 +789,6 @@
             </div>
           </div>
 
-          <!-- SOAT -->
           <div style="background:var(--bg-surface); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
               <strong style="color:#fff; font-size:0.85rem;">🛡️ SOAT Digital</strong>
@@ -760,7 +803,6 @@
             </div>
           </div>
 
-          <!-- Revisión Técnica -->
           <div style="background:var(--bg-surface); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
               <strong style="color:#fff; font-size:0.85rem;">🔧 Revisión Técnica (CITV)</strong>
@@ -775,7 +817,6 @@
             </div>
           </div>
 
-          <!-- Licencia de Conducir -->
           <div style="background:var(--bg-surface); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
               <strong style="color:#fff; font-size:0.85rem;">🪪 Licencia de Conducir</strong>
@@ -808,7 +849,7 @@
 
     function viewDocumentPreview(docType, driverId) {
       const d = currentDriversList.find(x => x.id === driverId) || {
-        full_name: 'Mario Huamán García',
+        full_name: 'Carlos Quispe Morales',
         dni: '45879632',
         plate_number: 'Y1A-452',
         brand: 'Toyota',
@@ -842,19 +883,11 @@
                 <strong style="color: #fbbf24; font-size: 0.9rem;">${d.property_card || 'TP-Y1A-452'}</strong>
               </div>
             </div>
-
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem; margin-bottom: 14px;">
               <div><span style="color:#94a3b8;">PLACA:</span> <strong style="color:#fff; font-size:1.1rem;">${d.plate_number || 'Y1A-452'}</strong></div>
               <div><span style="color:#94a3b8;">PROPIETARIO:</span> <strong>${d.full_name}</strong></div>
               <div><span style="color:#94a3b8;">MARCA / MODELO:</span> <strong>${d.brand || 'Toyota'} ${d.model || 'Yaris'}</strong></div>
               <div><span style="color:#94a3b8;">COLOR:</span> <strong>${d.color || 'Gris Plata'}</strong></div>
-              <div><span style="color:#94a3b8;">COMBUSTIBLE:</span> <strong>Gasolina / GNV</strong></div>
-              <div><span style="color:#94a3b8;">CLASE / CARROCERÍA:</span> <strong>Automóvil / Sedán M1</strong></div>
-            </div>
-
-            <div style="background: rgba(15,118,110,0.2); border: 1px solid #0f766e; border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="color: #6ee7b7; font-size: 0.75rem;">✓ Partida Electrónica Verificada SUNARP Ica</span>
-              <span style="color: #94a3b8; font-size: 0.7rem;">Código QR: [ 2D-AUTH-ICA-OK ]</span>
             </div>
           </div>
         `;
@@ -868,24 +901,11 @@
                 <div style="font-size: 0.72rem; color: #94a3b8;">SEGURO OBLIGATORIO DE ACCIDENTES DE TRÁNSITO</div>
                 <strong style="color: #5eead4; font-size: 0.95rem;">COMPAÑÍA DE SEGUROS LA POSITIVA / RIMAC</strong>
               </div>
-              <div style="text-align: right;">
-                <div style="font-size: 0.7rem; color: #94a3b8;">PÓLIZA N°</div>
-                <strong style="color: #fbbf24; font-size: 0.9rem;">${d.soat_number || 'SOAT-POSITIVA-Y1A-452'}</strong>
-              </div>
             </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem; margin-bottom: 14px;">
-              <div><span style="color:#94a3b8;">PLACA ASEGURADA:</span> <strong style="color:#fff; font-size:1.1rem;">${d.plate_number || 'Y1A-452'}</strong></div>
-              <div><span style="color:#94a3b8;">CONTRATANTE:</span> <strong>${d.full_name}</strong></div>
-              <div><span style="color:#94a3b8;">USO DEL VEHÍCULO:</span> <strong>SERVICIO DE TAXI URBANO (ICA)</strong></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem;">
+              <div><span style="color:#94a3b8;">PLACA ASEGURADA:</span> <strong style="color:#fff;">${d.plate_number || 'Y1A-452'}</strong></div>
               <div><span style="color:#94a3b8;">ESTADO:</span> <strong style="color:#10b981;">ACTIVO / VIGENTE</strong></div>
-              <div><span style="color:#94a3b8;">VIGENCIA INICIO:</span> <strong>01/07/2026</strong></div>
-              <div><span style="color:#94a3b8;">VIGENCIA FIN:</span> <strong style="color:#fbbf24;">${d.soat_expiry || '2027-06-30'}</strong></div>
-            </div>
-
-            <div style="background: rgba(16,185,129,0.15); border: 1px solid #10b981; border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="color: #6ee7b7; font-size: 0.75rem;">✓ Cobertura Médica y de Daños a Pasajeros Vigente</span>
-              <span style="color: #94a3b8; font-size: 0.7rem;">Registro SBS: #84920-ICA</span>
+              <div><span style="color:#94a3b8;">VIGENCIA HASTA:</span> <strong style="color:#fbbf24;">${d.soat_expiry || '2027-06-30'}</strong></div>
             </div>
           </div>
         `;
@@ -894,29 +914,10 @@
         titleEl.textContent = 'MTC — Certificado de Inspección Técnica Vehicular (CITV)';
         bodyEl.innerHTML = `
           <div style="background: #1e293b; border: 2px solid #334155; border-radius: 8px; padding: 16px; color: #fff; font-family: monospace;">
-            <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #0f766e; padding-bottom: 8px; margin-bottom: 12px;">
-              <div>
-                <div style="font-size: 0.72rem; color: #94a3b8;">MINISTERIO DE TRANSPORTES Y COMUNICACIONES</div>
-                <strong style="color: #5eead4; font-size: 0.95rem;">PLANTA DE REVISIONES TÉCNICAS FARENET — SEDE ICA</strong>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-size: 0.7rem; color: #94a3b8;">CERTIFICADO CITV</div>
-                <strong style="color: #fbbf24; font-size: 0.9rem;">${d.technical_review_number || 'REV-2026-ICA'}</strong>
-              </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem; margin-bottom: 14px;">
-              <div><span style="color:#94a3b8;">PLACA:</span> <strong style="color:#fff; font-size:1.1rem;">${d.plate_number || 'Y1A-452'}</strong></div>
-              <div><span style="color:#94a3b8;">RESULTADO:</span> <strong style="color:#10b981;">APROBADO (SIN DEFECTOS GRAVES)</strong></div>
-              <div><span style="color:#94a3b8;">FRENOS / SUSPENSIÓN:</span> <strong>Eficiencia 89% (Óptimo)</strong></div>
-              <div><span style="color:#94a3b8;">EMISIONES DE GASES:</span> <strong>Dentro de los límites permisibles MTC</strong></div>
-              <div><span style="color:#94a3b8;">FECHA INSPECCIÓN:</span> <strong>02/01/2026</strong></div>
-              <div><span style="color:#94a3b8;">VENCE:</span> <strong style="color:#fbbf24;">${d.technical_review_expiry || '2026-12-31'}</strong></div>
-            </div>
-
-            <div style="background: rgba(16,185,129,0.15); border: 1px solid #10b981; border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="color: #6ee7b7; font-size: 0.75rem;">✓ Acreditado para Transporte Público en Provincia de Ica</span>
-              <span style="color: #94a3b8; font-size: 0.7rem;">Ing. Inspector: CIP #77412</span>
+            <strong style="color: #5eead4;">FARENET — SEDE ICA (Aprobado)</strong>
+            <div style="margin-top: 8px; font-size: 0.8rem;">
+              <div>PLACA: <strong>${d.plate_number}</strong></div>
+              <div>VENCE: <strong style="color:#fbbf24;">${d.technical_review_expiry || '2026-12-31'}</strong></div>
             </div>
           </div>
         `;
@@ -925,29 +926,11 @@
         titleEl.textContent = 'MTC — Licencia Nacional de Conducir Electrónica';
         bodyEl.innerHTML = `
           <div style="background: #1e293b; border: 2px solid #334155; border-radius: 8px; padding: 16px; color: #fff; font-family: monospace;">
-            <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #0f766e; padding-bottom: 8px; margin-bottom: 12px;">
-              <div>
-                <div style="font-size: 0.72rem; color: #94a3b8;">REPÚBLICA DEL PERÚ &bull; MTC</div>
-                <strong style="color: #5eead4; font-size: 0.95rem;">LICENCIA DE CONDUCIR PROFESIONAL</strong>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-size: 0.7rem; color: #94a3b8;">CATEGORÍA</div>
-                <strong style="color: #10b981; font-size: 1.1rem;">A-IIa (Taxi / Colectivo)</strong>
-              </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem; margin-bottom: 14px;">
-              <div><span style="color:#94a3b8;">N° LICENCIA:</span> <strong style="color:#fff; font-size:1.1rem;">${d.license_number || 'Q-45879632'}</strong></div>
-              <div><span style="color:#94a3b8;">CONDUCTOR:</span> <strong>${d.full_name}</strong></div>
-              <div><span style="color:#94a3b8;">DNI:</span> <strong>${d.dni || '45879632'}</strong></div>
-              <div><span style="color:#94a3b8;">RÉGIMEN:</span> <strong>Servicio de Taxi Ica</strong></div>
-              <div><span style="color:#94a3b8;">PUNTOS DE CONDUCTOR:</span> <strong style="color:#10b981;">100 Puntos (Récord Limpio)</strong></div>
-              <div><span style="color:#94a3b8;">FECHA DE VENCIMIENTO:</span> <strong style="color:#fbbf24;">${d.license_expiry || '2028-12-31'}</strong></div>
-            </div>
-
-            <div style="background: rgba(16,185,129,0.15); border: 1px solid #10b981; border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="color: #6ee7b7; font-size: 0.75rem;">✓ Habilitado por el Sistema Nacional de Conductores</span>
-              <span style="color: #94a3b8; font-size: 0.7rem;">Firma Digital MTC: VÁLIDA</span>
+            <strong style="color: #10b981; font-size: 1rem;">Licencia Profesional Cat. A-IIa</strong>
+            <div style="margin-top: 8px; font-size: 0.8rem;">
+              <div>CONDUCTOR: <strong>${d.full_name}</strong></div>
+              <div>N° LICENCIA: <strong>${d.license_number || 'Q-45879632'}</strong></div>
+              <div>VENCE: <strong style="color:#fbbf24;">${d.license_expiry || '2028-12-31'}</strong></div>
             </div>
           </div>
         `;
@@ -962,169 +945,6 @@
 
     function closeAuditModal() {
       document.getElementById('modalAuditDriver').style.display = 'none';
-    }
-
-    async function approveDriver(driverId) {
-      const res = await fetch(`/api/drivers/${driverId}/approve`, { method: 'POST' });
-      const data = await res.json();
-      alert(data.message || 'Conductor aprobado');
-      closeAuditModal();
-      loadDriversWithDocs();
-      loadFleetDrivers();
-    }
-
-    async function rejectDriver(driverId) {
-      const reason = prompt('Ingrese el motivo del rechazo u observación de documentos:');
-      if (!reason) return;
-      const res = await fetch(`/api/drivers/${driverId}/reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason })
-      });
-      const data = await res.json();
-      alert(data.message || 'Solicitud rechazada');
-      closeAuditModal();
-      loadDriversWithDocs();
-    }
-
-    function handleAdminFileSelect(input, labelId) {
-      if (input.files && input.files[0]) {
-        const file = input.files[0];
-        const sizeKb = (file.size / 1024).toFixed(0);
-        document.getElementById(labelId).innerHTML = `✅ <strong>${file.name}</strong> (${sizeKb} KB)`;
-        document.getElementById(labelId).style.color = '#6ee7b7';
-      }
-    }
-
-    function openNewDriverModal() {
-      document.getElementById('modalNewDriver').style.display = 'flex';
-    }
-
-    function closeNewDriverModal() {
-      document.getElementById('modalNewDriver').style.display = 'none';
-    }
-
-    async function handleCreateDriver(e) {
-      e.preventDefault();
-      const body = {
-        full_name: document.getElementById('regName').value,
-        phone: document.getElementById('regPhone').value,
-        dni: document.getElementById('regDni').value,
-        plate_number: document.getElementById('regPlate').value,
-        brand: document.getElementById('regBrand').value,
-        model: document.getElementById('regModel').value,
-        color: document.getElementById('regColor').value,
-        property_card: document.getElementById('regPropertyCard').value,
-        soat_number: document.getElementById('regSoatNumber').value,
-        technical_review_number: document.getElementById('regRevTecnica').value,
-        license_number: document.getElementById('regLicense').value,
-        auto_approve: true,
-      };
-
-      const res = await fetch('/api/drivers/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert(data.message);
-        closeNewDriverModal();
-        loadDriversWithDocs();
-        loadFleetDrivers();
-      } else {
-        alert('Error: ' + data.message);
-      }
-    }
-
-  <script>
-    const socket = io();
-    let mapAdmin;
-    let driverMarkers = {};
-    let currentDriversList = [];
-
-    // Helper para realizar peticiones autenticadas con JWT (Hallazgo Crítico #1 Resuelto)
-    async function authFetch(url, options = {}) {
-      const token = localStorage.getItem('admin_token');
-      const headers = Object.assign({}, options.headers || {});
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      try {
-        const res = await fetch(url, { ...options, headers });
-        if (res.status === 401 || res.status === 403) {
-          localStorage.removeItem('admin_token');
-          checkAdminAuth();
-        }
-        return res;
-      } catch (err) {
-        console.error('Error en petición autenticada:', err);
-        throw err;
-      }
-    }
-
-    socket.on('connect', () => {
-      socket.emit('join_admin');
-    });
-
-    function switchAdminTab(tab) {
-      if (tab === 'radar') {
-        document.getElementById('tabRadarContent').style.display = 'grid';
-        document.getElementById('tabDriversContent').style.display = 'none';
-        document.getElementById('tabRadarBtn').className = 'tab-btn active';
-        document.getElementById('tabDriversBtn').className = 'tab-btn';
-      } else {
-        document.getElementById('tabRadarContent').style.display = 'none';
-        document.getElementById('tabDriversContent').style.display = 'block';
-        document.getElementById('tabRadarBtn').className = 'tab-btn';
-        document.getElementById('tabDriversBtn').className = 'tab-btn active';
-        loadDriversWithDocs();
-      }
-    }
-
-    function initAdminMap() {
-      if (!mapAdmin) {
-        mapAdmin = L.map('mapAdmin', { zoomControl: true }).setView([-14.06777, -75.72861], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '&copy; OpenStreetMap'
-        }).addTo(mapAdmin);
-      }
-
-      loadFleetDrivers();
-      loadActiveRides();
-      loadTariffConfig();
-      loadDriversWithDocs();
-    }
-
-    async function loadFleetDrivers() {
-      const res = await authFetch('/api/drivers');
-      const data = await res.json();
-      if (data.drivers) {
-        data.drivers.forEach(d => {
-          const color = d.status === 'online' || d.status === 'available' ? '#10b981' : d.status === 'busy' ? '#f59e0b' : '#64748b';
-          const marker = L.marker([d.latitude || -14.0677, d.longitude || -75.7286], {
-            icon: L.divIcon({
-              className: 'admin-marker',
-              html: `<div style="background:${color}; color:#000; font-size:14px; text-align:center; width:26px; height:26px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 10px ${color}; display:flex; align-items:center; justify-content:center;">🚗</div>`,
-              iconSize: [26, 26],
-              iconAnchor: [13, 13]
-            })
-          }).addTo(mapAdmin);
-
-          marker.bindPopup(`<strong>${d.full_name}</strong><br>Placa: ${d.vehicle?.plate_number || 'Y1A-452'}<br>Estado: <strong>${d.status.toUpperCase()}</strong>`);
-          driverMarkers[d.id] = marker;
-        });
-      }
-    }
-
-    async function loadDriversWithDocs() {
-      const res = await authFetch('/api/admin/drivers-with-docs');
-      const data = await res.json();
-      if (data.success && data.drivers) {
-        currentDriversList = data.drivers;
-        renderDriversTable(data.drivers);
-      }
     }
 
     async function approveDriver(driverId) {
@@ -1148,6 +968,14 @@
       alert(data.message || 'Solicitud rechazada');
       closeAuditModal();
       loadDriversWithDocs();
+    }
+
+    function openNewDriverModal() {
+      document.getElementById('modalNewDriver').style.display = 'flex';
+    }
+
+    function closeNewDriverModal() {
+      document.getElementById('modalNewDriver').style.display = 'none';
     }
 
     async function handleCreateDriver(e) {
@@ -1184,33 +1012,39 @@
     }
 
     async function loadActiveRides() {
-      const res = await authFetch('/api/admin/metrics');
-      const data = await res.json();
-      const tbody = document.getElementById('ridesTableBody');
-      if (data.recent_rides && data.recent_rides.length > 0) {
-        tbody.innerHTML = data.recent_rides.map(r => `
-          <tr>
-            <td>${new Date(r.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-            <td><strong>${r.origin.address || 'Centro'}</strong> &rarr; ${r.destination.address || 'Huacachina'}</td>
-            <td><strong style="color:var(--accent-action);">S/ ${(r.negotiated_fare || r.estimated_fare).toFixed(2)}</strong></td>
-            <td><span class="badge-status ${r.status.toLowerCase()}">${r.status}</span></td>
-          </tr>
-        `).join('');
-      } else {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No hay carreras activas en este momento</td></tr>`;
+      try {
+        const res = await authFetch('/api/admin/metrics');
+        const data = await res.json();
+        const tbody = document.getElementById('ridesTableBody');
+        if (tbody && data.recent_rides && data.recent_rides.length > 0) {
+          tbody.innerHTML = data.recent_rides.map(r => `
+            <tr>
+              <td>${new Date(r.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+              <td><strong>${r.origin.address || 'Centro'}</strong> &rarr; ${r.destination.address || 'Huacachina'}</td>
+              <td><strong style="color:var(--accent-action);">S/ ${(r.negotiated_fare || r.estimated_fare).toFixed(2)}</strong></td>
+              <td><span class="badge-status ${r.status.toLowerCase()}">${r.status}</span></td>
+            </tr>
+          `).join('');
+        }
+      } catch (e) {
+        console.warn('Error loading active rides', e);
       }
     }
 
     async function loadTariffConfig() {
-      const res = await authFetch('/api/tariff/config');
-      const data = await res.json();
-      if (data.config) {
-        document.getElementById('cfgBaseFare').value = data.config.base_fare || data.config.baseFare || 4.0;
-        document.getElementById('cfgPriceKm').value = data.config.price_per_km || data.config.pricePerKm || 1.4;
-        document.getElementById('cfgPriceMin').value = data.config.price_per_min || data.config.pricePerMinute || 0.12;
-        document.getElementById('cfgMinFare').value = data.config.min_fare || data.config.minimumFare || 6.0;
-        document.getElementById('cfgHuacachina').value = data.config.huacachina_factor || data.config.huacachinaSurcharge || 1.20;
-        document.getElementById('cfgNightFactor').value = data.config.night_factor || data.config.nightFactor || 1.25;
+      try {
+        const res = await authFetch('/api/tariff/config');
+        const data = await res.json();
+        if (data.config) {
+          document.getElementById('cfgBaseFare').value = data.config.base_fare || data.config.baseFare || 4.0;
+          document.getElementById('cfgPriceKm').value = data.config.price_per_km || data.config.pricePerKm || 1.4;
+          document.getElementById('cfgPriceMin').value = data.config.price_per_min || data.config.pricePerMinute || 0.12;
+          document.getElementById('cfgMinFare').value = data.config.min_fare || data.config.minimumFare || 6.0;
+          document.getElementById('cfgHuacachina').value = data.config.huacachina_factor || data.config.huacachinaSurcharge || 1.20;
+          document.getElementById('cfgNightFactor').value = data.config.night_factor || data.config.nightFactor || 1.25;
+        }
+      } catch (e) {
+        console.warn('Error loading tariff config', e);
       }
     }
 
@@ -1236,9 +1070,6 @@
       }
     }
 
-    // ==========================================
-    // AUTENTICACIÓN Y SEGURIDAD DEL ADMIN
-    // ==========================================
     function checkAdminAuth() {
       const token = localStorage.getItem('admin_token');
       if (!token) {
@@ -1284,37 +1115,19 @@
     socket.on('admin_event', (event) => {
       loadActiveRides();
       loadDriversWithDocs();
+      loadFleetDrivers();
     });
 
-    // Registro de PWA Service Worker e Instalación de Admin
-    let deferredPromptAdmin;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPromptAdmin = e;
-      const banner = document.getElementById('pwaInstallBanner');
-      if (banner) banner.style.display = 'flex';
-    });
-
-    document.getElementById('btnPwaInstall')?.addEventListener('click', async () => {
-      if (deferredPromptAdmin) {
-        deferredPromptAdmin.prompt();
-        const { outcome } = await deferredPromptAdmin.userChoice;
-        if (outcome === 'accepted') {
-          document.getElementById('pwaInstallBanner').style.display = 'none';
-        }
-        deferredPromptAdmin = null;
+    socket.on('driver_gps_update', (event) => {
+      if (driverMarkers[event.driver_id]) {
+        driverMarkers[event.driver_id].setLatLng([event.lat, event.lng]);
       }
     });
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch((err) => console.log('SW register error', err));
-    }
 
     window.addEventListener('DOMContentLoaded', () => {
       checkAdminAuth();
-      if (localStorage.getItem('admin_token')) {
-        initAdminMap();
-      }
+      // Inicializar el mapa y datos de la central
+      initAdminMap();
     });
   </script>
 
