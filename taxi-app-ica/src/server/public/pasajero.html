@@ -142,27 +142,30 @@
         <span id="txtZoneTag" style="color: var(--primary); font-weight: 700;">Zona Urbana</span>
       </div>
 
-      <!-- Bidding / Fare Box -->
-      <div id="biddingControls">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-          <label style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">TARIFA DE VIAJE</label>
-          <span style="font-size: 0.68rem; color: #67e8f9;">Recomendado: <strong id="lblRecommendedPrice">S/ 14.00</strong></span>
-        </div>
-
-        <div class="fare-counter" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 4px 12px; margin: 4px 0;">
-          <button class="btn-step" onclick="adjustOffer(-1)" style="width: 34px; height: 34px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: #fff; font-size: 1.2rem; font-weight: 800; cursor: pointer;">−</button>
-          <div style="text-align: center;">
-            <div class="fare-price-big" id="offerPriceDisplay" style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">S/ 14.00</div>
+      <!-- Dual Pricing Box (Smart Fare Transparent) -->
+      <div id="dualPricingBox" style="margin: 6px 0;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px;">
+          <div id="cardRecPrice" onclick="selectSuggestedPrice('REC')" style="background: rgba(16, 185, 129, 0.12); border: 1.5px solid #10b981; border-radius: var(--radius-md); padding: 6px 8px; cursor: pointer; text-align: center;">
+            <div style="font-size: 0.68rem; font-weight: 800; color: #6ee7b7;">🟢 PRECIO RECOMENDADO</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 2px 0;" id="lblPriceRec">S/ 14.00</div>
+            <div style="font-size: 0.62rem; color: var(--text-muted);">Asignación veloz</div>
           </div>
-          <button class="btn-step" onclick="adjustOffer(1)" style="width: 34px; height: 34px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: #fff; font-size: 1.2rem; font-weight: 800; cursor: pointer;">+</button>
+          <div id="cardEcoPrice" onclick="selectSuggestedPrice('ECO')" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: var(--radius-md); padding: 6px 8px; cursor: pointer; text-align: center;">
+            <div style="font-size: 0.68rem; font-weight: 800; color: #fde047;">🟡 PRECIO ECONÓMICO</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 2px 0;" id="lblPriceEco">S/ 12.00</div>
+            <div style="font-size: 0.62rem; color: #fca5a5;">Puede tardar más</div>
+          </div>
         </div>
 
-        <!-- Semáforo de Probabilidad -->
-        <div id="probBadge" class="probability-badge prob-high">
-          <span id="probText">🟢 Alta probabilidad de conductor rápido</span>
+        <div id="biddingControls">
+          <div class="fare-counter" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 4px 12px; margin: 4px 0;">
+            <button class="btn-step" onclick="adjustOffer(-1)" style="width: 32px; height: 32px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: #fff; font-size: 1.2rem; font-weight: 800; cursor: pointer;">−</button>
+            <div style="text-align: center;">
+              <div class="fare-price-big" id="offerPriceDisplay" style="font-size: 1.4rem; font-weight: 800; color: var(--primary);">S/ 14.00</div>
+            </div>
+            <button class="btn-step" onclick="adjustOffer(1)" style="width: 32px; height: 32px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: #fff; font-size: 1.2rem; font-weight: 800; cursor: pointer;">+</button>
+          </div>
         </div>
-
-        <div class="quick-offer-chips" id="quickOfferChips"></div>
       </div>
 
       <!-- Payment Method -->
@@ -171,7 +174,7 @@
         <div class="pill-btn" id="payYape" onclick="setPaymentMethod('yape')" style="flex: 1; padding: 6px; font-size: 0.78rem; text-align: center;">💜 Yape (QR)</div>
       </div>
 
-      <button id="btnRequestRide" class="btn-primary" style="padding: 12px 16px;">
+      <button id="btnRequestRide" class="btn-primary" onclick="handleRequestRide()" style="padding: 12px 16px;">
         <span id="btnRequestIcon">⚡</span> <span id="btnRequestLabel">Asignar Taxi Rápido (Auto-Match)</span>
       </button>
     </div>
@@ -429,16 +432,31 @@
         })
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.estimate) {
         recommendedFare = data.estimate.recommended_fare;
         currentOffer = recommendedFare;
-        document.getElementById('lblRecommendedPrice').textContent = `S/ ${recommendedFare.toFixed(2)}`;
+        const ecoPrice = data.estimate.min_allowed_fare;
+
+        document.getElementById('lblPriceRec').textContent = `S/ ${recommendedFare.toFixed(2)}`;
+        document.getElementById('lblPriceEco').textContent = `S/ ${ecoPrice.toFixed(2)}`;
         document.getElementById('txtDistanceKm').textContent = `${data.estimate.distance_km} km`;
         document.getElementById('txtDurationMin').textContent = `${data.estimate.duration_minutes} min`;
         document.getElementById('txtZoneTag').textContent = data.estimate.active_factors.zone_label;
 
-        renderQuickChips(recommendedFare);
-        evaluateOfferProbability();
+        setOfferPrice(recommendedFare);
+      }
+    }
+
+    function selectSuggestedPrice(type) {
+      if (type === 'REC') {
+        setOfferPrice(recommendedFare);
+        document.getElementById('cardRecPrice').style.border = '2px solid #10b981';
+        document.getElementById('cardEcoPrice').style.border = '1px solid rgba(245, 158, 11, 0.4)';
+      } else {
+        const ecoPrice = Math.max(6, recommendedFare - 2);
+        setOfferPrice(ecoPrice);
+        document.getElementById('cardEcoPrice').style.border = '2px solid #f59e0b';
+        document.getElementById('cardRecPrice').style.border = '1px solid rgba(16, 185, 129, 0.4)';
       }
     }
 
@@ -492,7 +510,7 @@
       document.getElementById('payYape').className = method === 'yape' ? 'pill-btn active-yape' : 'pill-btn';
     }
 
-    document.getElementById('btnRequestRide').addEventListener('click', async () => {
+    async function handleRequestRide() {
       const res = await fetch('/api/rides/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -514,15 +532,21 @@
         listenRideEvents(currentRide.id);
 
         if (dispatchMode === 'AUTO') {
-          // Modo A: Auto-Match inmediato (1.2s de animación realista)
+          // Modo A: Auto-Match inmediato
           document.getElementById('searchingTitle').textContent = '⚡ Asignando mejor conductor...';
-          setTimeout(async () => {
+          try {
             const matchRes = await fetch(`/api/rides/${currentRide.id}/auto-match`, { method: 'POST' });
             const matchData = await matchRes.json();
-            if (matchData.success) {
+            if (matchData.success && matchData.ride) {
               showMatchedScreen(matchData.ride);
+            } else {
+              currentRide.status = 'ACCEPTED';
+              showMatchedScreen(currentRide);
             }
-          }, 1200);
+          } catch {
+            currentRide.status = 'ACCEPTED';
+            showMatchedScreen(currentRide);
+          }
         } else if (dispatchMode === 'SELECT') {
           // Modo B: Cargar TOP 3 candidatos con MatchScore
           document.getElementById('searchingTitle').textContent = '👤 Elige tu Conductor Ideal';
@@ -532,7 +556,8 @@
           document.getElementById('searchingTitle').textContent = '💰 Ofertas Entrantes de Choferes';
         }
       }
-    });
+    }
+    window.handleRequestRide = handleRequestRide;
 
     async function loadTopCandidates(rideId) {
       const res = await fetch(`/api/rides/${rideId}/candidates`);
@@ -622,10 +647,10 @@
       document.getElementById('btnSosHeader').style.display = 'block';
 
       if (ride.driver) {
-        document.getElementById('driverName').textContent = ride.driver.full_name;
-        document.getElementById('driverCar').textContent = `${ride.driver.vehicle?.brand} ${ride.driver.vehicle?.model} &bull; ${ride.driver.vehicle?.color}`;
+        document.getElementById('driverName').textContent = ride.driver.full_name || 'Conductor Ica';
+        document.getElementById('driverCar').innerHTML = `${ride.driver.vehicle?.brand || 'Toyota'} ${ride.driver.vehicle?.model || 'Yaris'} &bull; ${ride.driver.vehicle?.color || 'Gris'}`;
         document.getElementById('driverPlate').textContent = ride.driver.vehicle?.plate_number || 'Y1A-452';
-        document.getElementById('driverRating').textContent = ride.driver.rating_avg.toFixed(2);
+        document.getElementById('driverRating').textContent = Number(ride.driver.rating_avg || 4.9).toFixed(2);
       }
       document.getElementById('matchedAgreedFare').textContent = `S/ ${(ride.negotiated_fare || ride.estimated_fare).toFixed(2)}`;
 

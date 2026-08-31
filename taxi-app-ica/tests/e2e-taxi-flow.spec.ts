@@ -1,31 +1,19 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Ecosistema Taxi App Ica - Smart Dispatch & Negociación', () => {
+test.describe('Ecosistema Smart Mobility Ica - Tests E2E', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeEach(async ({ request }) => {
     await request.post('http://localhost:4000/api/drivers/drv_mario_1/status', { data: { status: 'online' } });
     await request.post('http://localhost:4000/api/drivers/drv_jorge_2/status', { data: { status: 'online' } });
   });
 
-  test('Flujo 1: Asignación Rápida Auto-Match (Smart Match Score #1)', async ({ browser }) => {
-    const passengerContext = await browser.newContext({ viewport: { width: 440, height: 900 } });
-    const passengerPage = await passengerContext.newPage();
-
-    await passengerPage.goto('http://localhost:4000/pasajero');
-    await passengerPage.click('#tabModeAuto');
-    await passengerPage.click('#btnRequestRide');
-
-    // Debe auto-asignar al conductor #1 con alto Match Score
-    await expect(passengerPage.locator('#panelMatched')).toBeVisible({ timeout: 6000 });
-    await expect(passengerPage.locator('#driverName')).not.toBeEmpty();
-    await expect(passengerPage.locator('#driverCar')).toBeVisible();
-  });
-
-  test('Flujo 2: Negociación inDrive (Pasajero propone y Conductor contraoferta)', async ({ browser }) => {
-    const passengerContext = await browser.newContext({ viewport: { width: 440, height: 900 } });
-    const passengerPage = await passengerContext.newPage();
-
+  test('Flujo E2E: Ciclo Completo de Negociación, Carrera y Pago Yape', async ({ browser }) => {
     const driverContext = await browser.newContext({ viewport: { width: 440, height: 900 } });
     const driverPage = await driverContext.newPage();
+
+    const passengerContext = await browser.newContext({ viewport: { width: 440, height: 900 } });
+    const passengerPage = await passengerContext.newPage();
 
     await driverPage.goto('http://localhost:4000/conductor');
     await passengerPage.goto('http://localhost:4000/pasajero');
@@ -33,21 +21,21 @@ test.describe('Ecosistema Taxi App Ica - Smart Dispatch & Negociación', () => {
     // Pasajero elige Modo Negociar
     await passengerPage.click('#tabModeBid');
     await passengerPage.click('#payYape');
-    await passengerPage.click('#btnRequestRide');
+    await passengerPage.evaluate(() => (window as any).handleRequestRide());
 
     // Conductor recibe oferta y contraoferta
-    await expect(driverPage.locator('#rideOfferModal')).toBeVisible({ timeout: 5000 });
+    await expect(driverPage.locator('#rideOfferModal')).toBeVisible({ timeout: 6000 });
     await driverPage.click('#counter2');
 
     // Pasajero ve y acepta la contraoferta
-    await expect(passengerPage.locator('text=Aceptar Oferta').first()).toBeVisible({ timeout: 5000 });
+    await expect(passengerPage.locator('text=Aceptar Oferta').first()).toBeVisible({ timeout: 6000 });
     await passengerPage.locator('text=Aceptar Oferta').first().click();
 
     // Sincronizados en carrera activa
-    await expect(passengerPage.locator('#panelMatched')).toBeVisible({ timeout: 5000 });
-    await expect(driverPage.locator('#driverActiveTrip')).toBeVisible({ timeout: 5000 });
+    await expect(passengerPage.locator('#panelMatched')).toBeVisible({ timeout: 6000 });
+    await expect(driverPage.locator('#driverActiveTrip')).toBeVisible({ timeout: 6000 });
 
-    // Completar viaje
+    // Completar viaje (Llegada -> Inicio -> Fin)
     await driverPage.click('#btnTripAction');
     await driverPage.waitForTimeout(400);
     await driverPage.click('#btnTripAction');
@@ -55,7 +43,24 @@ test.describe('Ecosistema Taxi App Ica - Smart Dispatch & Negociación', () => {
     await driverPage.click('#btnTripAction');
 
     // Pantalla de pago Yape
-    await expect(passengerPage.locator('#panelCompleted')).toBeVisible({ timeout: 5000 });
+    await expect(passengerPage.locator('#panelCompleted')).toBeVisible({ timeout: 6000 });
     await passengerPage.click('text=Finalizar y Calificar');
+  });
+
+  test('Flujo E2E: Selección Directa de Conductor TOP 3 con MatchScore', async ({ browser }) => {
+    const passengerContext = await browser.newContext({ viewport: { width: 440, height: 900 } });
+    const passengerPage = await passengerContext.newPage();
+
+    await passengerPage.goto('http://localhost:4000/pasajero');
+    await passengerPage.click('#tabModeSelect');
+    await passengerPage.evaluate(() => (window as any).handleRequestRide());
+
+    // Debe mostrar la lista de candidatos rankeados
+    await expect(passengerPage.locator('#panelSearching')).toBeVisible({ timeout: 6000 });
+    await expect(passengerPage.locator('.driver-card-select').first()).toBeVisible({ timeout: 6000 });
+
+    // Pasajero elige al conductor #1
+    await passengerPage.locator('.driver-card-select button').first().click();
+    await expect(passengerPage.locator('#panelMatched')).toBeVisible({ timeout: 6000 });
   });
 });

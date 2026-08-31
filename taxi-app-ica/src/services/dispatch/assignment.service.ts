@@ -29,6 +29,13 @@ export class AssignmentService {
       return { success: false, error: 'RIDE_NOT_FOUND', message: 'El viaje solicitado no existe.' };
     }
 
+    if (currentRide.status === 'ACCEPTED') {
+      if (currentRide.driver_id === driverId) {
+        return { success: true, ride: currentRide, message: 'Viaje ya se encuentra asignado a este conductor.' };
+      }
+      return { success: false, error: 'ALREADY_ASSIGNED', message: 'El viaje ya fue tomado por otro conductor de Ica.' };
+    }
+
     if (!TripStateService.isValidTransition(currentRide.status as any, 'ACCEPTED')) {
       return { success: false, error: 'ALREADY_ASSIGNED', message: 'El viaje ya fue tomado o cancelado por otro conductor.' };
     }
@@ -36,13 +43,13 @@ export class AssignmentService {
     // 1. Intentar actualizar el viaje atómicamente con condición estricta
     const rideUpdate = this.db.prepare(`
       UPDATE rides 
-      SET driver_id = @driverId,
-          estimated_fare = @agreedFare,
-          negotiated_fare = @agreedFare,
+      SET driver_id = ?,
+          estimated_fare = ?,
+          negotiated_fare = ?,
           status = 'ACCEPTED',
           accepted_at = CURRENT_TIMESTAMP
-      WHERE id = @rideId AND status IN ('REQUESTED', 'SEARCHING', 'OFFERED')
-    `).run({ rideId, driverId, agreedFare });
+      WHERE id = ? AND status IN ('REQUESTED', 'SEARCHING', 'OFFERED')
+    `).run(driverId, agreedFare, agreedFare, rideId);
 
     if (rideUpdate.changes === 0) {
       return {
