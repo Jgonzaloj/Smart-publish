@@ -73,7 +73,7 @@
         <span class="brand-role" style="color: var(--accent-action); font-size: 0.75rem; font-weight: 800;">PASAJERO</span>
       </div>
       <div class="header-actions">
-        <div id="passengerProfileBadge" class="header-user-pill" onclick="openPassengerAuthModal()">
+        <div id="passengerProfileBadge" class="header-user-pill" onclick="openPassengerAccountModal()" title="Mi Perfil">
           📱 Ingresar
         </div>
         <button id="btnHeaderLogout" class="header-logout-btn" style="display:none;" onclick="logoutPassenger()" title="Cerrar sesión">
@@ -947,6 +947,8 @@
         if (data.success) {
           tempPassengerPhone = phone;
           tempPassengerName = name;
+          localStorage.setItem('temp_passenger_auth_phone', phone);
+          localStorage.setItem('temp_passenger_auth_name', name);
           document.getElementById('authStepPhone').style.display = 'none';
           document.getElementById('authStepOtp').style.display = 'block';
           document.getElementById('otpTargetPhoneDisplay').textContent = `+51 ${phone}`;
@@ -973,6 +975,21 @@
         errEl.textContent = 'Error conectando con el servidor';
         errEl.style.display = 'block';
       }
+    }
+
+    function openPassengerAccountModal() {
+      const phone = localStorage.getItem('passenger_phone');
+      const name = localStorage.getItem('passenger_name') || 'Pasajero Ica';
+      if (!phone) {
+        checkPassengerAuth();
+        return;
+      }
+      const nameEl = document.getElementById('accPassengerName');
+      const phoneEl = document.getElementById('accPassengerPhone');
+      if (nameEl) nameEl.textContent = name;
+      if (phoneEl) phoneEl.textContent = `+51 ${phone}`;
+      const modal = document.getElementById('modalPassengerAccountInfo');
+      if (modal) modal.style.display = 'flex';
     }
 
     function checkPassengerAuth() {
@@ -1002,6 +1019,8 @@
       e.preventDefault();
       const code = document.getElementById('inputPassengerOtp').value.trim();
       const errEl = document.getElementById('passengerAuthError');
+      const verifyPhone = tempPassengerPhone || localStorage.getItem('temp_passenger_auth_phone') || document.getElementById('inputPassengerPhone')?.value.trim();
+      const verifyName = tempPassengerName || localStorage.getItem('temp_passenger_auth_name') || 'Pasajero';
 
       if (!code || code.length < 6) {
         errEl.textContent = 'Ingrese el código de 6 dígitos';
@@ -1013,13 +1032,13 @@
         const res = await fetch('/api/auth/verify-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: tempPassengerPhone, code })
+          body: JSON.stringify({ phone: verifyPhone, code })
         });
         const data = await res.json();
         if (data.success && data.token) {
           localStorage.setItem('passenger_token', data.token);
-          localStorage.setItem('passenger_phone', tempPassengerPhone);
-          localStorage.setItem('passenger_name', tempPassengerName);
+          localStorage.setItem('passenger_phone', verifyPhone);
+          localStorage.setItem('passenger_name', verifyName);
           localStorage.setItem('passenger_id', data.user.id);
           checkPassengerAuth();
         } else {
@@ -1096,6 +1115,31 @@
 
       <div style="margin-top: 14px; font-size: 0.7rem; color: var(--text-dim);">
         Protección de datos &bull; Smart Mobility Ica
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: INFORMACIÓN DE CUENTA PASAJERO (CUANDO HACE CLIC EN SU NOMBRE 👤) -->
+  <div id="modalPassengerAccountInfo" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(10px); z-index: 4000; align-items: center; justify-content: center; padding: 16px;">
+    <div class="modal-card" style="background: #1e293b; border: 1.5px solid var(--accent-action); border-radius: var(--radius-lg); width: 100%; max-width: 360px; padding: 22px 18px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
+      <div style="font-size: 2.6rem; margin-bottom: 6px;">👤</div>
+      <h3 style="font-size: 1.25rem; color: #fff; margin: 0 0 4px;" id="accPassengerName">Fatima</h3>
+      <p style="font-size: 0.85rem; color: var(--accent-action); font-weight: 700; margin: 0 0 14px;" id="accPassengerPhone">+51 987827976</p>
+
+      <div style="background: #0f172a; border-radius: 8px; padding: 12px; margin-bottom: 16px; text-align: left; font-size: 0.78rem; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Tipo de Cuenta:</span><strong style="color: #6ee7b7;">Pasajero Ica</strong></div>
+        <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Calificación:</span><strong style="color: #fde047;">⭐ 5.0 (Excelente)</strong></div>
+        <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Medio de Pago Favorito:</span><strong style="color: #d8b4fe;">🟣 Yape / Plin / Efectivo</strong></div>
+        <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Zona:</span><strong style="color: #5eead4;">Ica Ciudad</strong></div>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="btn-primary" onclick="document.getElementById('modalPassengerAccountInfo').style.display = 'none'" style="flex: 1; padding: 10px; font-size: 0.85rem;">
+          Cerrar
+        </button>
+        <button type="button" class="header-logout-btn" onclick="document.getElementById('modalPassengerAccountInfo').style.display = 'none'; logoutPassenger();" style="padding: 10px 14px; font-size: 0.85rem;">
+          🚪 Salir
+        </button>
       </div>
     </div>
   </div>

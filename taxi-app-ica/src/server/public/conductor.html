@@ -106,7 +106,7 @@
         <button class="btn-icon-round" onclick="openDriverDocsModal()" title="Mis Documentos">
           📋
         </button>
-        <button id="btnDriverAccountBadge" class="btn-icon-round" onclick="openDriverAuthModal()" title="Mi Cuenta Chofer">
+        <button id="btnDriverAccountBadge" class="btn-icon-round" onclick="openDriverAccountModal()" title="Mi Perfil Chofer">
           👤
         </button>
         <button id="btnHeaderDriverLogout" class="btn-icon-round" style="display:none; border-color: rgba(239,68,68,0.4); color: #fca5a5;" onclick="logoutDriver()" title="Cerrar sesión">
@@ -815,6 +815,7 @@
         const data = await res.json();
         if (data.success) {
           tempDriverPhone = phone;
+          localStorage.setItem('temp_driver_auth_phone', phone);
           document.getElementById('authStepDriverPhone').style.display = 'none';
           document.getElementById('authStepDriverOtp').style.display = 'block';
           document.getElementById('otpDriverTargetDisplay').textContent = `+51 ${phone}`;
@@ -841,6 +842,17 @@
         errEl.textContent = 'Error conectando con el servidor';
         errEl.style.display = 'block';
       }
+    }
+
+    function openDriverAccountModal() {
+      const phone = localStorage.getItem('driver_phone') || '987827976';
+      const name = localStorage.getItem('driver_name') || 'Carlos R.';
+      const nameEl = document.getElementById('accDriverName');
+      const phoneEl = document.getElementById('accDriverPhone');
+      if (nameEl) nameEl.textContent = name;
+      if (phoneEl) phoneEl.textContent = `+51 ${phone}`;
+      const modal = document.getElementById('modalDriverAccountInfo');
+      if (modal) modal.style.display = 'flex';
     }
 
     function checkDriverAuth() {
@@ -870,6 +882,7 @@
       e.preventDefault();
       const code = document.getElementById('inputDriverOtp').value.trim();
       const errEl = document.getElementById('driverAuthError');
+      const verifyPhone = tempDriverPhone || localStorage.getItem('temp_driver_auth_phone') || document.getElementById('inputDriverLoginPhone')?.value.trim();
 
       if (!code || code.length < 6) {
         errEl.textContent = 'Ingrese el código de 6 dígitos';
@@ -881,12 +894,12 @@
         const res = await fetch('/api/auth/verify-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: tempDriverPhone, code })
+          body: JSON.stringify({ phone: verifyPhone, code })
         });
         const data = await res.json();
         if (data.success && data.token) {
           localStorage.setItem('driver_token', data.token);
-          localStorage.setItem('driver_phone', tempDriverPhone);
+          localStorage.setItem('driver_phone', verifyPhone);
           if (data.user) {
             localStorage.setItem('driver_name', data.user.name || 'Conductor Ica');
             localStorage.setItem('driver_id', data.user.id);
@@ -969,6 +982,31 @@
 
       <div style="margin-top: 14px; font-size: 0.7rem; color: var(--text-dim);">
         Sistema de Transporte Seguro &bull; Municipalidad Provincial de Ica
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: INFORMACIÓN DE CUENTA CONDUCTOR (CUANDO HACE CLIC EN EL MUÑEQUITO 👤) -->
+  <div id="modalDriverAccountInfo" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(10px); z-index: 4000; align-items: center; justify-content: center; padding: 16px;">
+    <div class="modal-card" style="background: #1e293b; border: 1.5px solid var(--accent-action); border-radius: var(--radius-lg); width: 100%; max-width: 360px; padding: 22px 18px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
+      <div style="font-size: 2.6rem; margin-bottom: 6px;">👨🏽‍✈️</div>
+      <h3 style="font-size: 1.25rem; color: #fff; margin: 0 0 4px;" id="accDriverName">Carlos Quispe</h3>
+      <p style="font-size: 0.85rem; color: var(--accent-action); font-weight: 700; margin: 0 0 14px;" id="accDriverPhone">+51 987827976</p>
+
+      <div style="background: #0f172a; border-radius: 8px; padding: 12px; margin-bottom: 16px; text-align: left; font-size: 0.78rem; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Estado:</span><strong style="color: #6ee7b7;">🟢 Chofer Verificado</strong></div>
+        <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Calificación:</span><strong style="color: #fde047;">⭐ 4.9 (Excelente)</strong></div>
+        <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Vehículo:</span><strong style="color: #fff;">Toyota Yaris &bull; Y1A-452</strong></div>
+        <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8;">Zona Operativa:</span><strong style="color: #5eead4;">Ica &bull; Huacachina</strong></div>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="btn-primary" onclick="document.getElementById('modalDriverAccountInfo').style.display = 'none'" style="flex: 1; padding: 10px; font-size: 0.85rem;">
+          Cerrar
+        </button>
+        <button type="button" class="header-logout-btn" onclick="document.getElementById('modalDriverAccountInfo').style.display = 'none'; logoutDriver();" style="padding: 10px 14px; font-size: 0.85rem;">
+          🚪 Salir
+        </button>
       </div>
     </div>
   </div>
