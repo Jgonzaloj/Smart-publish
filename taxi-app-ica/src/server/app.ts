@@ -83,14 +83,39 @@ app.post('/api/rides/request', (req, res) => {
     origin,
     destination,
     payment_method: payment_method || 'cash',
-    negotiated_fare,
+    negotiated_fare: negotiated_fare ? parseFloat(negotiated_fare) : undefined,
   });
 
-  // Notificar por WebSockets a todos los conductores y al panel admin
-  io.emit('new_ride_available', { ride: result.ride });
-  io.emit('admin_event', { type: 'RIDE_REQUESTED', ride: result.ride });
+  const ride = result.ride;
 
-  res.json({ success: true, ride: result.ride, nearby_drivers_count: result.nearby_drivers.length });
+  // Notificar a todos los conductores conectados por WebSocket
+  io.emit('new_ride_available', { ride, nearby_drivers: result.nearby_drivers });
+  io.emit('admin_event', { type: 'RIDE_REQUESTED', ride });
+
+  // ==============================================================================
+  // SIMULADOR DE FLOTA ACTIVA DE ICA (Para pruebas fluidas e interactivas)
+  // Genera ofertas de taxistas cercanos de Ica si no se aceptó inmediatamente
+  // ==============================================================================
+  const baseOffer = ride.negotiated_fare || ride.estimated_fare;
+  const simulatedDrivers = [
+    { id: 'drv_jorge_2', delay: 1500, fare: baseOffer },                     // Acepta al precio ofertado
+    { id: 'drv_luis_3', delay: 2800, fare: Math.round((baseOffer + 2) * 2) / 2 },  // Contraoferta +S/ 2.00
+    { id: 'drv_pedro_4', delay: 4200, fare: Math.round((baseOffer + 3.5) * 2) / 2 } // Contraoferta +S/ 3.50
+  ];
+
+  simulatedDrivers.forEach(bot => {
+    setTimeout(() => {
+      const currentRideState = dispatchService.getRideById(ride.id);
+      if (currentRideState && currentRideState.status === 'REQUESTED') {
+        const bid = dispatchService.submitDriverBid(ride.id, bot.id, bot.fare);
+        if (bid) {
+          io.emit(`ride_bid_${ride.id}`, { bid, all_bids: dispatchService.getBidsForRide(ride.id) });
+        }
+      }
+    }, bot.delay);
+  });
+
+  res.json({ success: true, ride, nearby_drivers_count: result.nearby_drivers.length });
 });
 
 app.get('/api/rides/:id', (req, res) => {
