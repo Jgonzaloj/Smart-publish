@@ -13,7 +13,7 @@ export type RideStatus =
   | 'PAID'            // Pago confirmado (Efectivo o Yape)
   | 'CANCELLED';      // Cancelado por pasajero o conductor
 
-export type PaymentMethod = 'cash' | 'yape' | 'wallet';
+export type PaymentMethod = 'cash' | 'yape' | 'plin' | 'wallet';
 
 export interface LocationPoint {
   latitude: number;

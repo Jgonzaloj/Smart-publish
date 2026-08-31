@@ -211,11 +211,28 @@ app.post('/api/drivers/:id/status', (req, res) => {
 // ==============================================================================
 // 4. ENDPOINTS DE PAGOS Y CALIFICACIONES
 // ==============================================================================
+app.get('/api/rides/:id/digital-payment-info', (req, res) => {
+    const ride = dispatchService.getRideById(req.params.id);
+    if (!ride)
+        return res.status(404).json({ success: false, message: 'Viaje no encontrado' });
+    const method = req.query.method || 'yape';
+    const fare = ride.final_fare || ride.negotiated_fare || ride.estimated_fare;
+    const phone = ride.driver?.phone || '956987111';
+    const driverName = ride.driver?.full_name || 'Mario Huamán García';
+    let paymentInfo;
+    if (method === 'plin') {
+        paymentInfo = paymentService.generatePlinPaymentInfo(ride.id, fare, phone, driverName);
+    }
+    else {
+        paymentInfo = paymentService.generateYapePaymentInfo(ride.id, fare, phone, driverName);
+    }
+    res.json({ success: true, payment: paymentInfo });
+});
 app.get('/api/rides/:id/yape-info', (req, res) => {
     const ride = dispatchService.getRideById(req.params.id);
     if (!ride)
         return res.status(404).json({ success: false, message: 'Viaje no encontrado' });
-    const yapeInfo = paymentService.generateYapePaymentInfo(ride.id, ride.final_fare || ride.estimated_fare, ride.driver?.phone || '956987111', ride.driver?.full_name || 'Mario Huamán García');
+    const yapeInfo = paymentService.generateYapePaymentInfo(ride.id, ride.final_fare || ride.negotiated_fare || ride.estimated_fare, ride.driver?.phone || '956987111', ride.driver?.full_name || 'Mario Huamán García');
     res.json({ success: true, yape: yapeInfo });
 });
 app.post('/api/rides/:id/pay', (req, res) => {

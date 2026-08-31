@@ -2,8 +2,13 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Smart Mobility Ica — Pasajero</title>
+  <link rel="manifest" href="/manifest-pasajero.json">
+  <meta name="theme-color" content="#0F766E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Taxi Ica">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="/shared.css">
   <style>
@@ -45,6 +50,20 @@
 </head>
 <body>
   <div class="phone-viewport">
+    <!-- PWA Install Banner -->
+    <div id="pwaInstallBanner" style="display: none; background: linear-gradient(135deg, #0f766e, #0e7490); color: #fff; padding: 10px 14px; border-radius: var(--radius-md); margin-bottom: 10px; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(15,118,110,0.4);">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.4rem;">📲</span>
+        <div>
+          <strong style="font-size: 0.85rem;">Instalar Taxi Ica</strong>
+          <div style="font-size: 0.72rem; opacity: 0.9;">Acceso rápido en tu celular</div>
+        </div>
+      </div>
+      <button id="btnPwaInstall" class="pill-btn" style="background: #fff; color: #0f766e; font-weight: 800; font-size: 0.78rem; padding: 6px 12px; border: none; cursor: pointer;">
+        Instalar
+      </button>
+    </div>
+
     <!-- Header -->
     <header class="phone-header">
       <div class="brand-badge">
@@ -136,17 +155,20 @@
         </div>
       </div>
 
-      <!-- Payment Selector -->
-      <div class="payment-pill" style="display: flex; gap: 8px; margin: 8px 0 10px;">
-        <div class="pill-btn active" id="payCash" onclick="setPaymentMethod('cash')" style="flex: 1; padding: 6px; font-size: 0.78rem; text-align: center;">
+      <!-- Payment Selector: Efectivo, Yape, Plin -->
+      <div class="payment-pill" style="display: flex; gap: 6px; margin: 8px 0 10px;">
+        <div class="pill-btn active" id="payCash" onclick="setPaymentMethod('cash')" style="flex: 1; padding: 6px 4px; font-size: 0.75rem; text-align: center;">
           💵 Efectivo
         </div>
-        <div class="pill-btn" id="payYape" onclick="setPaymentMethod('yape')" style="flex: 1; padding: 6px; font-size: 0.78rem; text-align: center;">
-          💜 Yape (QR)
+        <div class="pill-btn" id="payYape" onclick="setPaymentMethod('yape')" style="flex: 1; padding: 6px 4px; font-size: 0.75rem; text-align: center;">
+          🟣 Yape
+        </div>
+        <div class="pill-btn" id="payPlin" onclick="setPaymentMethod('plin')" style="flex: 1; padding: 6px 4px; font-size: 0.75rem; text-align: center;">
+          🔵 Plin
         </div>
       </div>
 
-      <!-- Main Action Button (Page 8: [ BUSCAR TAXI ]) -->
+      <!-- Main Action Button -->
       <button id="btnRequestRide" class="btn-primary" onclick="handleRequestRide()" style="padding: 13px 18px;">
         <span id="btnRequestIcon">⚡</span> <span id="btnRequestLabel">Asignar Taxi Rápido (Auto-Match)</span>
       </button>
@@ -171,7 +193,7 @@
       </div>
     </div>
 
-    <!-- Bottom Sheet 3: Driver Found / Matched Screen (PDF Spec Page 4) -->
+    <!-- Bottom Sheet 3: Driver Found / Matched Screen -->
     <div id="panelMatched" class="bottom-sheet" style="display: none;">
       <div class="status-banner" id="statusBanner" style="background: rgba(20, 184, 166, 0.15); border: 1px solid var(--accent-action); padding: 8px 12px; border-radius: var(--radius-md); font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
         <span id="statusText">🚗 Conductor en camino</span>
@@ -199,34 +221,56 @@
         <button class="pill-btn" onclick="triggerSos()" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fca5a5;">🚨 SOS</button>
       </div>
 
-      <div id="yapePaymentNotice" class="fare-box" style="display: none; background: rgba(116, 34, 132, 0.15); border: 1px solid #742284; border-radius: var(--radius-md); padding: 8px 12px; margin-top: 8px;">
-        <div style="font-size: 0.8rem; color: #e9d5ff;">💜 Pagarás con <strong>Yape (QR)</strong> al finalizar el viaje</div>
-        <div style="font-size: 1rem; font-weight: 800; color: #d8b4fe;" id="matchedFareYape">S/ 15.00</div>
+      <div id="digitalPaymentNotice" class="fare-box" style="display: none; border-radius: var(--radius-md); padding: 8px 12px; margin-top: 8px;">
+        <div style="font-size: 0.8rem;" id="digitalPayNoticeText">💳 Pagarás con código QR al finalizar</div>
+        <div style="font-size: 1rem; font-weight: 800;" id="matchedFareDigital">S/ 15.00</div>
       </div>
     </div>
 
-    <!-- Bottom Sheet 4: Trip Completed -->
+    <!-- Bottom Sheet 4: Trip Completed & Payment Flow -->
     <div id="panelCompleted" class="bottom-sheet" style="display: none; text-align: center;">
       <div style="font-size: 2.2rem; margin-bottom: 4px;">🎉</div>
       <h3 style="font-size: 1.2rem; color: #fff;">¡Llegaste a tu destino!</h3>
       <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 12px;">Viaje seguro completado con Smart Mobility Ica</p>
 
-      <div style="background: var(--bg-surface); padding: 14px; border-radius: var(--radius-md); margin-bottom: 14px; border: 1px solid var(--border-color);">
-        <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Monto Final a Pagar</div>
-        <div style="font-size: 1.7rem; font-weight: 800; color: var(--accent-action);" id="finalFareDisplay">S/ 15.00</div>
+      <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-md); margin-bottom: 12px; border: 1px solid var(--border-color);">
+        <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Monto Final de la Carrera</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: var(--accent-action);" id="finalFareDisplay">S/ 15.00</div>
         <div id="paymentMethodConfirm" style="font-size: 0.82rem; color: #6ee7b7; font-weight: 700; margin-top: 2px;">💵 Pago en Efectivo</div>
       </div>
 
-      <div id="yapeQrContainer" style="display: none; margin-bottom: 14px; background: rgba(116, 34, 132, 0.15); padding: 12px; border-radius: var(--radius-md); border: 1px solid #742284;">
-        <div style="font-size: 0.82rem; font-weight: 700; color: #d8b4fe; margin-bottom: 6px;">Escanea o Yapea al Conductor</div>
-        <div style="background: #fff; padding: 8px; display: inline-block; border-radius: 8px;">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=YAPE-TAXI-ICA-956987111" alt="QR Yape" style="width: 110px; height: 110px; display: block;" />
+      <!-- Digital Payment QR Box (Yape / Plin) -->
+      <div id="digitalQrContainer" style="display: none; margin-bottom: 14px; background: rgba(15, 23, 42, 0.95); padding: 14px; border-radius: var(--radius-md); border: 1.5px solid #0f766e;">
+        <div id="digitalBrandBadge" style="font-size: 0.85rem; font-weight: 800; margin-bottom: 8px; color: #a855f7;">
+          🟣 YAPE OFICIAL
         </div>
-        <div style="font-size: 0.8rem; color: #fff; margin-top: 6px;">Número: <strong id="yapePhoneDisplay">956987111</strong></div>
+        
+        <div style="background: #fff; padding: 10px; display: inline-block; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+          <img id="digitalQrImage" src="" alt="QR Pago" style="width: 140px; height: 140px; display: block;" />
+        </div>
+
+        <div style="margin-top: 8px; font-size: 0.82rem; color: #fff;">
+          Pagar al celular: <strong id="digitalPhoneDisplay" style="color: #5eead4; font-size: 0.95rem;">956987111</strong>
+          <button type="button" class="pill-btn" onclick="copyPaymentPhone()" style="margin-left: 6px; padding: 2px 8px; font-size: 0.7rem;">📋 Copiar</button>
+        </div>
+
+        <div style="margin-top: 10px; text-align: left;">
+          <label style="font-size: 0.72rem; color: #94a3b8; font-weight: 700;">N° de Operación (6 a 8 dígitos) *</label>
+          <div style="display: flex; gap: 6px; margin-top: 4px;">
+            <input type="text" id="inputOperationCode" class="form-input" placeholder="Ej: 849201" style="flex: 1; font-size: 0.85rem; padding: 8px;" />
+            <button class="btn-primary" onclick="submitDigitalPayment()" style="padding: 8px 12px; font-size: 0.8rem;">
+              ✓ Confirmar Pago
+            </button>
+          </div>
+        </div>
       </div>
 
-      <button class="btn-primary" onclick="finishAndReset()">
-        ⭐ Finalizar y Calificar
+      <div id="paymentSuccessNotice" style="display: none; background: rgba(16,185,129,0.15); border: 1px solid #10b981; color: #6ee7b7; padding: 10px; border-radius: var(--radius-md); font-weight: 700; margin-bottom: 12px;">
+        ✓ ¡Pago acreditado exitosamente al conductor!
+      </div>
+
+      <button class="btn-primary" onclick="finishAndReset()" style="width: 100%;">
+        ⭐ Calificar y Regresar al Inicio
       </button>
     </div>
   </div>
@@ -596,6 +640,13 @@
       }
     }
 
+    function setPaymentMethod(method) {
+      selectedPayment = method;
+      document.getElementById('payCash').className = method === 'cash' ? 'pill-btn active' : 'pill-btn';
+      document.getElementById('payYape').className = method === 'yape' ? 'pill-btn active' : 'pill-btn';
+      document.getElementById('payPlin').className = method === 'plin' ? 'pill-btn active' : 'pill-btn';
+    }
+
     function showMatchedScreen(ride) {
       currentRide = ride;
       document.getElementById('panelSearching').style.display = 'none';
@@ -612,9 +663,25 @@
       const agreed = (ride.negotiated_fare || ride.estimated_fare);
       document.getElementById('matchedAgreedFare').textContent = `S/ ${agreed.toFixed(2)}`;
 
+      const digitalNotice = document.getElementById('digitalPaymentNotice');
       if (ride.payment_method === 'yape') {
-        document.getElementById('yapePaymentNotice').style.display = 'block';
-        document.getElementById('matchedFareYape').textContent = `S/ ${agreed.toFixed(2)}`;
+        digitalNotice.style.display = 'block';
+        digitalNotice.style.background = 'rgba(116, 34, 132, 0.15)';
+        digitalNotice.style.border = '1px solid #742284';
+        document.getElementById('digitalPayNoticeText').innerHTML = '🟣 Pagarás con <strong>Yape (QR)</strong> al llegar a tu destino';
+        document.getElementById('digitalPayNoticeText').style.color = '#e9d5ff';
+        document.getElementById('matchedFareDigital').textContent = `S/ ${agreed.toFixed(2)}`;
+        document.getElementById('matchedFareDigital').style.color = '#d8b4fe';
+      } else if (ride.payment_method === 'plin') {
+        digitalNotice.style.display = 'block';
+        digitalNotice.style.background = 'rgba(0, 209, 210, 0.15)';
+        digitalNotice.style.border = '1px solid #00D1D2';
+        document.getElementById('digitalPayNoticeText').innerHTML = '🔵 Pagarás con <strong>Plin (QR)</strong> al llegar a tu destino';
+        document.getElementById('digitalPayNoticeText').style.color = '#a5f3fc';
+        document.getElementById('matchedFareDigital').textContent = `S/ ${agreed.toFixed(2)}`;
+        document.getElementById('matchedFareDigital').style.color = '#67e8f9';
+      } else {
+        digitalNotice.style.display = 'none';
       }
 
       // Conductor en mapa
@@ -629,18 +696,67 @@
       }).addTo(map);
     }
 
-    function showCompletedScreen(ride) {
+    async function showCompletedScreen(ride) {
       currentRide = ride;
       document.getElementById('panelMatched').style.display = 'none';
       document.getElementById('btnSosHeader').style.display = 'none';
       document.getElementById('panelCompleted').style.display = 'block';
 
-      document.getElementById('finalFareDisplay').textContent = `S/ ${(ride.final_fare || ride.negotiated_fare || ride.estimated_fare).toFixed(2)}`;
-      document.getElementById('paymentMethodConfirm').textContent = ride.payment_method === 'yape' ? '💜 Pago con Yape' : '💵 Pago en Efectivo';
+      const finalFare = (ride.final_fare || ride.negotiated_fare || ride.estimated_fare);
+      document.getElementById('finalFareDisplay').textContent = `S/ ${finalFare.toFixed(2)}`;
 
-      if (ride.payment_method === 'yape') {
-        document.getElementById('yapeQrContainer').style.display = 'block';
-        document.getElementById('yapePhoneDisplay').textContent = ride.driver?.phone || '956987111';
+      const confirmLabel = document.getElementById('paymentMethodConfirm');
+      const digitalContainer = document.getElementById('digitalQrContainer');
+
+      if (ride.payment_method === 'yape' || ride.payment_method === 'plin') {
+        confirmLabel.textContent = ride.payment_method === 'yape' ? '🟣 Pago Digital con Yape' : '🔵 Pago Digital con Plin';
+        confirmLabel.style.color = ride.payment_method === 'yape' ? '#d8b4fe' : '#67e8f9';
+        digitalContainer.style.display = 'block';
+
+        // Cargar QR dinámico
+        try {
+          const res = await fetch(`/api/rides/${ride.id}/digital-payment-info?method=${ride.payment_method}`);
+          const data = await res.json();
+          if (data.success && data.payment) {
+            const p = data.payment;
+            document.getElementById('digitalBrandBadge').textContent = p.badge_text;
+            document.getElementById('digitalBrandBadge').style.color = p.brand_color;
+            document.getElementById('digitalQrImage').src = p.qr_payload;
+            document.getElementById('digitalPhoneDisplay').textContent = p.driver_phone;
+            document.getElementById('inputOperationCode').value = p.operation_code;
+          }
+        } catch (err) {
+          console.warn('Error al cargar info digital de pago', err);
+        }
+      } else {
+        confirmLabel.textContent = '💵 Pago en Efectivo al Conductor';
+        confirmLabel.style.color = '#6ee7b7';
+        digitalContainer.style.display = 'none';
+      }
+    }
+
+    function copyPaymentPhone() {
+      const phone = document.getElementById('digitalPhoneDisplay').textContent;
+      navigator.clipboard.writeText(phone);
+      alert(`✅ Número ${phone} copiado al portapapeles`);
+    }
+
+    async function submitDigitalPayment() {
+      if (!currentRide) return;
+      const opCode = document.getElementById('inputOperationCode').value || `OP-${Date.now().toString().slice(-6)}`;
+      const res = await fetch(`/api/rides/${currentRide.id}/pay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: currentRide.final_fare || currentRide.negotiated_fare || currentRide.estimated_fare,
+          method: currentRide.payment_method || 'yape',
+          yape_code: opCode
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('paymentSuccessNotice').style.display = 'block';
+        document.getElementById('digitalQrContainer').style.opacity = '0.5';
       }
     }
 
@@ -661,8 +777,34 @@
     function finishAndReset() {
       document.getElementById('panelCompleted').style.display = 'none';
       document.getElementById('panelRequest').style.display = 'block';
+      document.getElementById('paymentSuccessNotice').style.display = 'none';
+      document.getElementById('digitalQrContainer').style.opacity = '1';
       currentRide = null;
       if (markerDriver) map.removeLayer(markerDriver);
+    }
+
+    // Registro de PWA Service Worker e Instalación
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const banner = document.getElementById('pwaInstallBanner');
+      if (banner) banner.style.display = 'flex';
+    });
+
+    document.getElementById('btnPwaInstall')?.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          document.getElementById('pwaInstallBanner').style.display = 'none';
+        }
+        deferredPrompt = null;
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch((err) => console.log('SW register error', err));
     }
 
     window.addEventListener('DOMContentLoaded', () => {
