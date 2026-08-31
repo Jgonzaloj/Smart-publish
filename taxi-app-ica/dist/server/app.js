@@ -64,9 +64,16 @@ const tariffService = new TariffService();
 const dispatchService = new DispatchService();
 const paymentService = new PaymentService();
 const zoneService = new ZoneService();
-// Servir frontend estático
+// Servir frontend estático sin caché para reflejar cambios instantáneamente
 const publicPath = path.resolve(process.cwd(), 'src', 'server', 'public');
-app.use(express.static(publicPath));
+app.use((req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+    next();
+});
+app.use(express.static(publicPath, { etag: false, maxAge: 0 }));
 // ==============================================================================
 // 1. ENDPOINTS PÚBLICOS DE GEOLOCALIZACIÓN Y ESTIMACIÓN DE TARIFAS (ICA)
 // ==============================================================================
