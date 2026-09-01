@@ -10,7 +10,7 @@ server {
     server_name agente.inversionesvawi.com; # Reemplazar con tu subdominio real
 
     # Redirección automática a HTTPS (después de instalar Certbot SSL)
-    # return 301 https://$host$request_uri;
+    return 301 https://$host$request_uri;
 
     location / {
         # Aplicar Rate Limiting al Dashboard y endpoints

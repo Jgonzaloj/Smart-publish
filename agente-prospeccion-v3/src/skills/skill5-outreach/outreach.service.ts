@@ -110,8 +110,10 @@ export class OutreachEngineService {
 
     // Circuit Breaker de Límite Diario (Warmup y Control de Costos)
     const dailySendsWhatsApp = this.outreachRepo.getDailySendsCount('whatsapp');
-    if (dailySendsWhatsApp >= config.MAX_DAILY_WHATSAPP_SENDS) {
-      console.warn(`[CircuitBreaker] ⚠️ Límite diario de WhatsApp alcanzado (${dailySendsWhatsApp}/${config.MAX_DAILY_WHATSAPP_SENDS}). Encolando restantes.`);
+    const dailySendsEmail = this.outreachRepo.getDailySendsCount('email');
+    
+    if (dailySendsWhatsApp >= config.MAX_DAILY_WHATSAPP_SENDS || dailySendsEmail >= config.MAX_DAILY_EMAIL_SENDS) {
+      console.warn(`[CircuitBreaker] ⚠️ Límite diario alcanzado (WA: ${dailySendsWhatsApp}/${config.MAX_DAILY_WHATSAPP_SENDS}, Email: ${dailySendsEmail}/${config.MAX_DAILY_EMAIL_SENDS}). Encolando restantes.`);
       return { sent: 0, pausedByCircuitBreaker: true };
     }
 
@@ -121,7 +123,7 @@ export class OutreachEngineService {
     for (const lead of queuedLeads) {
       // Candado Anti-Baneo: Delays escalonados entre mensajes
       if (sentCount > 0) {
-        const delayMs = config.USE_MOCK_MODE ? 200 : Math.floor(3000 + Math.random() * 4000);
+        const delayMs = config.USE_MOCK_MODE ? 200 : Math.floor(120000 + Math.random() * 240000); // 2 a 6 minutos
         console.log(`[Anti-Ban Guard] Aplicando delay escalonado de ${Math.round(delayMs / 1000)}s antes del próximo envío...`);
         await new Promise((r) => setTimeout(r, delayMs));
       }
@@ -298,7 +300,14 @@ export class OutreachEngineService {
   }
 
   private async sendMessage(channel: 'whatsapp' | 'email', lead: ProspectLead, proposal: any): Promise<void> {
-    const isSyntheticLead = lead.place_id?.startsWith('ChIJ_mock_') || lead.business_name?.includes('#') || config.USE_MOCK_MODE;
+    const isSyntheticData = lead.place_id?.startsWith('ChIJ_mock_') || lead.business_name?.includes('#');
+    const isSyntheticLead = isSyntheticData || config.USE_MOCK_MODE;
+
+    // Candado impenetrable de seguridad para Producción
+    if (!config.USE_MOCK_MODE && isSyntheticData) {
+      console.error(`[Outreach Guard] 🚫 CRÍTICO: Bloqueo de seguridad! Intento de enviar a lead mock en PRODUCCIÓN: "${lead.business_name}"`);
+      throw new Error('Intento de envío de datos mock en modo real bloqueado por el Outreach Guard.');
+    }
 
     if (isSyntheticLead) {
       // Candado impenetrable: bajo ninguna circunstancia se emiten llamadas externas para datos sintéticos

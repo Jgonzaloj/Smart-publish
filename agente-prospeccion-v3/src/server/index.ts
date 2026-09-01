@@ -22,6 +22,49 @@ const outreachRepo = new OutreachRepository();
 const outreachEngine = new OutreachEngineService();
 const orchestrator = new PipelineOrchestrator();
 
+// Función auxiliar para sanitizar HTML y evitar XSS
+const escapeHTML = (str?: string) => {
+  if (!str) return '';
+  return str.replace(/[&<>'"]/g, 
+    (tag: string) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;'
+    }[tag] || tag)
+  );
+};
+
+// Middleware de Autenticación (Basic Auth)
+const authMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Rutas públicas que no requieren autenticación
+  if (req.path.startsWith('/api/webhooks/') || req.path.startsWith('/api/demos/')) {
+    return next();
+  }
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Agente Prospeccion"');
+    return res.status(401).send('Autenticación requerida.');
+  }
+
+  const base64Auth = authHeader.split(' ')[1];
+  if (!base64Auth) {
+    return res.status(401).send('Formato de autenticación inválido.');
+  }
+
+  const [user, password] = Buffer.from(base64Auth, 'base64').toString().split(':');
+  if (user === config.ADMIN_USER && password === config.ADMIN_PASSWORD) {
+    return next();
+  }
+
+  res.setHeader('WWW-Authenticate', 'Basic realm="Agente Prospeccion"');
+  return res.status(401).send('Credenciales inválidas.');
+};
+
+// Aplicar middleware de autenticación de manera global (afecta a archivos estáticos y API)
+app.use(authMiddleware);
 
 // Servir capturas de pantalla generadas por Playwright
 app.use('/storage/screenshots', express.static(config.SCREENSHOTS_PATH));
@@ -128,17 +171,22 @@ app.get('/api/leads/:id', (req, res) => {
 });
 
 // 4. Ejecución del pipeline completo
-app.post('/api/pipeline/run', async (req, res) => {
+app.post('/api/pipeline/run', (req, res) => {
   try {
     const { niche, location, limit } = req.body;
-    const result = await orchestrator.runFullCycle({
+    
+    // Ejecución asíncrona (background) para evitar timeout de Nginx (180s)
+    orchestrator.runFullCycle({
       niche: niche || 'Clínicas Dentales',
       location: location || 'Madrid',
       limit: limit ? parseInt(limit, 10) : 5,
+    }).catch(error => {
+      console.error('Error crítico en pipeline de fondo:', error);
     });
-    res.json({ success: true, result });
+
+    res.status(202).json({ success: true, message: 'Pipeline iniciado en segundo plano. Monitoreando...' });
   } catch (error: any) {
-    console.error('Error ejecutando pipeline desde API:', error);
+    console.error('Error inicializando pipeline:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -199,15 +247,15 @@ app.get('/api/demos/:id', (req, res) => {
   const proposal = proposalsRepo.findByLeadId(lead.id);
 
   const html = generateFullWebsiteDemoHtml({
-    business_name: lead.business_name,
-    niche: lead.niche,
-    phone: lead.phone,
-    whatsapp: lead.whatsapp,
+    business_name: escapeHTML(lead.business_name),
+    niche: escapeHTML(lead.niche),
+    phone: escapeHTML(lead.phone),
+    whatsapp: escapeHTML(lead.whatsapp),
     rating: lead.rating,
     reviews_count: lead.reviews_count,
-    current_website_url: lead.current_website_url,
-    proposed_solution: proposal?.proposed_solution,
-    opportunity_type: proposal?.opportunity_type,
+    current_website_url: escapeHTML(lead.current_website_url),
+    proposed_solution: escapeHTML(proposal?.proposed_solution),
+    opportunity_type: escapeHTML(proposal?.opportunity_type),
   });
 
   res.send(html);
