@@ -234,8 +234,13 @@ app.delete('/api/leads/:id', (req, res) => {
 
 // 9. Resetear/Limpiar todos los leads de la base de datos
 app.post('/api/leads/reset', (req, res) => {
-  leadsRepo.resetAllLeads();
-  res.json({ success: true, message: 'Tablero y base de datos reseteados correctamente' });
+  try {
+    leadsRepo.resetAllLeads();
+    res.json({ success: true, message: 'Tablero y base de datos reseteados correctamente' });
+  } catch (error: any) {
+    console.error('Error al resetear leads:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // 8. Demo interactiva personalizada (Skill 4 Demo Generator - Full Website Mockup)
