@@ -144,18 +144,38 @@ export class LeadsRepository {
   }
 
   deleteLead(id: string): boolean {
-    this.db.prepare('DELETE FROM audit_diagnostics WHERE lead_id = ?').run(id);
-    this.db.prepare('DELETE FROM proposals WHERE lead_id = ?').run(id);
-    this.db.prepare('DELETE FROM outreach_results WHERE lead_id = ?').run(id);
-    const res = this.db.prepare('DELETE FROM prospect_leads WHERE id = ?').run(id);
-    return res.changes > 0;
+    const tables = ['audit_diagnostics', 'proposals', 'outreach_results', 'opportunity_proposals', 'outreach_logs'];
+    for (const table of tables) {
+      try {
+        this.db.prepare(`DELETE FROM ${table} WHERE lead_id = ?`).run(id);
+      } catch (e) {
+        // Ignorar si la tabla no existe en esta versión de la base de datos
+      }
+    }
+    try {
+      const res = this.db.prepare('DELETE FROM prospect_leads WHERE id = ?').run(id);
+      return res.changes > 0;
+    } catch (e) {
+      console.error('Error al eliminar lead de prospect_leads:', e);
+      return false;
+    }
   }
 
   resetAllLeads(): void {
-    this.db.prepare('DELETE FROM audit_diagnostics').run();
-    this.db.prepare('DELETE FROM proposals').run();
-    this.db.prepare('DELETE FROM outreach_results').run();
-    this.db.prepare('DELETE FROM prospect_leads').run();
+    const tables = ['audit_diagnostics', 'proposals', 'outreach_results', 'opportunity_proposals', 'outreach_logs'];
+    for (const table of tables) {
+      try {
+        this.db.prepare(`DELETE FROM ${table}`).run();
+      } catch (e) {
+        // Ignorar si la tabla no existe
+      }
+    }
+    try {
+      this.db.prepare('DELETE FROM prospect_leads').run();
+    } catch (e) {
+      console.error('Error crítico limpiando prospect_leads:', e);
+      throw e;
+    }
   }
 
   private mapRowToLead(row: any): ProspectLead {
