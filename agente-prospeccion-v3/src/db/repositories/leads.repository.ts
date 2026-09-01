@@ -145,16 +145,16 @@ export class LeadsRepository {
 
   deleteLead(id: string): boolean {
     this.db.prepare('DELETE FROM audit_diagnostics WHERE lead_id = ?').run(id);
-    this.db.prepare('DELETE FROM opportunity_proposals WHERE lead_id = ?').run(id);
-    this.db.prepare('DELETE FROM outreach_logs WHERE lead_id = ?').run(id);
+    this.db.prepare('DELETE FROM proposals WHERE lead_id = ?').run(id);
+    this.db.prepare('DELETE FROM outreach_results WHERE lead_id = ?').run(id);
     const res = this.db.prepare('DELETE FROM prospect_leads WHERE id = ?').run(id);
     return res.changes > 0;
   }
 
   resetAllLeads(): void {
     this.db.prepare('DELETE FROM audit_diagnostics').run();
-    this.db.prepare('DELETE FROM opportunity_proposals').run();
-    this.db.prepare('DELETE FROM outreach_logs').run();
+    this.db.prepare('DELETE FROM proposals').run();
+    this.db.prepare('DELETE FROM outreach_results').run();
     this.db.prepare('DELETE FROM prospect_leads').run();
   }
 
