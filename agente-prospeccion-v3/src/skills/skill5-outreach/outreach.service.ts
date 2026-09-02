@@ -156,6 +156,99 @@ export class OutreachEngineService {
   }
 
   /**
+   * Ejecuta el ciclo de seguimiento automático según la máquina de estados:
+   * 1. Leads en SENT con > FOLLOWUP_1_HOURS -> Envía Follow-up 1 -> FOLLOWUP_SENT
+   * 2. Leads en FOLLOWUP_SENT con > FOLLOWUP_2_HOURS -> Envía Follow-up 2 -> FOLLOWUP_2
+   * 3. Leads en FOLLOWUP_2 con > FOLLOWUP_2_HOURS -> Pasan a COLD (archivados)
+   */
+  async dispatchFollowups(batchSize = 20): Promise<{
+    followup1Sent: number;
+    followup2Sent: number;
+    movedToCold: number;
+  }> {
+    let followup1Sent = 0;
+    let followup2Sent = 0;
+    let movedToCold = 0;
+
+    const health = this.outreachRepo.getDomainHealth();
+    if (health.circuit_breaker_active || health.bounce_rate_24h > config.MAX_BOUNCE_RATE) {
+      console.warn('[Followups] Envíos de seguimiento pausados por circuit breaker.');
+      return { followup1Sent: 0, followup2Sent: 0, movedToCold: 0 };
+    }
+
+    // 1. Follow-up 1 (48h tras primer contacto)
+    const leadsForF1 = this.leadsRepo.findLeadsForFollowup1(config.FOLLOWUP_1_HOURS, batchSize);
+    for (const lead of leadsForF1) {
+      const proposal = this.proposalsRepo.findByLeadId(lead.id);
+      if (!proposal) continue;
+
+      const channel = lead.whatsapp || lead.phone ? 'whatsapp' : 'email';
+      const shortBizName = lead.business_name.split('-')[0].split('(')[0].trim();
+      
+      const f1Copy = {
+        whatsapp_pitch: `Hola ${shortBizName}, un cordial saludo. Te escribí hace un par de días sobre el análisis técnico de su sitio web y las oportunidades de captación que detectamos. ¿Pudieron revisarlo o prefieren que les reenvíe el resumen de 1 minuto?`,
+        email_subject: `Re: Auditoría técnica y oportunidad para ${shortBizName}`,
+        email_body: `Estimado equipo de ${shortBizName},\n\nQuería dar un breve seguimiento al correo que les enviamos hace unos días con el diagnóstico de rendimiento y captación digital para ${shortBizName}.\n\n¿Tendrán 5 minutos esta semana para ver rápidamente los puntos clave y cómo resolverlos sin compromiso?\n\nSaludos cordiales,\n${config.DEFAULT_CLOSER_NAME}`,
+      };
+
+      const copyUsed = channel === 'whatsapp' ? f1Copy.whatsapp_pitch : f1Copy.email_body;
+      await this.sendMessage(channel, lead, proposal, f1Copy);
+
+      this.outreachRepo.logOutreach({
+        lead_id: lead.id,
+        channel,
+        replied: false,
+        converted: false,
+        copy_used: copyUsed,
+        notes: `Follow-up 1 automático tras ${config.FOLLOWUP_1_HOURS}h sin respuesta`,
+      });
+
+      this.leadsRepo.updateStatusAtomic(lead.id, 'SENT', 'FOLLOWUP_SENT');
+      followup1Sent++;
+    }
+
+    // 2. Follow-up 2 (72h tras Follow-up 1)
+    const leadsForF2 = this.leadsRepo.findLeadsForFollowup2(config.FOLLOWUP_2_HOURS, batchSize);
+    for (const lead of leadsForF2) {
+      const proposal = this.proposalsRepo.findByLeadId(lead.id);
+      if (!proposal) continue;
+
+      const channel = lead.whatsapp || lead.phone ? 'whatsapp' : 'email';
+      const shortBizName = lead.business_name.split('-')[0].split('(')[0].trim();
+      
+      const f2Copy = {
+        whatsapp_pitch: `Hola ${shortBizName}, imagino que están con la agenda a tope. Solo quería confirmar si les interesa optimizar su presencia digital y captación de clientes este mes, o si prefieren que archivemos el diagnóstico por ahora. ¡Un saludo!`,
+        email_subject: `Último seguimiento: Propuesta técnica para ${shortBizName}`,
+        email_body: `Hola equipo de ${shortBizName},\n\nSé que deben estar muy ocupados gestionando el día a día del negocio. No quiero insistir de más.\n\nSolo quería consultar si este tema es de su interés en este momento o si prefieren que archivemos el reporte técnico.\n\nQuedamos a su total disposición si deciden retomarlo más adelante.\n\nAtentamente,\n${config.DEFAULT_CLOSER_NAME}`,
+      };
+
+      const copyUsed = channel === 'whatsapp' ? f2Copy.whatsapp_pitch : f2Copy.email_body;
+      await this.sendMessage(channel, lead, proposal, f2Copy);
+
+      this.outreachRepo.logOutreach({
+        lead_id: lead.id,
+        channel,
+        replied: false,
+        converted: false,
+        copy_used: copyUsed,
+        notes: `Follow-up 2 automático tras ${config.FOLLOWUP_2_HOURS}h sin respuesta`,
+      });
+
+      this.leadsRepo.updateStatusAtomic(lead.id, 'FOLLOWUP_SENT', 'FOLLOWUP_2');
+      followup2Sent++;
+    }
+
+    // 3. Pasar a COLD (72h adicionales tras Follow-up 2 sin respuesta)
+    const leadsForCold = this.leadsRepo.findLeadsForCold(config.FOLLOWUP_2_HOURS, batchSize);
+    for (const lead of leadsForCold) {
+      this.leadsRepo.updateStatusAtomic(lead.id, 'FOLLOWUP_2', 'COLD');
+      movedToCold++;
+    }
+
+    return { followup1Sent, followup2Sent, movedToCold };
+  }
+
+  /**
    * Traspaso al Humano (Human Handoff):
    * Se activa cuando un prospecto responde (`REPLIED`). El agente cede el control al cerrador
    * y despacha alertas inmediatas por Email y WhatsApp al cerrador humano.
@@ -299,7 +392,12 @@ export class OutreachEngineService {
     return this.leadsRepo.forceUpdateStatus(leadId, outcome);
   }
 
-  private async sendMessage(channel: 'whatsapp' | 'email', lead: ProspectLead, proposal: any): Promise<void> {
+  private async sendMessage(
+    channel: 'whatsapp' | 'email',
+    lead: ProspectLead,
+    proposal: any,
+    overrideCopy?: { whatsapp_pitch?: string; email_subject?: string; email_body?: string }
+  ): Promise<void> {
     const isSyntheticData = lead.place_id?.startsWith('ChIJ_mock_') || lead.business_name?.includes('#');
     const isSyntheticLead = isSyntheticData || config.USE_MOCK_MODE;
 
@@ -364,8 +462,8 @@ export class OutreachEngineService {
     } else if (channel === 'email' && config.RESEND_API_KEY && lead.email) {
       try {
         // Envío real con Resend API
-        const emailBody = proposal.outreach_copy?.email_body || '';
-        const emailSubject = proposal.outreach_copy?.email_subject || `Oportunidad técnica para ${lead.business_name}`;
+        const emailBody = overrideCopy?.email_body || proposal.outreach_copy?.email_body || '';
+        const emailSubject = overrideCopy?.email_subject || proposal.outreach_copy?.email_subject || `Oportunidad técnica para ${lead.business_name}`;
         
         // Convertir saltos de línea a párrafos HTML limpios
         const htmlParagraphs = emailBody

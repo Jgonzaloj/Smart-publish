@@ -10,10 +10,17 @@ import { OutreachRepository } from '../db/repositories/outreach.repository.js';
 import { PipelineOrchestrator } from '../pipeline/orchestrator.js';
 import { OutreachEngineService } from '../skills/skill5-outreach/outreach.service.js';
 import { generateFullWebsiteDemoHtml } from '../skills/skill4-demobuilder/demo-template.js';
+import { verifyMetaSignature } from '../utils/crypto.utils.js';
+import { SchedulerService } from '../services/scheduler.service.js';
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+// Capturar rawBody para verificación criptográfica de firmas HMAC (Meta / Resend)
+app.use(express.json({
+  verify: (req: any, _res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 
 const leadsRepo = new LeadsRepository();
 const auditsRepo = new AuditsRepository();
@@ -21,6 +28,7 @@ const proposalsRepo = new ProposalsRepository();
 const outreachRepo = new OutreachRepository();
 const outreachEngine = new OutreachEngineService();
 const orchestrator = new PipelineOrchestrator();
+const scheduler = new SchedulerService();
 
 // Función auxiliar para sanitizar HTML y evitar XSS
 const escapeHTML = (str?: string) => {
@@ -97,9 +105,16 @@ app.get('/api/webhooks/whatsapp', (req, res) => {
   return res.status(403).send('Token de verificación inválido');
 });
 
-// Webhook de Meta WhatsApp Cloud API (Recepción de mensajes POST)
+// Webhook de Meta WhatsApp Cloud API (Recepción de mensajes POST con verificación HMAC-SHA256)
 app.post('/api/webhooks/whatsapp', async (req, res) => {
   try {
+    // 1. Verificación de firma criptográfica de Meta
+    const signature = req.headers['x-hub-signature-256'] as string;
+    if (config.WHATSAPP_APP_SECRET && !verifyMetaSignature((req as any).rawBody, signature, config.WHATSAPP_APP_SECRET)) {
+      console.warn('[Webhook WhatsApp] 🚫 Firma criptográfica inválida (401 Unauthorized). Posible intento de spoofing.');
+      return res.status(401).send('Firma criptográfica inválida');
+    }
+
     const body = req.body;
     if (body.object === 'whatsapp_business_account') {
       for (const entry of body.entry || []) {
@@ -110,7 +125,7 @@ app.post('/api/webhooks/whatsapp', async (req, res) => {
             const senderPhone = message.from; // Ej: 34912345678
             const messageText = message.text?.body || 'Mensaje de WhatsApp recibido';
 
-            console.log(`[Webhook] Mensaje entrante de ${senderPhone}: "${messageText}"`);
+            console.log(`[Webhook WhatsApp] Mensaje entrante de ${senderPhone}: "${messageText}"`);
 
             // Buscar lead por número de teléfono
             const leads = leadsRepo.getAllLeads(500);
@@ -129,8 +144,69 @@ app.post('/api/webhooks/whatsapp', async (req, res) => {
     }
     res.sendStatus(404);
   } catch (error) {
-    console.error('[Webhook] Error procesando mensaje de WhatsApp:', error);
+    console.error('[Webhook WhatsApp] Error procesando mensaje de WhatsApp:', error);
     res.sendStatus(500);
+  }
+});
+
+// Webhook de Recepción de Correos Inbound (Resend / Email Webhook)
+app.post(['/api/webhooks/resend', '/api/webhooks/email'], async (req, res) => {
+  try {
+    const body = req.body;
+
+    // Verificar secret si está configurado
+    if (config.RESEND_WEBHOOK_SECRET) {
+      const authHeader = req.headers['authorization'] || req.headers['x-webhook-secret'];
+      if (authHeader !== config.RESEND_WEBHOOK_SECRET) {
+        return res.status(401).json({ error: 'Secret de webhook inválido' });
+      }
+    }
+
+    // Gestionar eventos de entrega o rebotes (bounces) para el Circuit Breaker
+    if (body.type === 'email.delivered' || body.type === 'email.bounced' || body.type === 'email.complained') {
+      if (body.type === 'email.bounced') {
+        const health = outreachRepo.getDomainHealth();
+        const newBounceRate = health.bounce_rate_24h + 0.02;
+        outreachRepo.updateDomainHealth(
+          health.domain,
+          newBounceRate,
+          health.spam_complaints,
+          newBounceRate > config.MAX_BOUNCE_RATE
+        );
+        console.warn(`[Webhook Email] ⚠️ Rebote detectado. Nueva tasa de bounce: ${(newBounceRate * 100).toFixed(1)}%`);
+      }
+      return res.status(200).send('EVENT_PROCESSED');
+    }
+
+    // Respuesta entrante de prospecto por correo (inbound email)
+    const fromEmailRaw = body.data?.from || body.from || body.sender || '';
+    const emailSubject = body.data?.subject || body.subject || 'Respuesta de correo';
+    const emailBodyText = body.data?.text || body.text || body.data?.html || body.html || 'El prospecto respondió vía correo';
+
+    // Extraer correo electrónico limpio
+    const emailMatch = fromEmailRaw.match(/<([^>]+)>/) || [null, fromEmailRaw];
+    const cleanFromEmail = (emailMatch[1] || fromEmailRaw).trim().toLowerCase();
+
+    if (!cleanFromEmail) {
+      return res.status(400).json({ error: 'Dirección de correo remitente no encontrada en payload' });
+    }
+
+    console.log(`[Webhook Email] Correo entrante de ${cleanFromEmail}: "${emailSubject}"`);
+
+    const matchedLead = leadsRepo.findByEmail(cleanFromEmail);
+    if (matchedLead) {
+      await outreachEngine.handleProspectReply(
+        matchedLead.id,
+        `Respuesta Email: [Asunto: ${emailSubject}] ${typeof emailBodyText === 'string' ? emailBodyText.slice(0, 300) : ''}`
+      );
+      return res.status(200).json({ success: true, message: 'Prospecto transferido al cerrador humano' });
+    } else {
+      console.warn(`[Webhook Email] No se encontró lead registrado con el email: ${cleanFromEmail}`);
+      return res.status(200).json({ success: false, message: 'Lead no registrado' });
+    }
+  } catch (error) {
+    console.error('[Webhook Email] Error procesando correo entrante:', error);
+    res.status(500).json({ error: 'Error interno procesando webhook de correo' });
   }
 });
 
@@ -188,6 +264,17 @@ app.post('/api/pipeline/run', (req, res) => {
   } catch (error: any) {
     console.error('Error inicializando pipeline:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// 4.1 Ejecución manual del ciclo de seguimientos automáticos (Followups)
+app.post('/api/pipeline/followups/run', async (req, res) => {
+  try {
+    const result = await scheduler.runFollowupCycle();
+    res.json({ success: true, result });
+  } catch (error: any) {
+    console.error('Error ejecutando ciclo de seguimientos:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -266,11 +353,14 @@ app.get('/api/demos/:id', (req, res) => {
   res.send(html);
 });
 
-// Arrancar servidor
+// Arrancar servidor y servicio de temporizador en segundo plano
 app.listen(config.PORT, () => {
   console.log(`\n=============================================================`);
   console.log(`[Servidor] Agente de Prospección B2B v3.0 Activo`);
   console.log(`[Dashboard Web] 👉 http://${config.HOST}:${config.PORT}`);
   console.log(`[Modo] ${config.USE_MOCK_MODE ? 'SIMULACIÓN SEGURA (Sin costo API)' : 'PRODUCCIÓN CON APIS REALES'}`);
   console.log(`=============================================================\n`);
+
+  // Iniciar Scheduler de seguimientos automáticos
+  scheduler.start();
 });

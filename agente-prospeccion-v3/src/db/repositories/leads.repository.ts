@@ -62,6 +62,59 @@ export class LeadsRepository {
     return rows.map((r) => this.mapRowToLead(r));
   }
 
+  findByEmail(email: string): ProspectLead | null {
+    if (!email) return null;
+    const cleanEmail = email.trim().toLowerCase();
+    const row = this.db.prepare('SELECT * FROM prospect_leads WHERE LOWER(email) = ? LIMIT 1').get(cleanEmail) as any;
+    if (!row) return null;
+    return this.mapRowToLead(row);
+  }
+
+  /**
+   * Obtiene leads en estado SENT con más de X horas sin respuesta para enviar el primer seguimiento (Follow-up 1)
+   */
+  findLeadsForFollowup1(hoursThreshold = 48, limit = 20): ProspectLead[] {
+    const rows = this.db.prepare(`
+      SELECT * FROM prospect_leads
+      WHERE status = 'SENT'
+        AND do_not_contact = 0
+        AND updated_at <= datetime('now', '-' || ? || ' hours')
+      ORDER BY updated_at ASC
+      LIMIT ?
+    `).all(hoursThreshold, limit) as any[];
+    return rows.map((r) => this.mapRowToLead(r));
+  }
+
+  /**
+   * Obtiene leads en estado FOLLOWUP_SENT con más de X horas sin respuesta para enviar el segundo seguimiento (Follow-up 2)
+   */
+  findLeadsForFollowup2(hoursThreshold = 72, limit = 20): ProspectLead[] {
+    const rows = this.db.prepare(`
+      SELECT * FROM prospect_leads
+      WHERE status = 'FOLLOWUP_SENT'
+        AND do_not_contact = 0
+        AND updated_at <= datetime('now', '-' || ? || ' hours')
+      ORDER BY updated_at ASC
+      LIMIT ?
+    `).all(hoursThreshold, limit) as any[];
+    return rows.map((r) => this.mapRowToLead(r));
+  }
+
+  /**
+   * Obtiene leads en estado FOLLOWUP_2 con más de X horas sin respuesta para archivarlos en frío (COLD)
+   */
+  findLeadsForCold(hoursThreshold = 72, limit = 20): ProspectLead[] {
+    const rows = this.db.prepare(`
+      SELECT * FROM prospect_leads
+      WHERE status = 'FOLLOWUP_2'
+        AND do_not_contact = 0
+        AND updated_at <= datetime('now', '-' || ? || ' hours')
+      ORDER BY updated_at ASC
+      LIMIT ?
+    `).all(hoursThreshold, limit) as any[];
+    return rows.map((r) => this.mapRowToLead(r));
+  }
+
   getAllLeads(limit = 200): ProspectLead[] {
     const rows = this.db.prepare('SELECT * FROM prospect_leads ORDER BY created_at DESC LIMIT ?').all(limit) as any[];
     return rows.map((r) => this.mapRowToLead(r));

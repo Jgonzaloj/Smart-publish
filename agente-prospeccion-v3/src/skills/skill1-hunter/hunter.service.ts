@@ -1,6 +1,7 @@
 import { LeadsRepository } from '../../db/repositories/leads.repository.js';
 import { ProspectLead } from '../../types/index.js';
 import { config } from '../../config/env.js';
+import { normalizeToE164 } from '../../utils/phone.utils.js';
 
 export interface HuntCriteria {
   niche: string;
@@ -57,56 +58,74 @@ export class LeadHunterService {
     limit: number
   ): Promise<Array<Omit<ProspectLead, 'id' | 'status' | 'retry_count' | 'do_not_contact' | 'created_at' | 'updated_at'>>> {
     const query = encodeURIComponent(`${niche} en ${location}`);
-    const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=${config.GOOGLE_PLACES_API_KEY}`;
+    const leads: Array<Omit<ProspectLead, 'id' | 'status' | 'retry_count' | 'do_not_contact' | 'created_at' | 'updated_at'>> = [];
+    let nextPageToken: string | undefined = undefined;
+    let page = 0;
+    const maxPages = Math.ceil(limit / 20);
 
     try {
-      const res = await fetch(searchUrl);
-      const data = (await res.json()) as any;
-
-      if (!data.results || !Array.isArray(data.results)) {
-        return [];
-      }
-
-      const results = data.results.slice(0, limit);
-      const leads: Array<Omit<ProspectLead, 'id' | 'status' | 'retry_count' | 'do_not_contact' | 'created_at' | 'updated_at'>> = [];
-
-      for (const place of results) {
-        // Obtener detalles adicionales si es necesario (sitio web, teléfono internacional)
-        let website = undefined;
-        let phone = undefined;
-
-        if (place.place_id) {
-          const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,formatted_phone_number,international_phone_number,website,url&key=${config.GOOGLE_PLACES_API_KEY}`;
-          try {
-            const detailRes = await fetch(detailUrl);
-            const detailData = (await detailRes.json()) as any;
-            if (detailData.result) {
-              website = detailData.result.website;
-              phone = detailData.result.formatted_phone_number || detailData.result.international_phone_number;
-            }
-          } catch (e) {
-            // Continuar con los datos básicos
-          }
+      while (leads.length < limit && page < maxPages) {
+        let searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=${config.GOOGLE_PLACES_API_KEY}`;
+        if (nextPageToken) {
+          // Google Places requiere un breve delay para que el nextPageToken sea válido
+          console.log(`[LeadHunter] Esperando activación de next_page_token para página ${page + 1}...`);
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken=${nextPageToken}&key=${config.GOOGLE_PLACES_API_KEY}`;
         }
 
-        leads.push({
-          place_id: place.place_id || `place_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-          business_name: place.name,
-          niche,
-          phone,
-          whatsapp: phone,
-          email: undefined,
-          google_maps_url: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
-          rating: place.rating,
-          reviews_count: place.user_ratings_total,
-          current_website_url: website,
-        });
+        const res = await fetch(searchUrl);
+        const data = (await res.json()) as any;
+
+        if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
+          break;
+        }
+
+        for (const place of data.results) {
+          if (leads.length >= limit) break;
+
+          let website = undefined;
+          let phone = undefined;
+
+          if (place.place_id) {
+            const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,formatted_phone_number,international_phone_number,website,url&key=${config.GOOGLE_PLACES_API_KEY}`;
+            try {
+              const detailRes = await fetch(detailUrl);
+              const detailData = (await detailRes.json()) as any;
+              if (detailData.result) {
+                website = detailData.result.website;
+                phone = detailData.result.international_phone_number || detailData.result.formatted_phone_number;
+              }
+            } catch (e) {
+              // Continuar con los datos básicos
+            }
+          }
+
+          // Normalizar teléfono a formato internacional E.164
+          const normalizedPhone = normalizeToE164(phone, config.DEFAULT_COUNTRY_CODE);
+
+          leads.push({
+            place_id: place.place_id || `place_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+            business_name: place.name,
+            niche,
+            phone: normalizedPhone || phone,
+            whatsapp: normalizedPhone || phone,
+            email: undefined,
+            google_maps_url: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
+            rating: place.rating,
+            reviews_count: place.user_ratings_total,
+            current_website_url: website,
+          });
+        }
+
+        nextPageToken = data.next_page_token;
+        page++;
+        if (!nextPageToken) break;
       }
 
       return leads;
     } catch (err) {
-      console.error('[LeadHunter] Error llamando a Google Places API:', err);
-      return [];
+      console.error('[LeadHunter] Error llamando a Google Places API con paginación:', err);
+      return leads;
     }
   }
 
@@ -168,12 +187,14 @@ export class LeadHunterService {
       const template = mockTemplates[i % mockTemplates.length];
       const placeId = `ChIJ_mock_${niche.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${location.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${timestamp}_${cycleCode}_${i}`;
 
+      const normalizedPhone = normalizeToE164(template.phone, config.DEFAULT_COUNTRY_CODE) || template.phone;
+
       leads.push({
         place_id: placeId,
         business_name: `${template.namePrefix} ${location} #${cycleCode + i}`,
         niche: `${niche} - ${location}`,
-        phone: template.phone,
-        whatsapp: template.phone.replace(/\s+/g, ''),
+        phone: normalizedPhone,
+        whatsapp: normalizedPhone,
         email: `contacto@${template.namePrefix.toLowerCase().replace(/[^a-z0-9]/g, '')}${cycleCode + i}.com`,
         google_maps_url: `https://www.google.com/maps/place/?q=place_id:${placeId}`,
         rating: template.rating,
