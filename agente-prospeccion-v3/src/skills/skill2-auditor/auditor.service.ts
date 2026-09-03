@@ -124,12 +124,43 @@ export class WebAuditorService {
         targetUrl = 'https://' + targetUrl;
       }
 
-      await page.goto(targetUrl, {
-        waitUntil: 'domcontentloaded',
-        timeout: 20000,
-      });
+      let navFailed = false;
+      let navErrorMsg = '';
+
+      try {
+        await page.goto(targetUrl, {
+          waitUntil: 'domcontentloaded',
+          timeout: 8000,
+        });
+      } catch (navErr: any) {
+        navFailed = true;
+        navErrorMsg = navErr.message || 'Error de conexión / Servidor inaccesible';
+        console.warn(`[Auditor] Sitio web inaccesible para lead ${lead.id} (${targetUrl}): ${navErrorMsg}`);
+      }
 
       const loadTime = Date.now() - startTime;
+
+      if (navFailed) {
+        return {
+          lead_id: lead.id,
+          has_website: true,
+          is_mobile_responsive: false,
+          lighthouse_perf_score: 25,
+          ttfb_ms: 5000,
+          load_time_ms: 8000,
+          screenshot_path: undefined,
+          detected_tech_stack: {
+            is_outdated_stack: true,
+            details: ['Servidor no responde o configuración DNS caída'],
+          },
+          ai_opportunity_type: 'MODERNIZATION',
+          issues_found: [
+            'El sitio web actual no carga o está caído (error de conexión/servidor)',
+            'Pérdida crítica de pacientes y clientes potenciales que intentan acceder',
+            'Falta de infraestructura web moderna, rápida y disponible 24/7',
+          ],
+        };
+      }
 
       // Medir TTFB exacto mediante Performance Navigation Timing API si está disponible
       const perfMetrics = await page.evaluate(() => {

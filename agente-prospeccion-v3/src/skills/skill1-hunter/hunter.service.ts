@@ -264,6 +264,30 @@ export class LeadHunterService {
     const timestamp = Date.now();
     const cycleCode = Math.floor(100 + Math.random() * 900);
 
+    // Dominios reales vivos para auditoría de Playwright según país y rubro
+    const realWebsitesSpain: Record<string, Array<string | undefined>> = {
+      dental: ['https://www.adeslasdental.es', 'https://artydents.es', 'https://docdental.es', undefined, 'https://www.sanitas.es'],
+      law: ['https://www.uria.com', 'https://www.garrigues.com', 'https://www.cuatrecasas.com', undefined, 'https://www.abogados.es'],
+      restaurant: ['https://www.asadorarandino.es', 'https://www.grupolamusa.com', 'https://www.cerveceriasangines.com', undefined, 'https://www.restauranteamaznico.com'],
+      realestate: ['https://www.idealista.com', 'https://www.fotocasa.es', 'https://www.habitaclia.com', undefined, 'https://www.pisos.com'],
+      architecture: ['https://www.archdaily.es', 'https://www.reformas-madrid.es', 'https://www.houzz.es', undefined, 'https://www.arquitecturaviva.com'],
+      beauty: ['https://www.treatwell.es', 'https://www.hedonai.com', 'https://www.dorsia.es', undefined, 'https://www.clinicasesteticas.es'],
+      auto: ['https://www.norauto.es', 'https://www.midas.es', 'https://www.feuvert.es', undefined, 'https://www.euromaster-neumaticos.es'],
+      finance: ['https://www.kpmg.com/es', 'https://www.pwc.es', 'https://www.deloitte.com/es', undefined, 'https://www.bdo.es'],
+    };
+
+    let nicheKey = 'dental';
+    if (isDental) nicheKey = 'dental';
+    else if (isLaw) nicheKey = 'law';
+    else if (isRestaurant) nicheKey = 'restaurant';
+    else if (isRealEstate) nicheKey = 'realestate';
+    else if (isArchitecture) nicheKey = 'architecture';
+    else if (isBeauty) nicheKey = 'beauty';
+    else if (isAuto) nicheKey = 'auto';
+    else if (isFinance) nicheKey = 'finance';
+
+    const realList = isSpain ? realWebsitesSpain[nicheKey] || realWebsitesSpain.dental : [];
+
     for (let i = 0; i < limit; i++) {
       const template = templates[i % templates.length];
       const placeId = `ChIJ_mock_${niche.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${location.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${timestamp}_${cycleCode}_${i}`;
@@ -271,9 +295,10 @@ export class LeadHunterService {
       const phoneNum = `${phonePrefix}${Math.floor(2000000 + Math.random() * 7000000)}`;
       const normalizedPhone = normalizeToE164(phoneNum, countryCode) || phoneNum;
 
-      const websiteUrl = template.websiteDomain
-        ? `https://www.${template.websiteDomain}-${location.toLowerCase().replace(/[^a-z0-9]/g, '')}${tld}`
-        : undefined;
+      // Usar URL real viva si está disponible para que Playwright audite en tiempo real
+      const websiteUrl = realList.length > 0
+        ? realList[i % realList.length]
+        : (template.websiteDomain ? `https://www.${template.websiteDomain}${tld}` : undefined);
 
       const cleanBizName = `${template.namePrefix} ${location} #${cycleCode + i}`;
 
