@@ -47,7 +47,7 @@ const escapeHTML = (str?: string) => {
 // Middleware de Autenticación (Basic Auth)
 const authMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   // Rutas públicas que no requieren autenticación
-  if (req.path.startsWith('/api/webhooks/') || req.path.startsWith('/api/demos/')) {
+  if (req.path.startsWith('/api/webhooks/') || req.path.startsWith('/api/demos/') || req.path === '/webhook') {
     return next();
   }
 
@@ -93,20 +93,20 @@ app.get('/', (req, res) => {
 // ==========================================
 
 // Webhook de Meta WhatsApp Cloud API (Verificación GET)
-app.get('/api/webhooks/whatsapp', (req, res) => {
+app.get(['/api/webhooks/whatsapp', '/webhook'], (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
   if (mode === 'subscribe' && token === config.WHATSAPP_WEBHOOK_VERIFY_TOKEN) {
-    console.log('[Webhook] WhatsApp webhook verificado exitosamente por Meta.');
+    console.log('[Webhook WhatsApp] Verificado exitosamente por Meta.');
     return res.status(200).send(challenge);
   }
   return res.status(403).send('Token de verificación inválido');
 });
 
 // Webhook de Meta WhatsApp Cloud API (Recepción de mensajes POST con verificación HMAC-SHA256)
-app.post('/api/webhooks/whatsapp', async (req, res) => {
+app.post(['/api/webhooks/whatsapp', '/webhook'], async (req, res) => {
   try {
     // 1. Verificación de firma criptográfica de Meta
     const signature = req.headers['x-hub-signature-256'] as string;
