@@ -339,15 +339,15 @@ app.get('/api/demos/:id', (req, res) => {
   const proposal = proposalsRepo.findByLeadId(lead.id);
 
   const html = generateFullWebsiteDemoHtml({
-    business_name: escapeHTML(lead.business_name),
-    niche: escapeHTML(lead.niche),
-    phone: escapeHTML(lead.phone),
-    whatsapp: escapeHTML(lead.whatsapp),
+    business_name: lead.business_name,
+    niche: lead.niche,
+    phone: lead.phone,
+    whatsapp: lead.whatsapp,
     rating: lead.rating,
     reviews_count: lead.reviews_count,
-    current_website_url: escapeHTML(lead.current_website_url),
-    proposed_solution: escapeHTML(proposal?.proposed_solution),
-    opportunity_type: escapeHTML(proposal?.opportunity_type),
+    current_website_url: lead.current_website_url,
+    proposed_solution: proposal?.proposed_solution,
+    opportunity_type: proposal?.opportunity_type,
   });
 
   res.send(html);

@@ -1,3 +1,5 @@
+import { escapeHtml, escapeJsString } from '../../utils/html.utils.js';
+
 export interface LeadDemoData {
   business_name: string;
   niche?: string;
@@ -19,6 +21,12 @@ export function generateFullWebsiteDemoHtml(lead: LeadDemoData): string {
   const rating = lead.rating ? lead.rating.toFixed(1) : '4.9';
   const reviewsCount = lead.reviews_count || 128;
   const proposalSolution = lead.proposed_solution || 'Plataforma web de alta conversión diseñada para captar más clientes en piloto automático con velocidad instantánea y conexión a WhatsApp.';
+
+  // Versiones escapadas contextualmente para prevenir vulnerabilidades XSS
+  const nameHtml = escapeHtml(name);
+  const nameJs = escapeJsString(name);
+  const phoneHtml = escapeHtml(phone);
+  const proposalSolutionHtml = escapeHtml(proposalSolution);
 
   // Detección inteligente de industria
   const isLaw = nameLower.includes('juríd') || nameLower.includes('jurid') || nameLower.includes('abog') || nameLower.includes('legal') || nameLower.includes('bufete') || nameLower.includes('lex') || nameLower.includes('ley') || nameLower.includes('notar') || (nicheLower.includes('legal') || nicheLower.includes('abogad') || nicheLower.includes('jurid'));
@@ -129,7 +137,7 @@ export function generateFullWebsiteDemoHtml(lead: LeadDemoData): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${name} — Prototipo Web de Alto Rendimiento</title>
+  <title>${nameHtml} — Prototipo Web de Alto Rendimiento</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -676,7 +684,7 @@ export function generateFullWebsiteDemoHtml(lead: LeadDemoData): string {
   <div class="prototype-bar">
     <div>
       <span class="badge-lead">✨ PROTOTIPO EXCLUSIVO</span>
-      <span>Sitio Web de Alto Rendimiento para: <strong>${name}</strong></span>
+      <span>Sitio Web de Alto Rendimiento para: <strong>${nameHtml}</strong></span>
     </div>
     <div>
       <a href="https://wa.me/${cleanPhone}?text=Hola,%20vi%20el%20prototipo%20web%20exclusivo%20para%20${encodeURIComponent(name)}%20y%20me%20gustaria%20activarlo" target="_blank" class="btn-activate">
@@ -688,8 +696,8 @@ export function generateFullWebsiteDemoHtml(lead: LeadDemoData): string {
   <!-- Navigation -->
   <header class="navbar">
     <a href="#" class="nav-brand">
-      <div class="nav-brand-logo">${name.charAt(0)}</div>
-      <div class="nav-brand-text">${name}</div>
+      <div class="nav-brand-logo">${nameHtml.charAt(0)}</div>
+      <div class="nav-brand-text">${nameHtml}</div>
     </a>
     <ul class="nav-links">
       <li><a href="#servicios">Servicios</a></li>
@@ -709,7 +717,7 @@ export function generateFullWebsiteDemoHtml(lead: LeadDemoData): string {
         <span>⚡</span> ${theme.badge}
       </div>
       <h1 class="hero-title">${theme.heroTitle}</h1>
-      <p class="hero-subtitle">${proposalSolution}</p>
+      <p class="hero-subtitle">${proposalSolutionHtml}</p>
       
       <div class="hero-buttons">
         <a href="#reservas" class="btn-hero-primary">
@@ -896,7 +904,7 @@ export function generateFullWebsiteDemoHtml(lead: LeadDemoData): string {
           <tr>
             <th>Factor Clave</th>
             <th>Tu Web Tradicional / Anterior</th>
-            <th>Esta Nueva Plataforma de ${name}</th>
+            <th>Esta Nueva Plataforma de ${nameHtml}</th>
           </tr>
         </thead>
         <tbody>
@@ -926,7 +934,7 @@ export function generateFullWebsiteDemoHtml(lead: LeadDemoData): string {
 
     <!-- Closing Sales Offer Box -->
     <section class="offer-box">
-      <h2>¿Te gustaría que esta sea la nueva web oficial de ${name}?</h2>
+      <h2>¿Te gustaría que esta sea la nueva web oficial de ${nameHtml}?</h2>
       <p>
         Podemos tener tu nueva plataforma lista, conectada a tu dominio, con agendamiento por WhatsApp y sincronizada con Google Maps en <strong>menos de 48 horas</strong>.
       </p>
@@ -941,8 +949,8 @@ export function generateFullWebsiteDemoHtml(lead: LeadDemoData): string {
     <div class="container footer-grid">
       <div>
         <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
-          <div class="nav-brand-logo">${name.charAt(0)}</div>
-          <span style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 800; color: #fff;">${name}</span>
+          <div class="nav-brand-logo">${nameHtml.charAt(0)}</div>
+          <span style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 800; color: #fff;">${nameHtml}</span>
         </div>
         <p style="color: var(--text-body); font-size: 0.9rem; max-width: 380px;">
           Líderes en atención y servicios de alta calidad. Comprometidos con la excelencia y la satisfacción de cada cliente en Lima.
@@ -962,7 +970,7 @@ export function generateFullWebsiteDemoHtml(lead: LeadDemoData): string {
       <div>
         <h4 class="footer-title">Contacto Directo</h4>
         <ul class="footer-links">
-          <li style="color: #cbd5e1;">📞 Teléfono: ${phone}</li>
+          <li style="color: #cbd5e1;">📞 Teléfono: ${phoneHtml}</li>
           <li style="color: #cbd5e1;">📍 Ubicación: Lima, Perú</li>
           <li style="color: #cbd5e1;">🕒 Horarios: Lun - Sáb: 08:00 - 20:00</li>
         </ul>
@@ -970,7 +978,7 @@ export function generateFullWebsiteDemoHtml(lead: LeadDemoData): string {
     </div>
 
     <div class="container" style="text-align: center; border-top: 1px solid var(--border-glass); padding-top: 1.5rem; color: #64748b; font-size: 0.85rem;">
-      © 2026 ${name} — Prototipo de Modernización Web de Alta Conversión.
+      © 2026 ${nameHtml} — Prototipo de Modernización Web de Alta Conversión.
     </div>
   </footer>
 
@@ -1008,7 +1016,7 @@ export function generateFullWebsiteDemoHtml(lead: LeadDemoData): string {
       const time = document.getElementById('patientTime').value;
 
       const message = encodeURIComponent(
-        'Hola ${name}, me gustaría solicitar ' + service + ' para el día ' + date + ' en el horario ' + time + '. Mi nombre es ' + name + '.'
+        'Hola ${nameJs}, me gustaría solicitar ' + service + ' para el día ' + date + ' en el horario ' + time + '. Mi nombre es ' + name + '.'
       );
 
       const whatsappUrl = 'https://wa.me/${cleanPhone}?text=' + message;

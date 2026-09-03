@@ -186,8 +186,39 @@ async function runFeatureTests() {
   // Limpieza del lead de prueba
   leadsRepo.deleteLead(dummyLead.id);
 
+  // -------------------------------------------------------------
+  // TEST 5: Prevención de XSS en Demo Generator (Skill 4)
+  // -------------------------------------------------------------
+  console.log('\n--- TEST 5: Validación Anti-XSS en Plantillas de Demo ---');
+  const { generateFullWebsiteDemoHtml } = await import('../src/skills/skill4-demobuilder/demo-template.js');
+
+  const maliciousBusinessName = `Clínica O'Brien <script>alert("xss")</script> & "Asociados"`;
+  const demoHtml = generateFullWebsiteDemoHtml({
+    business_name: maliciousBusinessName,
+    phone: '+51 987 654 321',
+    proposed_solution: 'Solución con <img src=x onerror=alert(1)>',
+  });
+
+  // 1. Verificar que no haya inyección de script sin escapar en HTML
+  if (demoHtml.includes('<script>alert("xss")</script>')) {
+    throw new Error('TEST 5 FALLIDO: Se detectó tag <script> sin escapar en el HTML generado');
+  }
+  if (!demoHtml.includes('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;')) {
+    throw new Error('TEST 5 FALLIDO: No se encontraron las entidades HTML escapadas');
+  }
+
+  // 2. Verificar que en el contexto JavaScript se use escape de comillas simples y backslashes
+  if (demoHtml.includes("Hola Clínica O'Brien")) {
+    throw new Error('TEST 5 FALLIDO: Comilla simple sin escapar en string literal de JavaScript');
+  }
+  if (!demoHtml.includes("O\\'Brien")) {
+    throw new Error("TEST 5 FALLIDO: No se encontró comilla escapada O\\'Brien en JavaScript");
+  }
+  console.log('  ✅ HTML injection neutralizado (tags y entidades escapadas)');
+  console.log('  ✅ JS string literal injection neutralizado (comillas simples escapadas)');
+
   console.log('\n================================================================');
-  console.log('🎉 TODOS LOS TESTS DE LAS 3 MEJORAS PASARON EXITOSAMENTE AL 100%');
+  console.log('🎉 TODOS LOS TESTS DE AUDITORÍA Y SEGURIDAD PASARON AL 100%');
   console.log('================================================================');
 }
 
