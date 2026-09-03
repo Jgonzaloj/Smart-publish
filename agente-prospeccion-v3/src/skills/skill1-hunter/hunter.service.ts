@@ -136,70 +136,158 @@ export class LeadHunterService {
    * 3. Negocio con web moderna y rápida (candidato a DISCARDED por score alto)
    * 4. Negocio con web no responsive y problemas móviles
    */
+  /**
+   * Generador dinámico y realista según el rubro y la ubicación geográfica (España, Perú, México, etc.)
+   */
   private generateMockLeads(
     niche: string,
     location: string,
     limit: number
   ): Array<Omit<ProspectLead, 'id' | 'status' | 'retry_count' | 'do_not_contact' | 'created_at' | 'updated_at'>> {
-    const mockTemplates = [
-      {
-        namePrefix: 'Clínica Dental & Estética Sonrisas',
-        rating: 4.8,
-        reviews: 142,
-        website: 'https://www.multident.pe',
-        phone: '+51 987 654 321',
-      },
-      {
-        namePrefix: 'Bufete Jurídico & Asociados Lex',
-        rating: 4.6,
-        reviews: 89,
-        website: 'https://www.prcp.com.pe',
-        phone: '+51 988 765 432',
-      },
-      {
-        namePrefix: 'Centro Médico Especializado Sanitas Care',
-        rating: 4.9,
-        reviews: 210,
-        website: undefined, // Sin web -> máxima oportunidad para crearle su web desde cero
-        phone: '+51 989 876 543',
-      },
-      {
-        namePrefix: 'Consultoría Financiera & Tributaria Éxito',
-        rating: 4.4,
-        reviews: 53,
-        website: 'https://inversionesvawi.com',
-        phone: '+51 990 987 654',
-      },
-      {
-        namePrefix: 'Estudio de Arquitectura e Interiorismo Vanguardia',
-        rating: 4.7,
-        reviews: 97,
-        website: 'https://inversionesvawi.com',
-        phone: '+51 991 098 765',
-      },
-    ];
+    const locLower = (location || '').toLowerCase();
+    const nicheLower = (niche || '').toLowerCase();
+
+    // Detección de país y prefijo
+    const isSpain = locLower.includes('madrid') || locLower.includes('barcelona') || locLower.includes('españa') || locLower.includes('spain') || locLower.includes('valencia') || locLower.includes('sevilla') || locLower.includes('málaga') || locLower.includes('bilbao') || locLower.includes('zaragoza');
+    const isPeru = locLower.includes('lima') || locLower.includes('perú') || locLower.includes('peru') || locLower.includes('ica') || locLower.includes('arequipa') || locLower.includes('trujillo') || locLower.includes('cusco');
+    const isMexico = locLower.includes('mexico') || locLower.includes('méxico') || locLower.includes('cdmx') || locLower.includes('guadalajara') || locLower.includes('monterrey');
+
+    let phonePrefix = '+34 91';
+    let countryCode = '34';
+    let tld = '.es';
+
+    if (isSpain) {
+      phonePrefix = '+34 91';
+      countryCode = '34';
+      tld = '.es';
+    } else if (isPeru) {
+      phonePrefix = '+51 9';
+      countryCode = '51';
+      tld = '.pe';
+    } else if (isMexico) {
+      phonePrefix = '+52 55';
+      countryCode = '52';
+      tld = '.mx';
+    } else {
+      phonePrefix = '+34 91';
+      countryCode = '34';
+      tld = '.es';
+    }
+
+    // Detección de rubro / nicho para generar plantillas específicas
+    const isDental = nicheLower.includes('dent') || nicheLower.includes('odont') || nicheLower.includes('sonris');
+    const isLaw = nicheLower.includes('abog') || nicheLower.includes('jurid') || nicheLower.includes('legal') || nicheLower.includes('bufete') || nicheLower.includes('ley');
+    const isRestaurant = nicheLower.includes('restaur') || nicheLower.includes('gastron') || nicheLower.includes('comida') || nicheLower.includes('café') || nicheLower.includes('bar') || nicheLower.includes('mesón') || nicheLower.includes('asador');
+    const isRealEstate = nicheLower.includes('inmobil') || nicheLower.includes('bienes') || nicheLower.includes('raices') || nicheLower.includes('propied');
+    const isArchitecture = nicheLower.includes('arquit') || nicheLower.includes('interior') || nicheLower.includes('reform') || nicheLower.includes('construc');
+    const isBeauty = nicheLower.includes('estetic') || nicheLower.includes('belleza') || nicheLower.includes('spa') || nicheLower.includes('peluquer') || nicheLower.includes('facial');
+    const isAuto = nicheLower.includes('taller') || nicheLower.includes('mecanic') || nicheLower.includes('auto') || nicheLower.includes('motor');
+    const isFinance = nicheLower.includes('financ') || nicheLower.includes('contab') || nicheLower.includes('tribut') || nicheLower.includes('fiscal') || nicheLower.includes('asesor');
+
+    let templates: Array<{ namePrefix: string; rating: number; reviews: number; websiteDomain?: string }> = [];
+
+    if (isDental) {
+      templates = [
+        { namePrefix: 'Clínica Dental & Estética Sonrisas', rating: 4.8, reviews: 142, websiteDomain: 'clinicadentalsonrisas' },
+        { namePrefix: 'Centro Odontológico Avanzado', rating: 4.9, reviews: 215, websiteDomain: 'odontologiaavanzada' },
+        { namePrefix: 'Clínica de Ortodoncia & Implantes', rating: 4.7, reviews: 98, websiteDomain: 'ortodonciayestetica' },
+        { namePrefix: 'Dental Care & Cirugía Oral', rating: 4.6, reviews: 84, websiteDomain: undefined }, // Oportunidad sin web
+        { namePrefix: 'Clínica Dental Familiar', rating: 4.8, reviews: 175, websiteDomain: 'dentalfamiliar' },
+      ];
+    } else if (isLaw) {
+      templates = [
+        { namePrefix: 'Bufete Jurídico & Asociados Lex', rating: 4.7, reviews: 89, websiteDomain: 'bufetelexabogados' },
+        { namePrefix: 'Gabinete Legal & Corporativo', rating: 4.8, reviews: 112, websiteDomain: 'gabinetelegal' },
+        { namePrefix: 'Abogados Especialistas en Litigios', rating: 4.6, reviews: 67, websiteDomain: 'abogadoslitigios' },
+        { namePrefix: 'Consultoría Legal & Fiscal', rating: 4.9, reviews: 154, websiteDomain: undefined },
+        { namePrefix: 'Estudio Jurídico Mercantil', rating: 4.5, reviews: 52, websiteDomain: 'juridicomercantil' },
+      ];
+    } else if (isRestaurant) {
+      templates = [
+        { namePrefix: 'Restaurante Asador Tradición & Fuego', rating: 4.8, reviews: 340, websiteDomain: 'asadorfuego' },
+        { namePrefix: 'Bistró Gourmet & Vinos', rating: 4.9, reviews: 280, websiteDomain: 'bistrogourmet' },
+        { namePrefix: 'Taberna & Arrocería La Cava', rating: 4.6, reviews: 195, websiteDomain: 'tabernalacava' },
+        { namePrefix: 'Restaurante Fusión & Mar', rating: 4.7, reviews: 220, websiteDomain: undefined },
+        { namePrefix: 'Mesón Gastronómico de Autor', rating: 4.8, reviews: 165, websiteDomain: 'mesondeautor' },
+      ];
+    } else if (isRealEstate) {
+      templates = [
+        { namePrefix: 'Inmobiliaria Habitat & Propiedades', rating: 4.7, reviews: 95, websiteDomain: 'habitatpropiedades' },
+        { namePrefix: 'Gestión Inmobiliaria & Fincas', rating: 4.8, reviews: 130, websiteDomain: 'gestionfincas' },
+        { namePrefix: 'Inversiones Inmobiliarias Prime', rating: 4.9, reviews: 160, websiteDomain: 'inversionesprime' },
+        { namePrefix: 'Consultora de Viviendas & Locales', rating: 4.5, reviews: 78, websiteDomain: undefined },
+        { namePrefix: 'Agencia Inmobiliaria Selecta', rating: 4.8, reviews: 140, websiteDomain: 'inmobiliariaselecta' },
+      ];
+    } else if (isArchitecture) {
+      templates = [
+        { namePrefix: 'Estudio de Arquitectura e Interiorismo Vanguardia', rating: 4.8, reviews: 104, websiteDomain: 'arquitecturavanguardia' },
+        { namePrefix: 'Proyectos Arquitectónicos & Reformas', rating: 4.7, reviews: 88, websiteDomain: 'proyectosyreformas' },
+        { namePrefix: 'Diseño de Espacios & Obra Llave en Mano', rating: 4.9, reviews: 142, websiteDomain: 'disenoespacios' },
+        { namePrefix: 'Gabinete Técnico & Reformas Integrales', rating: 4.6, reviews: 71, websiteDomain: undefined },
+        { namePrefix: 'Arquitectura Residencial Moderna', rating: 4.8, reviews: 93, websiteDomain: 'arquitecturaresidencial' },
+      ];
+    } else if (isBeauty) {
+      templates = [
+        { namePrefix: 'Centro de Estética Avanzada & Spa', rating: 4.9, reviews: 210, websiteDomain: 'esteticavanzada' },
+        { namePrefix: 'Salón de Belleza & Cuidado Capilar', rating: 4.8, reviews: 175, websiteDomain: 'salonbelleza' },
+        { namePrefix: 'Clínica de Medicina Estética & Rejuvenecimiento', rating: 4.7, reviews: 134, websiteDomain: 'medicinaesteticarejuvenece' },
+        { namePrefix: 'Spa Urbano & Masajes Terapéuticos', rating: 4.9, reviews: 190, websiteDomain: undefined },
+        { namePrefix: 'Estudio de Imagen & Alta Peluquería', rating: 4.6, reviews: 89, websiteDomain: 'estudioimagen' },
+      ];
+    } else if (isAuto) {
+      templates = [
+        { namePrefix: 'Taller Mecánico & Diagnosis Electrónica', rating: 4.7, reviews: 156, websiteDomain: 'tallermecanicodiagnosis' },
+        { namePrefix: 'Centro del Motor & Servicio Multimarca', rating: 4.8, reviews: 184, websiteDomain: 'centromotorservicio' },
+        { namePrefix: 'Taller de Chapa, Pintura & Mecánica', rating: 4.6, reviews: 98, websiteDomain: 'chapaymecanica' },
+        { namePrefix: 'Especialistas en Frenos, Suspensión & Neumáticos', rating: 4.9, reviews: 230, websiteDomain: undefined },
+        { namePrefix: 'Mecánica Rápida & Mantenimiento Pre-ITV', rating: 4.7, reviews: 145, websiteDomain: 'mecanicarapida' },
+      ];
+    } else if (isFinance) {
+      templates = [
+        { namePrefix: 'Consultoría Financiera & Tributaria Éxito', rating: 4.7, reviews: 88, websiteDomain: 'consultoriafiscalexito' },
+        { namePrefix: 'Asesoría Fiscal & Contable para Empresas', rating: 4.8, reviews: 120, websiteDomain: 'asesoriafiscalempresas' },
+        { namePrefix: 'Auditoría & Planificación Financiera', rating: 4.9, reviews: 145, websiteDomain: 'auditoriayfinanzas' },
+        { namePrefix: 'Gestoría Integral de Negocios', rating: 4.5, reviews: 65, websiteDomain: undefined },
+        { namePrefix: 'Consultores de Finanzas & Reestructuración', rating: 4.8, reviews: 110, websiteDomain: 'finanzascorporativas' },
+      ];
+    } else {
+      templates = [
+        { namePrefix: `${niche} Especializado`, rating: 4.8, reviews: 120, websiteDomain: 'serviciosprofesionales' },
+        { namePrefix: `Centro Integral de ${niche}`, rating: 4.7, reviews: 95, websiteDomain: 'centrointegral' },
+        { namePrefix: `Expertos en ${niche}`, rating: 4.9, reviews: 160, websiteDomain: 'expertosprofesionales' },
+        { namePrefix: `Servicios y Soluciones ${niche}`, rating: 4.6, reviews: 75, websiteDomain: undefined },
+        { namePrefix: `Gabinete Profesional ${niche}`, rating: 4.8, reviews: 140, websiteDomain: 'gabineteintegral' },
+      ];
+    }
 
     const leads: Array<Omit<ProspectLead, 'id' | 'status' | 'retry_count' | 'do_not_contact' | 'created_at' | 'updated_at'>> = [];
     const timestamp = Date.now();
     const cycleCode = Math.floor(100 + Math.random() * 900);
 
     for (let i = 0; i < limit; i++) {
-      const template = mockTemplates[i % mockTemplates.length];
+      const template = templates[i % templates.length];
       const placeId = `ChIJ_mock_${niche.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${location.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${timestamp}_${cycleCode}_${i}`;
 
-      const normalizedPhone = normalizeToE164(template.phone, config.DEFAULT_COUNTRY_CODE) || template.phone;
+      const phoneNum = `${phonePrefix}${Math.floor(2000000 + Math.random() * 7000000)}`;
+      const normalizedPhone = normalizeToE164(phoneNum, countryCode) || phoneNum;
+
+      const websiteUrl = template.websiteDomain
+        ? `https://www.${template.websiteDomain}-${location.toLowerCase().replace(/[^a-z0-9]/g, '')}${tld}`
+        : undefined;
+
+      const cleanBizName = `${template.namePrefix} ${location} #${cycleCode + i}`;
 
       leads.push({
         place_id: placeId,
-        business_name: `${template.namePrefix} ${location} #${cycleCode + i}`,
+        business_name: cleanBizName,
         niche: `${niche} - ${location}`,
         phone: normalizedPhone,
         whatsapp: normalizedPhone,
-        email: `contacto@${template.namePrefix.toLowerCase().replace(/[^a-z0-9]/g, '')}${cycleCode + i}.com`,
+        email: `contacto@${(template.websiteDomain || 'negocio')}${cycleCode + i}${tld}`,
         google_maps_url: `https://www.google.com/maps/place/?q=place_id:${placeId}`,
         rating: template.rating,
         reviews_count: template.reviews,
-        current_website_url: template.website,
+        current_website_url: websiteUrl,
       });
     }
 

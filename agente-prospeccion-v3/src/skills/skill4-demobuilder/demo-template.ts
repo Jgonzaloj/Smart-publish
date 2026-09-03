@@ -28,106 +28,254 @@ export function generateFullWebsiteDemoHtml(lead: LeadDemoData): string {
   const phoneHtml = escapeHtml(phone);
   const proposalSolutionHtml = escapeHtml(proposalSolution);
 
-  // Detección inteligente de industria
+  // Detección geográfica inteligente (España, Madrid, Lima, Perú, etc.)
+  const locRaw = (lead.niche || '').split('-')[1]?.trim() || '';
+  const isSpain = locRaw.toLowerCase().includes('madrid') || locRaw.toLowerCase().includes('barcelona') || locRaw.toLowerCase().includes('españa') || nameLower.includes('madrid') || nameLower.includes('barcelona');
+  const locCity = isSpain ? (nameLower.includes('barcelona') ? 'Barcelona' : 'Madrid') : (locRaw || 'tu ciudad');
+  const taxEntity = isSpain ? 'Hacienda / Agencia Tributaria' : 'SUNAT';
+  const currencySymbol = isSpain ? '€' : (locRaw.toLowerCase().includes('lima') || locRaw.toLowerCase().includes('peru') ? 'S/' : '$');
+
+  // Detección inteligente de industria / rubro
+  const isDental = nameLower.includes('dental') || nameLower.includes('dient') || nameLower.includes('odontol') || nameLower.includes('sonrisa') || nicheLower.includes('dent') || nicheLower.includes('odont');
   const isLaw = nameLower.includes('juríd') || nameLower.includes('jurid') || nameLower.includes('abog') || nameLower.includes('legal') || nameLower.includes('bufete') || nameLower.includes('lex') || nameLower.includes('ley') || nameLower.includes('notar') || (nicheLower.includes('legal') || nicheLower.includes('abogad') || nicheLower.includes('jurid'));
-  const isArchitecture = nameLower.includes('arquitect') || nameLower.includes('interior') || nameLower.includes('diseño') || nameLower.includes('diseno') || nameLower.includes('construc') || nameLower.includes('vanguardia') || (nicheLower.includes('arquitect') || nicheLower.includes('diseño'));
-  const isFinance = nameLower.includes('financ') || nameLower.includes('tributar') || nameLower.includes('contab') || nameLower.includes('consultor') || nameLower.includes('auditor') || nameLower.includes('éxito') || nameLower.includes('exito') || (nicheLower.includes('financ') || nicheLower.includes('tributar'));
-  const isDental = nameLower.includes('dental') || nameLower.includes('dient') || nameLower.includes('odontol') || nameLower.includes('sonrisa');
+  const isRestaurant = nameLower.includes('restaur') || nameLower.includes('gastron') || nameLower.includes('comida') || nameLower.includes('café') || nameLower.includes('bar') || nameLower.includes('mesón') || nameLower.includes('asador') || nicheLower.includes('restaur') || nicheLower.includes('gastron');
+  const isRealEstate = nameLower.includes('inmobil') || nameLower.includes('bienes') || nameLower.includes('raices') || nameLower.includes('propied') || nameLower.includes('fincas') || nicheLower.includes('inmobil');
+  const isArchitecture = nameLower.includes('arquitect') || nameLower.includes('interior') || nameLower.includes('diseño') || nameLower.includes('diseno') || nameLower.includes('construc') || nameLower.includes('vanguardia') || nameLower.includes('reforma') || (nicheLower.includes('arquitect') || nicheLower.includes('diseño') || nicheLower.includes('reforma'));
+  const isBeauty = nameLower.includes('estetic') || nameLower.includes('belleza') || nameLower.includes('spa') || nameLower.includes('peluquer') || nameLower.includes('facial') || nicheLower.includes('estetic') || nicheLower.includes('belleza') || nicheLower.includes('spa');
+  const isAuto = nameLower.includes('taller') || nameLower.includes('mecanic') || nameLower.includes('auto') || nameLower.includes('motor') || nicheLower.includes('taller') || nicheLower.includes('mecanic') || nicheLower.includes('auto');
+  const isFitness = nameLower.includes('gym') || nameLower.includes('gimnas') || nameLower.includes('fit') || nameLower.includes('entren') || nicheLower.includes('gym') || nicheLower.includes('fitness');
+  const isFinance = nameLower.includes('financ') || nameLower.includes('tributar') || nameLower.includes('contab') || nameLower.includes('consultor') || nameLower.includes('auditor') || (nicheLower.includes('financ') || nicheLower.includes('tributar'));
 
   let theme = {
-    category: 'Centro Médico & Salud',
-    badge: 'Atención Médica & Odontológica de Excelencia',
-    heroTitle: `Cuidado Médico de Confianza y Tecnología Avanzada en Lima`,
-    heroSubtitle: `Atención personalizada, especialistas certificados y tecnología de última generación para tu bienestar y el de tu familia. Agenda tu cita en segundos.`,
-    servicesTitle: 'Nuestras Especialidades y Servicios',
-    servicesSubtitle: 'Contamos con un equipo multidisciplinario listo para brindarte la mejor atención médica.',
-    ctaBooking: 'Agendar Cita Médica',
+    category: 'Centro Médico & Odontológico',
+    badge: `Atención Odontológica & Salud de Excelencia en ${locCity}`,
+    heroTitle: `Sonrisas Saludables, Tecnología Avanzada y Confianza en ${locCity}`,
+    heroSubtitle: `Atención dental especializada, odontología digital y especialistas certificados para transformar tu sonrisa y cuidar la salud bucal de toda tu familia. Agenda en segundos.`,
+    servicesTitle: 'Especialidades Odontológicas & Tratamientos',
+    servicesSubtitle: 'Tratamientos de vanguardia con mínima invasión y resultados de máxima estética.',
+    ctaBooking: 'Agendar Cita Odontológica',
     clientLabel: 'Pacientes',
-    avgTicket: 120,
+    avgTicket: isSpain ? 180 : 120,
+    primaryColor: '#0284c7',
+    primaryGradient: 'linear-gradient(135deg, #0284c7 0%, #10b981 100%)',
+    glowColor: '0 10px 30px -5px rgba(2, 132, 199, 0.4)',
+    bgRadial1: 'rgba(2, 132, 199, 0.18)',
+    bgRadial2: 'rgba(16, 185, 129, 0.14)',
     services: [
-      { icon: '🩺', title: 'Consultas & Diagnóstico Integral', desc: 'Evaluación médica completa con especialistas dedicados y tecnología de diagnóstico rápido.', tag: 'Popular' },
-      { icon: '🦷', title: 'Odontología & Estética Dental', desc: 'Diseño de sonrisa, blanqueamiento, ortodoncia invisible e implantes de alta precisión.', tag: 'Alta Demanda' },
-      { icon: '🧪', title: 'Laboratorio & Análisis Clínicos', desc: 'Resultados precisos en tiempo récord con entrega digital directa a tu WhatsApp.', tag: 'Rápido' },
-      { icon: '⚡', title: 'Atención Prioritaria & Emergencias', desc: 'Disponibilidad inmediata para urgencias con médicos especialistas de guardia.', tag: '24/7' }
+      { icon: '🦷', title: 'Diseño de Sonrisa & Estética Dental', desc: 'Carillas de porcelana, blanqueamiento láser y armonización dental personalizada.', tag: 'Alta Demanda' },
+      { icon: '🔬', title: 'Ortodoncia Invisible & Brackets Zafiro', desc: 'Alineación dental de alta precisión sin que nadie note que llevas ortodoncia.', tag: 'Top Ventas' },
+      { icon: '💎', title: 'Implantes Dentales de Carga Inmediata', desc: 'Recupera tus piezas dentales con titanio de grado médico y cirugía guiada 3D.', tag: 'Garantizado' },
+      { icon: '🩺', title: 'Limpieza Profunda & Prevención', desc: 'Higiene ultrasónica sin dolor, eliminación de sarro y control integral de encías.', tag: 'Esencial' }
     ],
-    bookingOptions: ['Consulta Médica General', 'Odontología / Limpieza', 'Especialidad Pediátrica', 'Chequeo Preventivo', 'Otro Servicio'],
+    bookingOptions: ['Valoración Dental / Diagnóstico', 'Ortodoncia Invisible', 'Diseño de Sonrisa / Carillas', 'Implante Dental', 'Limpieza y Revisión'],
     testimonials: [
-      { name: 'Dra. Patricia Morales', text: 'Excelente atención, el proceso de agendamiento fue inmediato y las instalaciones son impecables. 100% recomendados.', date: 'Hace 3 días' },
-      { name: 'Ing. Carlos Mendoza', text: 'Gran puntualidad y trato profesional. Me atendieron a la hora exacta y el seguimiento por WhatsApp fue genial.', date: 'Hace 1 semana' },
-      { name: 'Mariana Vega', text: 'La mejor experiencia médica que he tenido en Lima. Médicos muy atentos y comprensivos con toda mi familia.', date: 'Hace 2 semanas' }
+      { name: 'Dra. Patricia Morales', text: `La mejor clínica en ${locCity}. El diseño de mi sonrisa quedó impecable y el trato de todo el personal es de primer nivel.`, date: 'Hace 3 días' },
+      { name: 'Ing. Carlos Mendoza', text: 'Puntualidad absoluta, tecnología de escaneo 3D sin pastas molestas y presupuesto transparente desde el primer día.', date: 'Hace 1 semana' },
+      { name: 'Mariana Vega', text: 'Trato muy cálido con los niños y adultos. Me colocaron un implante sin dolor alguno. 100% recomendados.', date: 'Hace 2 semanas' }
     ]
   };
 
   if (isLaw) {
     theme = {
       category: 'Estudio Jurídico & Legal',
-      badge: 'Defensa Legal Estratégica & Corporativa',
-      heroTitle: `Defensa Jurídica de Alto Nivel y Asesoría Legal Integral`,
-      heroSubtitle: `Protegemos tus intereses comerciales y patrimoniales con estrategias legales sólidas, experiencia comprobada y total confidencialidad en Lima.`,
+      badge: `Defensa Legal Estratégica & Corporativa en ${locCity}`,
+      heroTitle: `Defensa Jurídica de Alto Nivel y Protección Patrimonial`,
+      heroSubtitle: `Protegemos tus intereses comerciales y patrimoniales con estrategias legales sólidas, experiencia comprobada y total confidencialidad en ${locCity}.`,
       servicesTitle: 'Áreas de Práctica Jurídica',
       servicesSubtitle: 'Soluciones legales estratégicas a medida para empresas, directores y particulares.',
       ctaBooking: 'Solicitar Asesoría Legal',
       clientLabel: 'Clientes / Casos',
-      avgTicket: 850,
+      avgTicket: isSpain ? 950 : 750,
+      primaryColor: '#1e3a8a',
+      primaryGradient: 'linear-gradient(135deg, #1e3a8a 0%, #d97706 100%)',
+      glowColor: '0 10px 30px -5px rgba(217, 119, 6, 0.35)',
+      bgRadial1: 'rgba(30, 58, 138, 0.22)',
+      bgRadial2: 'rgba(217, 119, 6, 0.12)',
       services: [
-        { icon: '⚖️', title: 'Derecho Corporativo & Comercial', desc: 'Constitución de sociedades, contratos comerciales de alta cuantía, fusiones y blindaje patrimonial.', tag: 'Empresarial' },
-        { icon: '🏛️', title: 'Litigios & Resolución de Conflictos', desc: 'Defensa judicial y arbitral de alta complejidad con enfoque en protección de activos.', tag: 'Estratégico' },
-        { icon: '💼', title: 'Derecho Laboral & Tributario', desc: 'Auditoría laboral preventiva, defensa ante SUNAT y optimización impositiva legal.', tag: 'SUNAT' },
-        { icon: '🏢', title: 'Derecho Inmobiliario & Notarial', desc: 'Saneamiento de propiedades, compraventas, contratos de arrendamiento y estudio de títulos.', tag: 'Inmobiliario' }
+        { icon: '⚖️', title: 'Derecho Corporativo & Mercantil', desc: 'Constitución societaria, contratos comerciales de alta cuantía, fusiones y blindaje patrimonial.', tag: 'Empresarial' },
+        { icon: '🏛️', title: 'Litigios Civiles & Resolución de Conflictos', desc: 'Defensa judicial y arbitral de alta complejidad con enfoque en salvaguarda de activos.', tag: 'Estratégico' },
+        { icon: '💼', title: 'Derecho Laboral & Tributario', desc: `Auditoría laboral preventiva, defensa ante ${taxEntity} y optimización fiscal legal.`, tag: 'Preventivo' },
+        { icon: '🏢', title: 'Derecho Inmobiliario & Notarial', desc: 'Estudio de títulos, contratos de arrendamiento, compraventas y saneamiento de fincas.', tag: 'Inmobiliario' }
       ],
-      bookingOptions: ['Asesoría Corporativa / Contratos', 'Consulta Tributaria / SUNAT', 'Litigio o Conflicto Legal', 'Derecho Inmobiliario', 'Consulta General'],
+      bookingOptions: ['Asesoría Corporativa / Contratos', `Consulta Fiscal / ${taxEntity}`, 'Litigio o Conflicto Judicial', 'Derecho Inmobiliario', 'Consulta General'],
       testimonials: [
-        { name: 'Dr. Roberto Zambrano', text: 'Resolvieron un conflicto contractual complejo en tiempo récord. El nivel de preparación del equipo es sobresaliente.', date: 'Hace 4 días' },
-        { name: 'Lucía Fernández (Gerente)', text: 'Nuestro estudio de confianza para todos los asuntos comerciales y societarios. Totalmente recomendados.', date: 'Hace 2 semanas' },
-        { name: 'Esteban Quispe', text: 'Excelente asesoramiento en derecho tributario, nos ahorraron contingencias graves con SUNAT. Muy profesionales.', date: 'Hace 1 mes' }
+        { name: 'Dr. Roberto Zambrano', text: 'Resolvieron un conflicto contractual societario en tiempo récord. El nivel de preparación del equipo es sobresaliente.', date: 'Hace 4 días' },
+        { name: 'Lucía Fernández (Gerente)', text: `Nuestro despacho de confianza en ${locCity} para todos los asuntos comerciales. Rigor y seriedad total.`, date: 'Hace 2 semanas' },
+        { name: 'Esteban Ramos', text: `Excelente asesoramiento tributario, nos evitaron contingencias graves ante ${taxEntity}. Muy agradecido.`, date: 'Hace 1 mes' }
+      ]
+    };
+  } else if (isRestaurant) {
+    theme = {
+      category: 'Restaurante & Experiencia Gastronómica',
+      badge: `Gastronomía de Autor & Sabores Auténticos en ${locCity}`,
+      heroTitle: `Experiencia Culinaria Inolvidable, Tradición y Vanguardia`,
+      heroSubtitle: `Ingredientes seleccionados de temporada, carnes maduradas a la brasa, cocina con alma y una selecta bodega para deleitar tus sentidos en ${locCity}.`,
+      servicesTitle: 'Nuestra Propuesta Gastronómica',
+      servicesSubtitle: 'Un viaje de sabores creado con pasión por nuestros maestros de cocina.',
+      ctaBooking: 'Reservar Mesa Online',
+      clientLabel: 'Comensales',
+      avgTicket: isSpain ? 45 : 35,
+      primaryColor: '#b91c1c',
+      primaryGradient: 'linear-gradient(135deg, #b91c1c 0%, #f59e0b 100%)',
+      glowColor: '0 10px 30px -5px rgba(185, 28, 28, 0.4)',
+      bgRadial1: 'rgba(185, 28, 28, 0.20)',
+      bgRadial2: 'rgba(245, 158, 11, 0.15)',
+      services: [
+        { icon: '🥩', title: 'Carnes Maduradas & Brasa Viva', desc: 'Cortes premium madurados en su punto exacto, sellados a la brasa de encina con sabor único.', tag: 'Especialidad' },
+        { icon: '🍷', title: 'Cava de Vinos & Maridaje Seleccionado', desc: 'Más de 80 referencias de las mejores denominaciones de origen para elevar cada plato.', tag: 'Maridaje' },
+        { icon: '🥘', title: 'Arroces de Autor & Pescados Frescos', desc: 'Recetas de mar y tierra preparadas al momento con fondos reducidos durante horas.', tag: 'Favorito' },
+        { icon: '🎉', title: 'Eventos Privados & Cenas de Empresa', desc: 'Salones exclusivos para grupos, menús corporativos a medida y atención personalizada.', tag: 'Reservas' }
+      ],
+      bookingOptions: ['Reserva de Mesa (2-4 personas)', 'Mesa para Grupo (5+ personas)', 'Cena Maridaje de Degustación', 'Evento Privado / Celebración', 'Consulta Carta & Alérgenos'],
+      testimonials: [
+        { name: 'Marta Delgado', text: `Sin duda uno de los mejores restaurantes de ${locCity}. El solomillo y el trato del sumiller fueron espectaculares.`, date: 'Hace 2 días' },
+        { name: 'Javier Navarro', text: 'Celebramos nuestro aniversario y cuidaron cada detalle con postre sorpresa incluido. Una velada mágica.', date: 'Hace 1 semana' },
+        { name: 'Beatriz Sanz', text: 'Ambiente acogedor, carta de vinos de nivel y arroces en su punto exacto. Repetiremos siempre.', date: 'Hace 2 semanas' }
+      ]
+    };
+  } else if (isRealEstate) {
+    theme = {
+      category: 'Inmobiliaria & Gestión Patrimonial',
+      badge: `Propiedades Exclusivas & Asesoría Inmobiliaria en ${locCity}`,
+      heroTitle: `Encuentra tu Hogar Ideal o Maximiza la Venta de tu Propiedad`,
+      heroSubtitle: `Expertos en compra, venta y alquiler de inmuebles residenciales y comerciales en ${locCity}. Tasación profesional gratuita y acompañamiento integral.`,
+      servicesTitle: 'Servicios Inmobiliarios Integrales',
+      servicesSubtitle: 'Gestión transparente, compradores cualificados y marketing inmobiliario de alto impacto.',
+      ctaBooking: 'Solicitar Tasación Gratuita',
+      clientLabel: 'Operaciones Cerradas',
+      avgTicket: isSpain ? 3500 : 2500,
+      primaryColor: '#059669',
+      primaryGradient: 'linear-gradient(135deg, #2563eb 0%, #059669 100%)',
+      glowColor: '0 10px 30px -5px rgba(5, 150, 105, 0.4)',
+      bgRadial1: 'rgba(37, 99, 235, 0.18)',
+      bgRadial2: 'rgba(5, 150, 105, 0.16)',
+      services: [
+        { icon: '🏡', title: 'Venta de Pisos & Chalets Exclusivos', desc: 'Plan de marketing digital 360°, fotografía profesional y filtrado riguroso de compradores.', tag: 'Venta Rápida' },
+        { icon: '📈', title: 'Tasación Inmobiliaria Oficial Gratuita', desc: 'Valoración real de mercado basada en datos registrales recientes sin coste ni compromiso.', tag: 'Gratis' },
+        { icon: '🔑', title: 'Alquiler Seguro con Garantía de Pago', desc: 'Selección de inquilinos solventes con seguro de impago y gestión integral del contrato.', tag: 'Protegido' },
+        { icon: '🏢', title: 'Inversión & Locales Comerciales', desc: 'Oportunidades de alta rentabilidad neta para inversores patrimoniales en ubicaciones prime.', tag: 'Inversión' }
+      ],
+      bookingOptions: ['Quiero Vender mi Propiedad', 'Tasación Gratuita de Inmueble', 'Busco Comprar Vivienda', 'Alquiler de Propiedades', 'Asesoría de Inversión'],
+      testimonials: [
+        { name: 'Ignacio Gómez', text: `Vendieron mi piso en ${locCity} en menos de 40 días al precio pactado. Gestión notarial impecable.`, date: 'Hace 5 días' },
+        { name: 'Elena Garrido', text: 'Encontrar vivienda con ellos fue un respiro. Nos ahorraron semanas de visitas infructuosas.', date: 'Hace 2 semanas' },
+        { name: 'Marcos Gil', text: 'Gran equipo de inversores. Excelente ojo para detectar oportunidades de reforma y rentabilidad.', date: 'Hace 1 mes' }
+      ]
+    };
+  } else if (isBeauty) {
+    theme = {
+      category: 'Estética Avanzada & Centro de Belleza',
+      badge: `Tratamientos Faciales, Corporales & Bienestar en ${locCity}`,
+      heroTitle: `Tu Belleza Natural Realzada con Tecnología Avanzada`,
+      heroSubtitle: `Rituales de cuidado facial, rejuvenecimiento sin cirugía, aparatología médico-estética y masajes de relajación en un ambiente de calma exclusivo.`,
+      servicesTitle: 'Nuestra Carta de Belleza & Estética',
+      servicesSubtitle: 'Protocolos personalizados según las necesidades únicas de tu piel y cuerpo.',
+      ctaBooking: 'Reservar Tratamiento Estético',
+      clientLabel: 'Clientas Satisfechas',
+      avgTicket: isSpain ? 85 : 60,
+      primaryColor: '#db2777',
+      primaryGradient: 'linear-gradient(135deg, #db2777 0%, #8b5cf6 100%)',
+      glowColor: '0 10px 30px -5px rgba(219, 39, 119, 0.4)',
+      bgRadial1: 'rgba(219, 39, 119, 0.20)',
+      bgRadial2: 'rgba(139, 92, 246, 0.16)',
+      services: [
+        { icon: '✨', title: 'Higiene Facial Profunda & Hydrafacial', desc: 'Limpieza celular con sueros antioxidantes, extracción suave y luminosidad instantánea.', tag: 'Top Glow' },
+        { icon: '🌿', title: 'Maderoterapia & Reductor Corporal', desc: 'Drenaje linfático, reafirmación y modelado corporal con técnicas naturales no invasivas.', tag: 'Efectivo' },
+        { icon: '💎', title: 'Lifting Facial & Rejuvenecimiento Radiofrecuencia', desc: 'Estimulación de colágeno propio para tensar la piel y difuminar líneas de expresión.', tag: 'Antiedad' },
+        { icon: '🧖‍♀️', title: 'Rituales Spa & Masaje Relajante con Aromas', desc: 'Desconexión total del estrés diario con aceites botánicos y aromaterapia guiada.', tag: 'Relax' }
+      ],
+      bookingOptions: ['Diagnóstico de Piel Gratuito', 'Limpieza Facial Hydrafacial', 'Bono Corporal Reductor', 'Masaje Spa Relajante', 'Tratamiento Antiedad'],
+      testimonials: [
+        { name: 'Sofía Carvajal', text: `Salí con la piel luminosa y descansada. El mejor centro de estética de ${locCity}, sin duda alguna.`, date: 'Hace 3 días' },
+        { name: 'Valeria Montero', text: 'El tratamiento reductor dio resultados visibles desde la tercera sesión. Trato muy profesional y delicado.', date: 'Hace 1 semana' },
+        { name: 'Lorena Rubio', text: 'Un oasis de paz en mitad de la ciudad. El masaje con aromaterapia me dejó como nueva.', date: 'Hace 3 semanas' }
+      ]
+    };
+  } else if (isAuto) {
+    theme = {
+      category: 'Taller Mecánico & Diagnosis Automotriz',
+      badge: `Mecánica de Confianza & Mantenimiento Multimarca en ${locCity}`,
+      heroTitle: `Mecánica Profesional, Diagnosis de Precisión y Seguridad en Carretera`,
+      heroSubtitle: `Mantenimiento oficial pre-ITV, diagnosis por ordenador, revisión de frenos y neumáticos con repuestos homologados y presupuesto cerrado sin sorpresas.`,
+      servicesTitle: 'Servicios de Taller & Reparación',
+      servicesSubtitle: 'Cuidamos de tu vehículo con mecánicos titulados y tecnología de diagnosis oficial.',
+      ctaBooking: 'Pedir Cita en Taller',
+      clientLabel: 'Vehículos Reparados',
+      avgTicket: isSpain ? 220 : 150,
+      primaryColor: '#ea580c',
+      primaryGradient: 'linear-gradient(135deg, #1f2937 0%, #ea580c 100%)',
+      glowColor: '0 10px 30px -5px rgba(234, 88, 12, 0.4)',
+      bgRadial1: 'rgba(31, 41, 55, 0.25)',
+      bgRadial2: 'rgba(234, 88, 12, 0.18)',
+      services: [
+        { icon: '🔧', title: 'Revisión Oficial Pre-ITV & Mantenimiento', desc: 'Chequeo completo de 40 puntos de control para pasar la ITV a la primera y sin contratiempos.', tag: 'Garantizado' },
+        { icon: '💻', title: 'Diagnosis Electrónica Multimarca', desc: 'Detección exacta de fallos de motor, sensores e inyección con equipos de última generación.', tag: 'Rápido' },
+        { icon: '🛞', title: 'Frenos, Neumáticos & Suspensión', desc: 'Sustitución de pastillas, discos, amortiguadores y equilibrado de ruedas para tu seguridad.', tag: 'Seguridad' },
+        { icon: '⚡', title: 'Climatización, Batería & Cambio de Aceite', desc: 'Carga de gas R134a/R1234yf, comprobación de alternador y aceites sintéticos de máxima calidad.', tag: 'Mantenimiento' }
+      ],
+      bookingOptions: ['Revisión Pre-ITV Completa', 'Diagnosis de Fallo de Motor', 'Cambio de Aceite y Filtros', 'Presupuesto de Frenos / Neumáticos', 'Revisión General de Taller'],
+      testimonials: [
+        { name: 'Manuel Ortiz', text: `Excelente taller en ${locCity}. Me explicaron la avería con fotos y me dieron presupuesto exacto antes de tocar nada.`, date: 'Hace 4 días' },
+        { name: 'Daniel Herranz', text: 'Pasé la ITV a la primera tras la revisión. Muy puntuales y coche limpio al entregarlo.', date: 'Hace 2 semanas' },
+        { name: 'Raúl Santana', text: 'Precios justos y mecánicos honestos, que hoy en día es difícil de encontrar. Taller de confianza.', date: 'Hace 1 mes' }
       ]
     };
   } else if (isArchitecture) {
     theme = {
-      category: 'Estudio de Arquitectura & Interiorismo',
-      badge: 'Diseño Exclusivo & Construcción de Vanguardia',
-      heroTitle: `Transformamos Espacios en Obras Arquitectónicas Únicas`,
-      heroSubtitle: `Diseño arquitectónico contemporáneo, interiorismo de lujo y gestión integral de obra desde el concepto hasta la entrega llave en mano.`,
+      category: 'Estudio de Arquitectura & Reformas',
+      badge: `Diseño Arquitectónico, Interiorismo & Reformas Integrales en ${locCity}`,
+      heroTitle: `Transformamos Espacios en Obras Arquitectónicas Extraordinarias`,
+      heroSubtitle: `Diseño arquitectónico contemporáneo, reformas integrales de lujo y gestión completa de obra desde la idea conceptual hasta la entrega de llaves en ${locCity}.`,
       servicesTitle: 'Servicios de Arquitectura & Diseño',
-      servicesSubtitle: 'Innovación espacial, estética refinada y máxima eficiencia constructiva.',
-      ctaBooking: 'Cotizar Proyecto Arquitectónico',
-      clientLabel: 'Proyectos',
-      avgTicket: 2500,
+      servicesSubtitle: 'Innovación espacial, estética refinada y máximo rigor en plazos y costes.',
+      ctaBooking: 'Cotizar Proyecto / Reforma',
+      clientLabel: 'Proyectos Entregados',
+      avgTicket: isSpain ? 3200 : 2200,
+      primaryColor: '#ea580c',
+      primaryGradient: 'linear-gradient(135deg, #334155 0%, #ea580c 100%)',
+      glowColor: '0 10px 30px -5px rgba(234, 88, 12, 0.35)',
+      bgRadial1: 'rgba(51, 65, 85, 0.25)',
+      bgRadial2: 'rgba(234, 88, 12, 0.16)',
       services: [
         { icon: '📐', title: 'Diseño Residencial & Comercial', desc: 'Planificación arquitectónica completa con estética moderna y funcionalidad optimizada.', tag: 'Exclusivo' },
-        { icon: '🛋️', title: 'Interiorismo & Remodelaciones', desc: 'Selección de materiales de lujo, iluminación escénica y mobiliario personalizado.', tag: 'Diseño' },
-        { icon: '🏗️', title: 'Gestión & Supervisión de Obra', desc: 'Control riguroso de plazos, presupuestos y acabados de máxima calidad constructiva.', tag: 'Llave en Mano' },
-        { icon: '🖥️', title: 'Renders 3D & Recorridos Virtuales', desc: 'Visualización hiperrealista de tu proyecto antes de iniciar la construcción.', tag: '3D HD' }
+        { icon: '🛋️', title: 'Interiorismo & Reformas Integrales', desc: 'Selección de materiales nobles, iluminación escénica y mobiliario personalizado a medida.', tag: 'Diseño' },
+        { icon: '🏗️', title: 'Gestión & Dirección de Obra Llave en Mano', desc: 'Control exhaustivo de plazos, licencias municipales y acabados de máxima calidad constructiva.', tag: 'Sin Estrés' },
+        { icon: '🖥️', title: 'Renders 3D & Recorridos Virtuales VR', desc: 'Visualización fotorrealista de tu vivienda o local comercial antes de poner el primer ladrillo.', tag: '3D Ultra' }
       ],
-      bookingOptions: ['Diseño de Casa / Departamento', 'Proyecto Comercial / Oficinas', 'Remodelación & Interiorismo', 'Supervisión de Obra', 'Cotización de Proyecto'],
+      bookingOptions: ['Reforma Integral de Vivienda', 'Diseño de Local Comercial / Oficina', 'Obra Nueva / Proyecto Arquitectónico', 'Interiorismo y Mobiliario', 'Solicitar Presupuesto'],
       testimonials: [
-        { name: 'Arq. Gabriela Soto', text: 'El diseño de nuestra casa de playa superó todas las expectativas. Gran manejo de la luz y los espacios.', date: 'Hace 5 días' },
-        { name: 'Felipe Paredes', text: 'Remodelaron nuestras oficinas corporativas con un gusto exquisito y dentro del presupuesto pactado.', date: 'Hace 2 semanas' },
-        { name: 'Claudia Navarro', text: 'Los renders y la ejecución final fueron idénticos. Cuidaron cada detalle con mucha dedicación.', date: 'Hace 3 semanas' }
+        { name: 'Arq. Gabriela Soto', text: `El proyecto de nuestra vivienda en ${locCity} superó las expectativas. Gran aprovechamiento de la luz.`, date: 'Hace 5 días' },
+        { name: 'Felipe Paredes', text: 'Reformaron nuestras oficinas dentro del plazo pactado y sin sobrecostes inesperados. 10/10.', date: 'Hace 2 semanas' },
+        { name: 'Claudia Navarro', text: 'Los renders y la casa terminada eran idénticos. Cuidaron cada milímetro con mucha pasión.', date: 'Hace 3 semanas' }
       ]
     };
   } else if (isFinance) {
     theme = {
       category: 'Consultoría Financiera & Tributaria',
-      badge: 'Estrategia Fiscal & Crecimiento Financiero',
-      heroTitle: `Estrategia Tributaria y Control Financiero para Empresas`,
-      heroSubtitle: `Optimizamos la carga tributaria de tu empresa, garantizamos cumplimiento ante SUNAT y mejoramos la rentabilidad de tu negocio en Lima.`,
-      servicesTitle: 'Nuestros Servicios Financieros',
-      servicesSubtitle: 'Soluciones contables, tributarias y de auditoría con rigor técnico.',
-      ctaBooking: 'Solicitar Diagnóstico Financiero',
-      clientLabel: 'Empresas',
-      avgTicket: 1200,
+      badge: `Estrategia Fiscal & Crecimiento Financiero en ${locCity}`,
+      heroTitle: `Estrategia Tributaria, Contabilidad y Control Financiero para Empresas`,
+      heroSubtitle: `Optimizamos la carga tributaria de tu empresa de forma 100% legal, garantizamos cumplimiento ante ${taxEntity} y maximizamos la rentabilidad en ${locCity}.`,
+      servicesTitle: 'Nuestros Servicios Financieros & Fiscales',
+      servicesSubtitle: 'Soluciones contables, tributarias y de auditoría con máximo rigor técnico.',
+      ctaBooking: 'Solicitar Diagnóstico Fiscal',
+      clientLabel: 'Empresas Asesoradas',
+      avgTicket: isSpain ? 1400 : 1000,
+      primaryColor: '#0f766e',
+      primaryGradient: 'linear-gradient(135deg, #0f766e 0%, #0284c7 100%)',
+      glowColor: '0 10px 30px -5px rgba(15, 118, 110, 0.4)',
+      bgRadial1: 'rgba(15, 118, 110, 0.22)',
+      bgRadial2: 'rgba(2, 132, 199, 0.15)',
       services: [
-        { icon: '📊', title: 'Asesoría & Planeamiento Tributario', desc: 'Estructuración legal y fiscal para reducir riesgos impositivos y maximizar flujo de caja.', tag: 'Ahorro Fiscal' },
-        { icon: '📑', title: 'Contabilidad Integral & Outsourcing', desc: 'Estados financieros al día, libros electrónicos y cumplimiento formal oportuno.', tag: 'Mensual' },
-        { icon: '🔍', title: 'Auditoría Preventiva SUNAT', desc: 'Revisión exhaustiva para prevenir fiscalizaciones y multas inesperadas.', tag: 'Preventivo' },
-        { icon: '💼', title: 'Finanzas Corporativas & Valorizaciones', desc: 'Diagnóstico de rentabilidad, flujo de caja proyectado y valorización de empresas.', tag: 'Estratégico' }
+        { icon: '📊', title: 'Planeamiento Fiscal & Ahorro Tributario', desc: `Estructuración legal y fiscal para reducir riesgos impositivos ante ${taxEntity} y ganar liquidez.`, tag: 'Ahorro' },
+        { icon: '📑', title: 'Contabilidad Integral & Cierre de Cuentas', desc: 'Presentación puntual de impuestos, estados financieros mensuales y libros contables oficiales.', tag: 'Mensual' },
+        { icon: '🔍', title: `Auditoría Preventiva & Blindaje ante ${taxEntity}`, desc: 'Revisión exhaustiva de ejercicios anteriores para evitar inspecciones, multas o requerimientos.', tag: 'Blindaje' },
+        { icon: '💼', title: 'Finanzas Corporativas & Flujo de Caja', desc: 'Diagnóstico de rentabilidad, análisis de márgenes operativos y valoración de empresas.', tag: 'Estratégico' }
       ],
-      bookingOptions: ['Planeamiento Tributario', 'Outsourcing Contable', 'Auditoría Preventiva SUNAT', 'Diagnóstico Financiero', 'Otro Requerimiento'],
+      bookingOptions: ['Diagnóstico Fiscal Gratuito', 'Outsourcing Contable Mensual', `Revisión Preventiva ${taxEntity}`, 'Planificación Financiera Empresarial', 'Consulta General'],
       testimonials: [
-        { name: 'Ing. Rodrigo Alarcón', text: 'Nos ayudaron a reestructurar los costos y recuperar saldos a favor con SUNAT de manera impecable.', date: 'Hace 6 días' },
-        { name: 'Valeria Benavides', text: 'Tranquilidad total para nuestra empresa. Siempre al día con impuestos y reportes financieros claros.', date: 'Hace 2 semanas' },
-        { name: 'Martín Córdova', text: 'Asesoría de primer nivel. Entienden perfectamente el ritmo de los negocios en Perú.', date: 'Hace 1 mes' }
+        { name: 'Ing. Rodrigo Alarcón', text: `Nos ahorraron miles de euros en deducciones legales ante ${taxEntity}. Asesoría brillante.`, date: 'Hace 6 días' },
+        { name: 'Valeria Benavides', text: 'Tranquilidad total para nuestra junta directiva. Siempre al día con impuestos y reportes nítidos.', date: 'Hace 2 semanas' },
+        { name: 'Martín Córdova', text: 'Asesoría cercana, rápida y de primer nivel. Un socio estratégico indispensable para crecer.', date: 'Hace 1 mes' }
       ]
     };
   }
@@ -146,8 +294,8 @@ export function generateFullWebsiteDemoHtml(lead: LeadDemoData): string {
       --bg-main: #060913;
       --bg-card: rgba(17, 24, 43, 0.85);
       --bg-card-hover: rgba(26, 36, 64, 0.95);
-      --primary: #3b82f6;
-      --primary-gradient: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
+      --primary: ${theme.primaryColor || '#3b82f6'};
+      --primary-gradient: ${theme.primaryGradient || 'linear-gradient(135deg, #2563eb 0%, #06b6d4 100%)'};
       --emerald-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
       --accent-cyan: #06b6d4;
       --accent-emerald: #10b981;
@@ -158,7 +306,7 @@ export function generateFullWebsiteDemoHtml(lead: LeadDemoData): string {
       --text-light: #e2e8f0;
       --border-glass: rgba(255, 255, 255, 0.08);
       --border-focus: rgba(59, 130, 246, 0.5);
-      --glow-blue: 0 10px 30px -5px rgba(37, 99, 235, 0.4);
+      --glow-blue: ${theme.glowColor || '0 10px 30px -5px rgba(37, 99, 235, 0.4)'};
       --font-display: 'Outfit', sans-serif;
       --font-body: 'Plus Jakarta Sans', sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
@@ -169,8 +317,8 @@ export function generateFullWebsiteDemoHtml(lead: LeadDemoData): string {
     body {
       background-color: var(--bg-main);
       background-image: 
-        radial-gradient(at 15% 15%, rgba(37, 99, 235, 0.18) 0px, transparent 50%),
-        radial-gradient(at 85% 75%, rgba(6, 182, 212, 0.15) 0px, transparent 50%),
+        radial-gradient(at 15% 15%, ${theme.bgRadial1 || 'rgba(37, 99, 235, 0.18)'} 0px, transparent 50%),
+        radial-gradient(at 85% 75%, ${theme.bgRadial2 || 'rgba(6, 182, 212, 0.15)'} 0px, transparent 50%),
         radial-gradient(at 50% 40%, rgba(139, 92, 246, 0.09) 0px, transparent 60%);
       color: var(--text-light);
       font-family: var(--font-body);
