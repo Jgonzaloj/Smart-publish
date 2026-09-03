@@ -63,6 +63,12 @@ export class SchedulerService {
 
     this.isProcessing = true;
     try {
+      // 1. Despachar prospectos nuevos que estén en cola (primer contacto)
+      const queuedRes = await this.outreachEngine.dispatchQueuedMessages(5);
+      if (queuedRes.sent > 0) {
+        console.log(`[Scheduler] 🚀 Despachados ${queuedRes.sent} prospectos nuevos desde la cola.`);
+      }
+
       console.log('[Scheduler] 🔄 Ejecutando escaneo de seguimientos automáticos (48h/72h -> COLD)...');
       const result = await this.outreachEngine.dispatchFollowups(20);
 

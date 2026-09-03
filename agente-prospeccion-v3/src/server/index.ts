@@ -353,6 +353,18 @@ app.get('/api/demos/:id', (req, res) => {
   res.send(html);
 });
 
+// 9. Despacho manual bajo demanda de prospectos en cola
+app.post('/api/outreach/dispatch', async (req, res) => {
+  try {
+    const limit = req.body.limit ? parseInt(req.body.limit, 10) : 10;
+    const result = await outreachEngine.dispatchQueuedMessages(limit);
+    res.json({ success: true, ...result });
+  } catch (error: any) {
+    console.error('Error despachando cola:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Arrancar servidor y servicio de temporizador en segundo plano
 app.listen(config.PORT, () => {
   console.log(`\n=============================================================`);

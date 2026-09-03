@@ -82,6 +82,37 @@ function setupEventListeners() {
     });
   }
 
+  // Despachar cola bajo demanda
+  const btnDispatchQueue = document.getElementById('btnDispatchQueue');
+  if (btnDispatchQueue) {
+    btnDispatchQueue.addEventListener('click', async () => {
+      btnDispatchQueue.disabled = true;
+      btnDispatchQueue.innerHTML = `<span>⏳ Despachando...</span>`;
+      try {
+        const res = await fetch('/api/outreach/dispatch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ limit: 10 }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          await loadDashboardData();
+          alert(`✅ Proceso completado: ${data.sent} prospecto(s) despachados.${data.pausedByCircuitBreaker ? ' (Circuit Breaker activo)' : ''}`);
+        } else {
+          alert('Aviso: ' + (data.error || 'No se pudieron despachar prospectos'));
+        }
+      } catch (err) {
+        alert('Error de conexión al despachar la cola');
+      } finally {
+        btnDispatchQueue.disabled = false;
+        btnDispatchQueue.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          ⚡ Despachar Cola
+        `;
+      }
+    });
+  }
+
   // Ejecución de pipeline
   pipelineForm.addEventListener('submit', async (e) => {
     e.preventDefault();
