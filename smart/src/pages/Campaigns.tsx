@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../lib/api';
-import { Loader2, Plus, Zap, Play, Trash2, Bot, CalendarClock, Settings2 } from 'lucide-react';
+import { Loader2, Plus, Zap, Play, Trash2, Bot, CalendarClock, Settings2, Sparkles } from 'lucide-react';
 
 export const Campaigns = () => {
     const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -11,6 +11,7 @@ export const Campaigns = () => {
     const [topic, setTopic] = useState('');
     const [frequency, setFrequency] = useState('0 9 * * *');
     const [accountId, setAccountId] = useState('');
+    const topicInputRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
         fetchData();
@@ -38,7 +39,6 @@ export const Campaigns = () => {
         setIsCreating(true);
         try {
             const res = await api.post('/automation/campaigns', {
-                workspaceId: 'ws-1', // MVP
                 accountId,
                 topic,
                 frequencyCron: frequency
@@ -72,64 +72,65 @@ export const Campaigns = () => {
         }
     };
 
-    if (loading) return <div className="flex justify-center items-center h-[60vh]"><Loader2 className="animate-spin text-brand-500" size={40} /></div>;
+    if (loading) {
+        return <div className="text-text-secondary p-8 animate-pulse">Cargando tus campañas...</div>;
+    }
 
     return (
-        <div className="flex flex-col gap-10 animate-fade-in relative z-10">
-            <div className="flex items-center justify-between glass-panel p-8 !bg-gradient-to-r from-brand-500/10 to-purple-500/10 border-none">
-                <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-400 to-purple-500 shadow-lg shadow-brand-500/20 flex items-center justify-center text-white relative group">
-                        <div className="absolute inset-0 bg-white/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <Bot size={32} />
+        <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-10">
+            {/* Header Banner */}
+            <div className="bg-surface border border-borderc rounded-xl p-6 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-purple/15 text-purple border border-purple/20 flex items-center justify-center shrink-0">
+                        <Sparkles size={24} />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-300">
-                            Piloto Automático (IA)
+                        <h1 className="text-2xl font-medium text-white mb-0.5">
+                            Piloto Automático con IA
                         </h1>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-xl">
-                            Configura campañas inteligentes. Nuestra IA investigará, redactará y publicará el contenido más relevante para tu audiencia de forma automática.
+                        <p className="text-text-secondary text-sm">
+                            Configura campañas automatizadas. Nuestra IA investigará, redactará y publicará en tus canales de forma continua.
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                {/* Formulario */}
-                <div className="glass-panel p-8 flex flex-col gap-6 col-span-1 xl:col-span-1 h-fit sticky top-8">
-                    <div className="flex items-center gap-3 border-b border-slate-200/50 dark:border-slate-700/50 pb-4">
-                        <div className="w-8 h-8 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-600 dark:text-yellow-500">
-                            <Zap size={18} className="animate-pulse" />
-                        </div>
-                        <h3 className="font-bold text-xl text-slate-800 dark:text-slate-100">Nueva Campaña</h3>
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                {/* Formulario de Campaña */}
+                <div className="bg-surface border border-borderc rounded-xl p-5 sm:p-6 flex flex-col gap-4 col-span-1 xl:col-span-1 h-fit">
+                    <div className="flex items-center gap-2 pb-3 border-b border-borderc">
+                        <Zap size={16} className="text-purple" />
+                        <h2 className="font-semibold text-sm text-white">Nueva Campaña Inteligente</h2>
                     </div>
                     
-                    <div className="flex flex-col gap-2">
-                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                            <Settings2 size={16} className="text-brand-500" /> Tema / Instrucción
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
+                            <Settings2 size={13} className="text-purple" /> Tema / Directiva para la IA
                         </label>
                         <textarea 
-                            placeholder="Ej: Consejos sobre café de especialidad, con tono alegre..." 
-                            className="input-field min-h-[120px] resize-none"
+                            ref={topicInputRef}
+                            placeholder="Ej: Consejos de marketing digital para emprendedores, con llamado a la acción..." 
+                            className="input-field min-h-[110px] resize-none text-xs leading-relaxed"
                             value={topic}
                             onChange={(e) => setTopic(e.target.value)}
                         />
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Cuenta Destino</label>
-                        <select className="input-field cursor-pointer" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-                            <option value="">-- Selecciona --</option>
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-text-secondary">Cuenta Social Destino</label>
+                        <select className="input-field cursor-pointer text-xs" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+                            <option value="">-- Selecciona una cuenta --</option>
                             {accounts.map(acc => (
                                 <option key={acc.id} value={acc.id}>{acc.account_name} ({acc.platform})</option>
                             ))}
                         </select>
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                            <CalendarClock size={16} className="text-brand-500" /> Frecuencia (Cron)
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
+                            <CalendarClock size={13} className="text-text-secondary" /> Frecuencia de Publicación
                         </label>
-                        <select className="input-field cursor-pointer" value={frequency} onChange={(e) => setFrequency(e.target.value)}>
+                        <select className="input-field cursor-pointer text-xs" value={frequency} onChange={(e) => setFrequency(e.target.value)}>
                             {Array.from({ length: 24 }).map((_, i) => {
                                 const ampm = i >= 12 ? 'PM' : 'AM';
                                 const displayHour = i % 12 === 0 ? 12 : i % 12;
@@ -145,49 +146,59 @@ export const Campaigns = () => {
                     <button 
                         onClick={handleCreate} 
                         disabled={isCreating}
-                        className="btn-primary mt-2 w-full py-3.5 text-lg"
+                        className="bg-accent hover:bg-accent-hover text-white text-xs font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 mt-2 shadow-sm disabled:opacity-50"
                     >
-                        {isCreating ? <Loader2 className="animate-spin mx-auto" /> : <><Plus size={22} /> Programar IA</>}
+                        {isCreating ? <Loader2 className="animate-spin" size={16} /> : <><Plus size={16} /> Activar Campaña con IA</>}
                     </button>
                 </div>
 
                 {/* Lista de Campañas */}
                 <div className="col-span-1 xl:col-span-2">
-                    <h3 className="font-bold text-xl mb-6 text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        <Play size={20} className="text-brand-500" /> Campañas Activas
+                    <h3 className="font-medium text-sm mb-4 text-text-primary flex items-center gap-2">
+                        <Play size={15} className="text-accent" /> Campañas Activas ({campaigns.length})
                     </h3>
                     
                     {campaigns.length === 0 ? (
-                        <div className="p-16 text-center glass-panel border-dashed border-2 border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/20">
-                            <Bot size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-                            <h4 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-1">Sin campañas activas</h4>
-                            <p className="text-slate-500 dark:text-slate-500">
-                                Crea tu primera campaña a la izquierda y deja que la IA haga el trabajo pesado por ti.
+                        <div className="p-12 text-center bg-surface border border-dashed border-borderc rounded-xl flex flex-col items-center justify-center">
+                            <Bot size={36} className="text-text-secondary opacity-40 mb-3" />
+                            <h4 className="text-sm font-medium text-white mb-1">Sin campañas activas</h4>
+                            <p className="text-xs text-text-secondary max-w-sm mb-4">
+                                Configura tu primera campaña para que los agentes autónomos redacten y programen tus posts.
                             </p>
+                            <button 
+                                onClick={() => topicInputRef.current?.focus()}
+                                className="bg-surface-raised hover:bg-borderc border border-borderc text-white text-xs font-medium px-3.5 py-2 rounded-lg transition-colors"
+                            >
+                                Iniciar configuración
+                            </button>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {campaigns.map(camp => (
-                                <div key={camp.id} className="glass-panel p-6 flex flex-col justify-between group hover:border-brand-300 dark:hover:border-brand-700">
-                                    <div className="flex flex-col gap-3">
+                                <div key={camp.id} className="bg-surface border border-borderc rounded-xl p-4 flex flex-col justify-between hover:bg-surface-raised transition-colors group">
+                                    <div className="flex flex-col gap-2.5">
                                         <div className="flex items-start justify-between">
-                                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100/80 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-200 dark:border-green-800/50">
-                                                {camp.status}
+                                            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-success/10 text-success border border-success/20">
+                                                {camp.status || 'ACTIVA'}
                                             </span>
-                                            <div onClick={() => handleDelete(camp.id)} className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-red-200 dark:hover:bg-red-900/50">
-                                                <Trash2 size={14} className="text-red-600 dark:text-red-400" />
-                                            </div>
+                                            <button 
+                                                onClick={() => handleDelete(camp.id)} 
+                                                className="p-1 text-text-secondary hover:text-danger rounded transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Eliminar campaña"
+                                            >
+                                                <Trash2 size={15} />
+                                            </button>
                                         </div>
-                                        <p className="font-bold text-lg text-slate-800 dark:text-slate-100 line-clamp-2">{camp.topic}</p>
+                                        <p className="font-medium text-sm text-white line-clamp-2">{camp.topic}</p>
                                     </div>
-                                    <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700/50 flex flex-col gap-2">
-                                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                                            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                                            Destino: <span className="font-semibold text-slate-700 dark:text-slate-300">{camp.account_name} ({camp.platform})</span>
+                                    <div className="mt-4 pt-3 border-t border-borderc flex flex-col gap-1.5 text-xs text-text-secondary">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                                            Destino: <span className="text-white font-medium">{camp.account_name || 'Cuenta vinculada'} ({camp.platform})</span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                                            <CalendarClock size={12} className="text-slate-400" />
-                                            Frecuencia: <span className="font-medium text-slate-600 dark:text-slate-300">{camp.frequency_cron}</span>
+                                        <div className="flex items-center gap-2 font-mono text-[11px]">
+                                            <CalendarClock size={12} className="text-text-secondary" />
+                                            Cron: {camp.frequency_cron}
                                         </div>
                                     </div>
                                 </div>

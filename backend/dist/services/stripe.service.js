@@ -6,8 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.StripeService = void 0;
 const stripe_1 = __importDefault(require("stripe"));
 const WorkspaceRepository_1 = require("../repositories/WorkspaceRepository");
-const stripe = new stripe_1.default(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', {
-    apiVersion: '2024-04-10', // Bypass strict type checking for different SDK versions
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecretKey && process.env.NODE_ENV === 'production') {
+    throw new Error('FATAL ERROR: STRIPE_SECRET_KEY no está configurado en las variables de entorno.');
+}
+const stripe = new stripe_1.default(stripeSecretKey || '', {
+    apiVersion: '2024-04-10',
 });
 const workspaceRepository = new WorkspaceRepository_1.WorkspaceRepository();
 class StripeService {

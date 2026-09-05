@@ -20,6 +20,7 @@ const billing_routes_1 = __importDefault(require("./routes/billing.routes"));
 const team_routes_1 = require("./routes/team.routes");
 const superadmin_routes_1 = require("./routes/superadmin.routes");
 const webhooks_routes_1 = require("./routes/webhooks.routes");
+const post_routes_1 = require("./routes/post.routes");
 const error_middleware_1 = require("./middlewares/error.middleware");
 const path_1 = __importDefault(require("path"));
 dotenv_1.default.config({ path: path_1.default.resolve(__dirname, '../.env') });
@@ -72,6 +73,7 @@ app.use('/api/analytics', analytics_routes_1.analyticsRoutes);
 app.use('/api/team', team_routes_1.teamRoutes);
 app.use('/api/superadmin', superadmin_routes_1.superAdminRoutes);
 app.use('/api/webhooks', webhooks_routes_1.webhooksRoutes);
+app.use('/api/posts', post_routes_1.postRoutes);
 // Manejo seguro de Errores al final de todas las rutas
 app.use(error_middleware_1.errorHandler);
 // Inicializar Workers (BullMQ)

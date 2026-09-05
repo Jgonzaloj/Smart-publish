@@ -15,6 +15,7 @@ import billingRoutes from './routes/billing.routes';
 import { teamRoutes } from './routes/team.routes';
 import { superAdminRoutes } from './routes/superadmin.routes';
 import { webhooksRoutes } from './routes/webhooks.routes';
+import { postRoutes } from './routes/post.routes';
 import { errorHandler } from './middlewares/error.middleware';
 
 import path from 'path';
@@ -77,6 +78,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/superadmin', superAdminRoutes);
 app.use('/api/webhooks', webhooksRoutes);
+app.use('/api/posts', postRoutes);
 
 // Manejo seguro de Errores al final de todas las rutas
 app.use(errorHandler);

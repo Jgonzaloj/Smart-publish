@@ -63,4 +63,20 @@ export class PostRepository {
         );
         return newId;
     }
+
+    async findByWorkspace(workspaceId: string): Promise<Post[]> {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            'SELECT * FROM posts WHERE workspace_id = ? ORDER BY scheduled_at DESC, id DESC',
+            [workspaceId]
+        );
+        return rows as Post[];
+    }
+
+    async delete(id: string, workspaceId: string): Promise<boolean> {
+        const [result] = await pool.query<ResultSetHeader>(
+            'DELETE FROM posts WHERE id = ? AND workspace_id = ?',
+            [id, workspaceId]
+        );
+        return result.affectedRows > 0;
+    }
 }

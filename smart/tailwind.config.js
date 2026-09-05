@@ -21,6 +21,12 @@ export default {
         success: '#34C77B',
         warning: '#F0A93E',
         danger: '#EF5350',
+        purple: {
+          DEFAULT: '#8B5CF6',
+          hover: '#9D74FF',
+        },
+        'text-primary': '#FFFFFF',
+        'text-secondary': '#94A3B8',
         brand: {
           50: '#f0f9ff',
           100: '#e0f2fe',
@@ -42,7 +48,7 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'monospace'],
       },
       animation: {

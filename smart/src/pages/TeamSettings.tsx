@@ -56,7 +56,7 @@ export const TeamSettings = () => {
       setError('');
       await api.post('/team/invite', { email: inviteEmail, role: inviteRole });
       setInviteEmail('');
-      await fetchTeam(); // recargar
+      await fetchTeam();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al invitar al usuario');
     } finally {
@@ -80,28 +80,28 @@ export const TeamSettings = () => {
     <div className="space-y-6">
       
       {isAdmin && (
-        <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-700">
-          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <Plus size={20} /> Invitar Miembro
+        <div className="bg-surface border border-borderc rounded-xl p-5 sm:p-6">
+          <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+            <Plus size={16} className="text-accent" /> Invitar a un Colaborador
           </h3>
-          <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-4 items-start">
+          <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3 items-start">
             <div className="flex-1 w-full relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail size={18} className="text-slate-400" />
+                <Mail size={16} className="text-text-secondary" />
               </div>
               <input 
                 type="email" 
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder="correo@agencia.com" 
+                placeholder="colaborador@agencia.com" 
                 required
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent dark:bg-slate-900/50"
+                className="input-field pl-9 text-xs"
               />
             </div>
             <select 
               value={inviteRole}
               onChange={(e) => setInviteRole(e.target.value)}
-              className="w-full sm:w-auto py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent dark:bg-slate-900/50"
+              className="input-field w-full sm:w-auto text-xs cursor-pointer"
             >
               <option value="MANAGER">Manager</option>
               <option value="EDITOR">Editor</option>
@@ -110,44 +110,49 @@ export const TeamSettings = () => {
             <button 
               type="submit" 
               disabled={inviting || !inviteEmail}
-              className="w-full sm:w-auto btn-primary whitespace-nowrap"
+              className="w-full sm:w-auto bg-accent hover:bg-accent-hover text-white text-xs font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 whitespace-nowrap"
             >
-              {inviting ? <Loader2 size={18} className="animate-spin" /> : 'Enviar Invitación'}
+              {inviting ? <Loader2 size={15} className="animate-spin" /> : 'Enviar Invitación'}
             </button>
           </form>
-          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+          {error && <p className="text-danger text-xs mt-2">{error}</p>}
         </div>
       )}
 
-      <div className="glass-panel rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-          <h3 className="text-xl font-bold flex items-center gap-2">
-            <Users size={20} /> Miembros Activos
+      {/* Lista de Miembros */}
+      <div className="bg-surface border border-borderc rounded-xl overflow-hidden">
+        <div className="p-4 sm:px-6 border-b border-borderc bg-surface-raised">
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+            <Users size={16} className="text-accent" /> Miembros del Equipo ({members.length})
           </h3>
         </div>
         
         {loading ? (
-          <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-brand-500" /></div>
+          <div className="p-8 text-center text-text-secondary text-xs">Cargando equipo...</div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-borderc">
             {members.map(m => (
-              <div key={m.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 flex items-center justify-center font-bold">
+              <div key={m.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-surface-raised transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-surface-raised border border-borderc text-accent flex items-center justify-center font-bold text-xs">
                     {m.email.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-semibold">{m.email}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                        <Shield size={10} /> {m.role}
+                    <p className="text-xs font-medium text-white">{m.email}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] font-mono bg-surface-raised text-text-secondary px-1.5 py-0.5 rounded border border-borderc flex items-center gap-1">
+                        <Shield size={9} /> {m.role}
                       </span>
                     </div>
                   </div>
                 </div>
                 {isAdmin && m.id !== user?.id && (
-                  <button onClick={() => handleRemove(m.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
-                    <Trash2 size={18} />
+                  <button 
+                    onClick={() => handleRemove(m.id)} 
+                    className="p-1.5 text-text-secondary hover:text-danger rounded-md transition-colors"
+                    title="Eliminar del equipo"
+                  >
+                    <Trash2 size={15} />
                   </button>
                 )}
               </div>
@@ -157,19 +162,22 @@ export const TeamSettings = () => {
       </div>
 
       {invites.length > 0 && (
-        <div className="glass-panel rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden opacity-70">
-          <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-            <h3 className="text-lg font-bold flex items-center gap-2">
-              Invitaciones Pendientes
+        <div className="bg-surface border border-borderc rounded-xl overflow-hidden">
+          <div className="p-4 sm:px-6 border-b border-borderc bg-surface-raised">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              Invitaciones Pendientes ({invites.length})
             </h3>
           </div>
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-borderc">
             {invites.map(inv => (
               <div key={inv.id} className="p-4 sm:px-6 flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-slate-600 dark:text-slate-300">{inv.email}</p>
-                  <p className="text-xs text-slate-400 mt-1">Expira en 48 horas - Rol: {inv.role}</p>
+                  <p className="text-xs font-medium text-white">{inv.email}</p>
+                  <p className="text-[10px] text-text-secondary mt-0.5">Expira en 48 horas · Rol: {inv.role}</p>
                 </div>
+                <span className="text-[10px] font-medium text-warning bg-warning/10 px-2 py-0.5 rounded border border-warning/20">
+                  Pendiente
+                </span>
               </div>
             ))}
           </div>

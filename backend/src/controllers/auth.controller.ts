@@ -6,7 +6,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { EmailService } from '../services/email.service';
 import crypto from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_fallback_key';
+if (!process.env.JWT_SECRET) {
+    console.error('FATAL ERROR: JWT_SECRET no está configurado en las variables de entorno.');
+    process.exit(1);
+}
+const JWT_SECRET: string = process.env.JWT_SECRET;
 const emailService = new EmailService();
 const JWT_EXPIRES_IN = '24h'; // Política de seguridad acordada (Fase 11)
 

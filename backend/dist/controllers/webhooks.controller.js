@@ -46,21 +46,25 @@ class WebhooksController {
      * GET /api/webhooks/meta
      */
     static verifyMetaWebhook(req, res) {
-        const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || 'smart_publish_secure_token';
+        const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN;
+        if (!VERIFY_TOKEN) {
+            console.error('ERROR: META_WEBHOOK_VERIFY_TOKEN no está configurado en las variables de entorno.');
+            return res.status(500).json({ error: 'Webhook verify token not configured' });
+        }
         const mode = req.query['hub.mode'];
         const token = req.query['hub.verify_token'];
         const challenge = req.query['hub.challenge'];
         if (mode && token) {
             if (mode === 'subscribe' && token === VERIFY_TOKEN) {
                 console.log('✅ Webhook de Meta verificado correctamente');
-                res.status(200).send(challenge);
+                return res.status(200).send(challenge);
             }
             else {
-                res.sendStatus(403);
+                return res.sendStatus(403);
             }
         }
         else {
-            res.sendStatus(400);
+            return res.sendStatus(400);
         }
     }
     /**
@@ -109,21 +113,25 @@ class WebhooksController {
      * GET /api/webhooks/whatsapp
      */
     static verifyWhatsAppWebhook(req, res) {
-        const VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'smart_publish_whatsapp_token';
+        const VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
+        if (!VERIFY_TOKEN) {
+            console.error('ERROR: WHATSAPP_WEBHOOK_VERIFY_TOKEN no está configurado en las variables de entorno.');
+            return res.status(500).json({ error: 'WhatsApp verify token not configured' });
+        }
         const mode = req.query['hub.mode'];
         const token = req.query['hub.verify_token'];
         const challenge = req.query['hub.challenge'];
         if (mode && token) {
             if (mode === 'subscribe' && token === VERIFY_TOKEN) {
                 console.log('✅ Webhook de WhatsApp verificado');
-                res.status(200).send(challenge);
+                return res.status(200).send(challenge);
             }
             else {
-                res.sendStatus(403);
+                return res.sendStatus(403);
             }
         }
         else {
-            res.sendStatus(400);
+            return res.sendStatus(400);
         }
     }
     /**

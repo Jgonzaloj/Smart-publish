@@ -34,5 +34,13 @@ class PostRepository {
              VALUES (?, ?, ?, ?, 'DRAFT')`, [newId, original.workspace_id, original.user_id, original.content]);
         return newId;
     }
+    async findByWorkspace(workspaceId) {
+        const [rows] = await database_1.pool.query('SELECT * FROM posts WHERE workspace_id = ? ORDER BY scheduled_at DESC, id DESC', [workspaceId]);
+        return rows;
+    }
+    async delete(id, workspaceId) {
+        const [result] = await database_1.pool.query('DELETE FROM posts WHERE id = ? AND workspace_id = ?', [id, workspaceId]);
+        return result.affectedRows > 0;
+    }
 }
 exports.PostRepository = PostRepository;

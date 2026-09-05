@@ -34,45 +34,45 @@ export const Login = () => {
 
   return (
     <div>
-      <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">Bienvenido de nuevo</h2>
-      <p className="text-slate-500 mb-8">Ingresa a tu cuenta para continuar gestionando.</p>
+      <h2 className="text-2xl font-bold tracking-tight text-white mb-1.5">Bienvenido de nuevo</h2>
+      <p className="text-text-secondary text-sm mb-6">Ingresa a tu cuenta para continuar gestionando.</p>
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-4 rounded-xl flex items-start gap-3 mb-6 border border-red-200 dark:border-red-800">
-          <AlertCircle size={20} className="shrink-0 mt-0.5" />
-          <p className="text-sm font-medium">{error}</p>
+        <div className="bg-danger/10 text-danger p-3.5 rounded-lg flex items-start gap-2.5 mb-6 border border-danger/20 text-sm">
+          <AlertCircle size={18} className="shrink-0 mt-0.5" />
+          <p className="font-medium">{error}</p>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Correo Electrónico</label>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-text-secondary">Correo Electrónico</label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" size={16} />
             <input 
               type="email" 
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="input-field pl-10" 
+              className="input-field pl-9" 
               placeholder="tu@correo.com" 
             />
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Contraseña</label>
-            <a href="#" className="text-sm text-brand-600 hover:text-brand-500 font-medium">¿Olvidaste tu contraseña?</a>
+            <label className="text-xs font-medium text-text-secondary">Contraseña</label>
+            <Link to="/forgot-password" className="text-xs text-accent hover:underline font-medium">¿Olvidaste tu contraseña?</Link>
           </div>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" size={16} />
             <input 
               type="password" 
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="input-field pl-10" 
+              className="input-field pl-9" 
               placeholder="••••••••" 
             />
           </div>
@@ -81,14 +81,14 @@ export const Login = () => {
         <button 
           type="submit" 
           disabled={isLoading}
-          className="w-full btn-primary justify-center py-3 mt-4"
+          className="w-full bg-accent hover:bg-accent-hover text-white py-2.5 px-4 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2 mt-4 shadow-sm"
         >
-          {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Iniciar Sesión'}
+          {isLoading ? <Loader2 className="animate-spin" size={18} /> : 'Iniciar Sesión'}
         </button>
       </form>
 
-      <p className="text-center mt-8 text-sm text-slate-500">
-        ¿No tienes una cuenta? <Link to="/register" className="text-brand-600 font-bold hover:underline">Regístrate gratis</Link>
+      <p className="text-center mt-6 text-sm text-text-secondary">
+        ¿No tienes una cuenta? <Link to="/register" className="text-accent font-semibold hover:underline">Regístrate gratis</Link>
       </p>
     </div>
   );

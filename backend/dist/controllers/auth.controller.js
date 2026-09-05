@@ -10,7 +10,11 @@ const database_1 = require("../config/database");
 const uuid_1 = require("uuid");
 const email_service_1 = require("../services/email.service");
 const crypto_1 = __importDefault(require("crypto"));
-const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_fallback_key';
+if (!process.env.JWT_SECRET) {
+    console.error('FATAL ERROR: JWT_SECRET no está configurado en las variables de entorno.');
+    process.exit(1);
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 const emailService = new email_service_1.EmailService();
 const JWT_EXPIRES_IN = '24h'; // Política de seguridad acordada (Fase 11)
 class AuthController {

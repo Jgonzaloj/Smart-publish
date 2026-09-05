@@ -26,68 +26,64 @@ export const ForgotPassword = () => {
   };
 
   return (
-    <div className="w-full max-w-md">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-50 dark:bg-brand-900/30 text-brand-500 mb-6 relative">
-          <Mail size={32} />
+    <div>
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-surface-raised text-accent mb-3">
+          <Mail size={24} />
         </div>
-        <h1 className="text-3xl font-bold text-slate-800 dark:text-white mb-2">Recuperar Contraseña</h1>
-        <p className="text-slate-500 dark:text-slate-400">Te enviaremos un enlace seguro para que puedas crear una nueva contraseña.</p>
+        <h1 className="text-2xl font-bold text-white mb-1">Recuperar Contraseña</h1>
+        <p className="text-text-secondary text-sm">Te enviaremos un enlace seguro para crear una nueva contraseña.</p>
       </div>
 
-      <div className="glass-panel rounded-2xl p-8 border border-white/40 dark:border-slate-700/50 shadow-xl shadow-brand-500/5">
-        {success ? (
-          <div className="text-center">
-            <div className="flex justify-center mb-4 text-emerald-500">
-              <CheckCircle size={48} />
+      {success ? (
+        <div className="text-center py-4">
+          <div className="flex justify-center mb-3 text-success">
+            <CheckCircle size={36} />
+          </div>
+          <h3 className="text-lg font-bold text-white mb-1.5">¡Correo Enviado!</h3>
+          <p className="text-text-secondary text-sm mb-6">Si existe una cuenta asociada a {email}, recibirás un enlace de recuperación pronto.</p>
+          <Link to="/login" className="text-accent text-sm font-medium hover:underline inline-flex items-center justify-center gap-2">
+            <ArrowLeft size={16} /> Volver al Inicio de Sesión
+          </Link>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3.5 rounded-lg bg-danger/10 text-danger border border-danger/20 text-sm font-medium">
+              {error}
             </div>
-            <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">¡Correo Enviado!</h3>
-            <p className="text-slate-500 mb-6">Si existe una cuenta asociada a {email}, recibirás un enlace de recuperación pronto.</p>
-            <Link to="/login" className="text-brand-500 font-medium hover:text-brand-600 transition-colors flex items-center justify-center gap-2">
-              <ArrowLeft size={16} /> Volver al Inicio de Sesión
+          )}
+          
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-text-secondary">Correo Electrónico</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" size={16} />
+              <input 
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input-field pl-9"
+                placeholder="tu@correo.com"
+                required
+              />
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={loading || !email}
+            className="w-full bg-accent hover:bg-accent-hover text-white py-2.5 px-4 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2 mt-4 shadow-sm disabled:opacity-50"
+          >
+            {loading ? <Loader2 size={18} className="animate-spin" /> : 'Enviar Enlace'}
+          </button>
+          
+          <div className="text-center pt-2">
+            <Link to="/login" className="text-sm text-text-secondary hover:text-white font-medium transition-colors inline-flex items-center justify-center gap-1.5">
+              <ArrowLeft size={16} /> Volver a Iniciar Sesión
             </Link>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="p-4 rounded-xl bg-red-50 text-red-500 border border-red-100 text-sm">
-                {error}
-              </div>
-            )}
-            
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Correo Electrónico</label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-brand-500 transition-colors">
-                  <Mail size={20} />
-                </div>
-                <input 
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all outline-none text-slate-800 dark:text-white"
-                  placeholder="tu@correo.com"
-                  required
-                />
-              </div>
-            </div>
-
-            <button 
-              type="submit" 
-              disabled={loading || !email}
-              className="w-full py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-lg shadow-lg shadow-brand-500/30 hover:shadow-brand-500/40 transition-all active:scale-[0.98] disabled:opacity-70 flex justify-center items-center"
-            >
-              {loading ? <Loader2 size={24} className="animate-spin" /> : 'Enviar Enlace'}
-            </button>
-            
-            <div className="text-center pt-2">
-              <Link to="/login" className="text-sm text-slate-500 hover:text-brand-500 font-medium transition-colors flex items-center justify-center gap-1">
-                <ArrowLeft size={16} /> Volver a Iniciar Sesión
-              </Link>
-            </div>
-          </form>
-        )}
-      </div>
+        </form>
+      )}
     </div>
   );
 };

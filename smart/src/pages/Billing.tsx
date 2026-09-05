@@ -38,122 +38,135 @@ export const Billing = () => {
   };
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="space-y-6 max-w-6xl mx-auto pb-10">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Suscripción y Límites</h1>
-          <p className="text-slate-500 mt-2">Gestiona tu plan y revisa tus consumos de este mes.</p>
+          <h1 className="text-2xl font-medium text-white mb-1">Suscripción y Planes</h1>
+          <p className="text-sm text-text-secondary">Elige el plan adecuado según la escala de tus publicaciones y marcas.</p>
         </div>
         <button 
           onClick={handleManageBilling}
           disabled={loading === 'portal'}
-          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-colors font-medium flex items-center gap-2"
+          className="bg-surface hover:bg-surface-raised border border-borderc text-text-secondary hover:text-white px-3.5 py-2 rounded-lg text-sm transition-colors font-medium flex items-center gap-2"
         >
-          {loading === 'portal' ? <Loader2 size={18} className="animate-spin" /> : <CreditCard size={18} />}
-          Gestionar Facturación
+          {loading === 'portal' ? <Loader2 size={16} className="animate-spin" /> : <CreditCard size={16} />}
+          Portal de Facturación
         </button>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
         {/* Plan Gratis */}
-        <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-6 shadow-xl shadow-slate-200/20 dark:shadow-none border border-slate-200 dark:border-slate-700">
-          <div className="mb-6">
-            <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Básico</h3>
-            <p className="text-slate-500 text-sm h-10">Para probar la plataforma y descubrir su magia.</p>
-            <div className="mt-4 flex items-baseline text-4xl font-extrabold text-slate-900 dark:text-white">
-              $0
-              <span className="ml-1 text-xl font-medium text-slate-500">/mes</span>
+        <div className="bg-surface rounded-xl p-6 border border-borderc flex flex-col justify-between">
+          <div>
+            <div className="mb-4">
+              <h3 className="text-base font-semibold text-white mb-1">Básico</h3>
+              <p className="text-text-secondary text-xs h-8">Ideal para probar la plataforma y descubrir la automatización.</p>
+              <div className="mt-3 flex items-baseline font-mono text-3xl font-medium text-white">
+                $0
+                <span className="ml-1 text-xs font-normal text-text-secondary">/mes</span>
+              </div>
             </div>
+            <ul className="space-y-2.5 my-6 text-xs text-text-secondary">
+              <li className="flex items-center gap-2.5">
+                <Check size={16} className="text-success shrink-0" />
+                <span>Hasta 50 publicaciones al mes</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Check size={16} className="text-success shrink-0" />
+                <span>30 generaciones con IA</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Check size={16} className="text-success shrink-0" />
+                <span>1 cuenta social conectada</span>
+              </li>
+            </ul>
           </div>
-          <ul className="space-y-4 mb-8">
-            <li className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
-              <Check size={20} className="text-emerald-500 flex-shrink-0" />
-              <span>Hasta 50 posts mensuales</span>
-            </li>
-            <li className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
-              <Check size={20} className="text-emerald-500 flex-shrink-0" />
-              <span>30 generaciones con IA</span>
-            </li>
-            <li className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
-              <Check size={20} className="text-emerald-500 flex-shrink-0" />
-              <span>1 cuenta social por red</span>
-            </li>
-          </ul>
-          <button disabled className="w-full py-3 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-bold">
+          <button disabled className="w-full py-2.5 rounded-lg bg-surface-raised border border-borderc text-text-secondary text-xs font-medium cursor-default">
             Plan Actual
           </button>
         </div>
 
         {/* Plan Pro */}
-        <div className="bg-gradient-to-b from-brand-600 to-brand-700 rounded-2xl p-6 shadow-xl shadow-brand-500/30 border border-brand-500 relative transform md:-translate-y-4">
-          <div className="absolute top-0 right-6 transform -translate-y-1/2 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
-            <Sparkles size={14} /> RECOMENDADO
+        <div className="bg-surface rounded-xl p-6 border border-accent/60 flex flex-col justify-between relative shadow-lg shadow-accent/5">
+          <div className="absolute top-0 right-5 -translate-y-1/2 bg-accent text-white px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide flex items-center gap-1">
+            <Sparkles size={11} /> RECOMENDADO
           </div>
-          <div className="mb-6">
-            <h3 className="text-xl font-bold text-white mb-2">Pro</h3>
-            <p className="text-brand-100 text-sm h-10">Para profesionales y pequeños negocios que buscan crecer.</p>
-            <div className="mt-4 flex items-baseline text-4xl font-extrabold text-white">
-              $49
-              <span className="ml-1 text-xl font-medium text-brand-200">/mes</span>
+          <div>
+            <div className="mb-4">
+              <h3 className="text-base font-semibold text-white mb-1">Profesional</h3>
+              <p className="text-text-secondary text-xs h-8">Para agencias y negocios en crecimiento continuo.</p>
+              <div className="mt-3 flex items-baseline font-mono text-3xl font-medium text-white">
+                $49
+                <span className="ml-1 text-xs font-normal text-text-secondary">/mes</span>
+              </div>
             </div>
+            <ul className="space-y-2.5 my-6 text-xs text-text-secondary">
+              <li className="flex items-center gap-2.5 text-white">
+                <Check size={16} className="text-accent shrink-0" />
+                <span>Hasta 1,000 publicaciones al mes</span>
+              </li>
+              <li className="flex items-center gap-2.5 text-white">
+                <Check size={16} className="text-accent shrink-0" />
+                <span>500 generaciones con IA y Piloto</span>
+              </li>
+              <li className="flex items-center gap-2.5 text-white">
+                <Check size={16} className="text-accent shrink-0" />
+                <span>10 cuentas sociales por red</span>
+              </li>
+              <li className="flex items-center gap-2.5 text-white">
+                <Check size={16} className="text-accent shrink-0" />
+                <span>Soporte prioritario 24/7</span>
+              </li>
+            </ul>
           </div>
-          <ul className="space-y-4 mb-8">
-            <li className="flex items-center gap-3 text-white">
-              <Check size={20} className="text-brand-300 flex-shrink-0" />
-              <span>Hasta 1,000 posts mensuales</span>
-            </li>
-            <li className="flex items-center gap-3 text-white">
-              <Check size={20} className="text-brand-300 flex-shrink-0" />
-              <span>500 generaciones con IA</span>
-            </li>
-            <li className="flex items-center gap-3 text-white">
-              <Check size={20} className="text-brand-300 flex-shrink-0" />
-              <span>10 cuentas por red social</span>
-            </li>
-          </ul>
           <button 
-            onClick={() => handleSubscribe('price_XXXXXXXXXXXX_pro')} // Reemplazar con ID de Stripe real
-            disabled={loading === 'price_XXXXXXXXXXXX_pro'}
-            className="w-full py-3 rounded-xl bg-white text-brand-600 font-bold hover:bg-slate-50 transition-colors shadow-lg flex justify-center items-center gap-2"
+            onClick={() => handleSubscribe('price_pro_monthly')}
+            disabled={loading === 'price_pro_monthly'}
+            className="w-full py-2.5 rounded-lg bg-accent hover:bg-accent-hover text-white text-xs font-medium transition-colors flex justify-center items-center gap-2 shadow-sm"
           >
-            {loading === 'price_XXXXXXXXXXXX_pro' ? <Loader2 size={20} className="animate-spin" /> : 'Mejorar a Pro'}
+            {loading === 'price_pro_monthly' ? <Loader2 size={16} className="animate-spin" /> : 'Mejorar a Plan Pro'}
           </button>
         </div>
 
         {/* Plan Agencia */}
-        <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-6 shadow-xl shadow-slate-200/20 dark:shadow-none border border-slate-200 dark:border-slate-700">
-          <div className="mb-6">
-            <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Agencia</h3>
-            <p className="text-slate-500 text-sm h-10">Escala tus operaciones con múltiples clientes y equipo.</p>
-            <div className="mt-4 flex items-baseline text-4xl font-extrabold text-slate-900 dark:text-white">
-              $199
-              <span className="ml-1 text-xl font-medium text-slate-500">/mes</span>
+        <div className="bg-surface rounded-xl p-6 border border-borderc flex flex-col justify-between">
+          <div>
+            <div className="mb-4">
+              <h3 className="text-base font-semibold text-white mb-1">Agencia / Enterprise</h3>
+              <p className="text-text-secondary text-xs h-8">Control total para equipos y agencias a gran escala.</p>
+              <div className="mt-3 flex items-baseline font-mono text-3xl font-medium text-white">
+                $199
+                <span className="ml-1 text-xs font-normal text-text-secondary">/mes</span>
+              </div>
             </div>
+            <ul className="space-y-2.5 my-6 text-xs text-text-secondary">
+              <li className="flex items-center gap-2.5">
+                <Check size={16} className="text-success shrink-0" />
+                <span>Hasta 10,000 publicaciones al mes</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Check size={16} className="text-success shrink-0" />
+                <span>Generaciones ilimitadas con IA</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Check size={16} className="text-success shrink-0" />
+                <span>Cuentas y marcas ilimitadas</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Check size={16} className="text-success shrink-0" />
+                <span>Módulo de roles y permisos multi-usuario</span>
+              </li>
+            </ul>
           </div>
-          <ul className="space-y-4 mb-8">
-            <li className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
-              <Check size={20} className="text-emerald-500 flex-shrink-0" />
-              <span>Hasta 10,000 posts mensuales</span>
-            </li>
-            <li className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
-              <Check size={20} className="text-emerald-500 flex-shrink-0" />
-              <span>5,000 generaciones con IA</span>
-            </li>
-            <li className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
-              <Check size={20} className="text-emerald-500 flex-shrink-0" />
-              <span>Cuentas ilimitadas</span>
-            </li>
-          </ul>
           <button 
-            onClick={() => handleSubscribe('price_XXXXXXXXXXXX_agency')} // Reemplazar con ID de Stripe real
-            disabled={loading === 'price_XXXXXXXXXXXX_agency'}
-            className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-brand-500 dark:hover:bg-brand-600 text-white font-bold transition-colors shadow-lg flex justify-center items-center gap-2"
+            onClick={() => handleSubscribe('price_agency_monthly')}
+            disabled={loading === 'price_agency_monthly'}
+            className="w-full py-2.5 rounded-lg bg-surface-raised hover:bg-borderc border border-borderc text-white text-xs font-medium transition-colors flex justify-center items-center gap-2"
           >
-             {loading === 'price_XXXXXXXXXXXX_agency' ? <Loader2 size={20} className="animate-spin" /> : 'Contactar Ventas'}
+             {loading === 'price_agency_monthly' ? <Loader2 size={16} className="animate-spin" /> : 'Contratar Plan Agencia'}
           </button>
         </div>
       </div>
-
     </div>
   );
 };

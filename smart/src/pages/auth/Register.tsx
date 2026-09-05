@@ -36,70 +36,70 @@ export const Register = () => {
 
   if (success) {
     return (
-      <div className="text-center">
-        <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
-          <CheckCircle2 size={32} />
+      <div className="text-center py-4">
+        <div className="w-14 h-14 bg-success/15 text-success rounded-full flex items-center justify-center mx-auto mb-4">
+          <CheckCircle2 size={28} />
         </div>
-        <h2 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">¡Registro Exitoso!</h2>
-        <p className="text-slate-500 mb-8">Tu cuenta ha sido creada. Redirigiendo al inicio de sesión...</p>
+        <h2 className="text-xl font-bold mb-1.5 text-white">¡Registro Exitoso!</h2>
+        <p className="text-text-secondary text-sm">Tu cuenta ha sido creada. Redirigiendo al inicio de sesión...</p>
       </div>
     );
   }
 
   return (
     <div>
-      <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">Crea tu cuenta</h2>
-      <p className="text-slate-500 mb-8">Comienza a probar Smart Publish gratis por 14 días.</p>
+      <h2 className="text-2xl font-bold tracking-tight text-white mb-1.5">Crea tu cuenta</h2>
+      <p className="text-text-secondary text-sm mb-6">Comienza a probar Smart Publish gratis por 14 días.</p>
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-4 rounded-xl flex items-start gap-3 mb-6 border border-red-200 dark:border-red-800">
-          <AlertCircle size={20} className="shrink-0 mt-0.5" />
-          <p className="text-sm font-medium">{error}</p>
+        <div className="bg-danger/10 text-danger p-3.5 rounded-lg flex items-start gap-2.5 mb-6 border border-danger/20 text-sm">
+          <AlertCircle size={18} className="shrink-0 mt-0.5" />
+          <p className="font-medium">{error}</p>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Nombre Completo</label>
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-text-secondary">Nombre Completo</label>
           <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" size={16} />
             <input 
               type="text" 
               required
               value={name}
               onChange={e => setName(e.target.value)}
-              className="input-field pl-10" 
+              className="input-field pl-9" 
               placeholder="Juan Pérez" 
             />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Correo Electrónico</label>
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-text-secondary">Correo Electrónico</label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" size={16} />
             <input 
               type="email" 
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="input-field pl-10" 
+              className="input-field pl-9" 
               placeholder="tu@correo.com" 
             />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Contraseña</label>
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-text-secondary">Contraseña</label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" size={16} />
             <input 
               type="password" 
               required
               minLength={6}
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="input-field pl-10" 
+              className="input-field pl-9" 
               placeholder="••••••••" 
             />
           </div>
@@ -108,14 +108,14 @@ export const Register = () => {
         <button 
           type="submit" 
           disabled={isLoading}
-          className="w-full btn-primary justify-center py-3 mt-6"
+          className="w-full bg-accent hover:bg-accent-hover text-white py-2.5 px-4 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2 mt-4 shadow-sm"
         >
-          {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Crear Cuenta'}
+          {isLoading ? <Loader2 className="animate-spin" size={18} /> : 'Crear Cuenta'}
         </button>
       </form>
 
-      <p className="text-center mt-8 text-sm text-slate-500">
-        ¿Ya tienes una cuenta? <Link to="/login" className="text-brand-600 font-bold hover:underline">Inicia sesión</Link>
+      <p className="text-center mt-6 text-sm text-text-secondary">
+        ¿Ya tienes una cuenta? <Link to="/login" className="text-accent font-semibold hover:underline">Inicia sesión</Link>
       </p>
     </div>
   );

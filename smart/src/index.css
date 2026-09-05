@@ -4,25 +4,22 @@
 
 @layer base {
   :root {
-    --bg-color: #f8fafc;
-    --text-color: #0f172a;
-    color-scheme: light;
+    --bg-color: #0F1115;
+    --text-color: #FFFFFF;
+    color-scheme: dark;
   }
 
   html.dark {
-    --bg-color: #0b1121; /* Slightly darker for better contrast */
-    --text-color: #f8fafc;
+    --bg-color: #0F1115;
+    --text-color: #FFFFFF;
     color-scheme: dark;
   }
 
   body {
-    @apply bg-[var(--bg-color)] text-[var(--text-color)] antialiased transition-colors duration-500 font-sans;
-    /* Soft gradient background for a premium feel */
-    background-image: radial-gradient(circle at top right, rgba(14, 165, 233, 0.05), transparent 40%),
-                      radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.05), transparent 40%);
+    @apply bg-canvas text-white antialiased font-sans selection:bg-accent/30 selection:text-white;
   }
 
-  /* Custom scrollbar para un look más profesional */
+  /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -33,35 +30,27 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-300/50 dark:bg-slate-700/50 rounded-full transition-colors;
+    @apply bg-borderc/80 rounded-full transition-colors;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-400 dark:bg-slate-500;
+    @apply bg-text-secondary/40;
   }
 }
 
 @layer components {
-  .glass-panel {
-    @apply bg-white/70 dark:bg-slate-800/60 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 shadow-lg shadow-slate-200/20 dark:shadow-none rounded-2xl transition-all duration-300;
-  }
-  
-  .glass-panel:hover {
-    @apply shadow-xl shadow-slate-200/40 dark:shadow-slate-900/50 border-white/40 dark:border-slate-600/50;
+  .input-field {
+    @apply w-full px-3.5 py-2.5 bg-surface border border-borderc rounded-lg text-sm text-white placeholder:text-text-secondary/60 focus:border-accent focus:ring-1 focus:ring-accent/30 outline-none transition-colors;
   }
 
   .btn-primary {
-    @apply px-5 py-2.5 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-white font-semibold rounded-xl shadow-md shadow-brand-500/25 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2;
+    @apply px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2;
   }
 
   .btn-secondary {
-    @apply px-5 py-2.5 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 backdrop-blur-md text-slate-700 dark:text-slate-200 font-semibold rounded-xl transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 border border-slate-200/50 dark:border-slate-600/50 shadow-sm;
+    @apply px-4 py-2 bg-surface hover:bg-surface-raised border border-borderc text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2;
   }
-  
-  .input-field {
-    @apply w-full px-4 py-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-slate-200/80 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 outline-none transition-all duration-300 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 hover:border-brand-300 dark:hover:border-brand-700;
-  }
-  
+
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }

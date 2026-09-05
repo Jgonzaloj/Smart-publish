@@ -1,18 +1,17 @@
 import { Outlet } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
 
 export const AuthLayout = () => {
   return (
-    <div className="min-h-screen flex w-full bg-slate-50 dark:bg-slate-900">
+    <div className="min-h-screen flex w-full bg-canvas text-white">
       
       {/* Columna Izquierda: Formulario (Auth) */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 lg:p-24 bg-white dark:bg-[#1e293b]">
-        <div className="w-full max-w-md">
-          <div className="flex items-center gap-2 mb-12">
-            <div className="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
-              <Sparkles size={24} />
+      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 sm:p-12 lg:p-16 bg-canvas">
+        <div className="w-full max-w-md bg-surface border border-borderc p-8 sm:p-10 rounded-2xl shadow-xl">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-white font-bold text-sm shadow-md shadow-accent/20">
+              SP
             </div>
-            <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-brand-400">
+            <span className="text-xl font-bold text-white tracking-tight">
               Smart Publish
             </span>
           </div>

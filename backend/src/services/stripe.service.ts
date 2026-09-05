@@ -1,8 +1,13 @@
 import Stripe from 'stripe';
 import { WorkspaceRepository } from '../repositories/WorkspaceRepository';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', {
-    apiVersion: '2024-04-10' as any, // Bypass strict type checking for different SDK versions
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecretKey && process.env.NODE_ENV === 'production') {
+    throw new Error('FATAL ERROR: STRIPE_SECRET_KEY no está configurado en las variables de entorno.');
+}
+
+const stripe = new Stripe(stripeSecretKey || '', {
+    apiVersion: '2024-04-10' as any,
 });
 
 const workspaceRepository = new WorkspaceRepository();

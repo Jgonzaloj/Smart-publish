@@ -80,10 +80,12 @@ class AutomationController {
     // POST /api/automation/cancel/:postId
     static async cancelPost(req, res) {
         const { postId } = req.params;
+        const activeWorkspaceId = req.user?.workspace_id;
         try {
             const post = await postRepository.findById(postId);
-            if (!post)
-                return res.status(404).json({ success: false, message: 'Post no encontrado' });
+            if (!post || (activeWorkspaceId && post.workspace_id !== activeWorkspaceId)) {
+                return res.status(404).json({ success: false, message: 'Post no encontrado o no autorizado' });
+            }
             if (post.status !== 'SCHEDULED')
                 return res.status(400).json({ success: false, message: 'Post no está programado' });
             // Eliminar de la cola de Redis
@@ -102,14 +104,12 @@ class AutomationController {
     // POST /api/automation/retry/:postId
     static async retryPost(req, res) {
         const { postId } = req.params;
+        const activeWorkspaceId = req.user?.workspace_id;
         try {
             const post = await postRepository.findById(postId);
-            if (!post || post.status !== 'FAILED') {
-                return res.status(400).json({ success: false, message: 'Solo se pueden reintentar posts fallidos' });
+            if (!post || (activeWorkspaceId && post.workspace_id !== activeWorkspaceId) || post.status !== 'FAILED') {
+                return res.status(400).json({ success: false, message: 'Solo se pueden reintentar posts fallidos autorizados' });
             }
-            // Aquí clonaríamos o re-encolaríamos (por simplicidad, asumimos platform desde el payload frontend MVP)
-            // Se requeriría cargar la tabla de destinos para saber a dónde iba
-            // MVP: Clonamos y el frontend re-agenda.
             const newPostId = await postRepository.duplicate(postId);
             res.json({ success: true, message: 'Post duplicado para reintento', data: { newPostId } });
         }
