@@ -16,6 +16,11 @@ import { teamRoutes } from './routes/team.routes';
 import { superAdminRoutes } from './routes/superadmin.routes';
 import { webhooksRoutes } from './routes/webhooks.routes';
 import { postRoutes } from './routes/post.routes';
+import { crmRoutes } from './routes/crm.routes';
+import { catalogRoutes } from './routes/catalog.routes';
+import { quotesRoutes } from './routes/quotes.routes';
+import { conversationsRoutes } from './routes/conversations.routes';
+import { observabilityRoutes } from './routes/observability.routes';
 import { errorHandler } from './middlewares/error.middleware';
 
 import path from 'path';
@@ -78,6 +83,11 @@ app.use('/api/team', teamRoutes);
 app.use('/api/superadmin', superAdminRoutes);
 app.use('/api/webhooks', webhooksRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/crm', crmRoutes);
+app.use('/api/catalog', catalogRoutes);
+app.use('/api/quotes', quotesRoutes);
+app.use('/api/conversations', conversationsRoutes);
+app.use('/api/observability', observabilityRoutes);
 
 // Manejo seguro de Errores al final de todas las rutas
 app.use(errorHandler);

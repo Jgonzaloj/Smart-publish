@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.quotesRoutes = void 0;
+const express_1 = require("express");
+const quotes_controller_1 = require("../controllers/quotes.controller");
+const auth_middleware_1 = require("../middlewares/auth.middleware");
+const tenant_middleware_1 = require("../middlewares/tenant.middleware");
+exports.quotesRoutes = (0, express_1.Router)();
+exports.quotesRoutes.use(auth_middleware_1.authMiddleware, tenant_middleware_1.tenantMiddleware);
+exports.quotesRoutes.get('/', quotes_controller_1.QuotesController.getQuotes);
+exports.quotesRoutes.post('/', quotes_controller_1.QuotesController.generateQuote);

@@ -6,7 +6,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 // Lazy Loading para optimizar el bundle inicial
-const Dashboard = lazy(() => import('./pages/Dashboard').then(module => ({ default: module.default })));
+const Dashboard = lazy(() => import('./pages/Dashboard').then(module => ({ default: module.Dashboard || module.default })));
 const Composer = lazy(() => import('./pages/Composer').then(module => ({ default: module.Composer })));
 const Settings = lazy(() => import('./pages/Settings').then(module => ({ default: module.Settings })));
 const FacebookCallback = lazy(() => import('./pages/FacebookCallback').then(module => ({ default: module.FacebookCallback })));
@@ -16,6 +16,15 @@ const Campaigns = lazy(() => import('./pages/Campaigns').then(module => ({ defau
 const Calendar = lazy(() => import('./pages/Calendar').then(module => ({ default: module.Calendar })));
 const Billing = lazy(() => import('./pages/Billing').then(module => ({ default: module.Billing })));
 const SuperAdmin = lazy(() => import('./pages/SuperAdmin').then(module => ({ default: module.SuperAdmin })));
+
+// Módulos de Ventas, CRM & AI Business OS
+const CRM = lazy(() => import('./pages/CRM').then(module => ({ default: module.CRM })));
+const WhatsAppInbox = lazy(() => import('./pages/WhatsAppInbox').then(module => ({ default: module.WhatsAppInbox })));
+const Catalog = lazy(() => import('./pages/Catalog').then(module => ({ default: module.Catalog })));
+const Quotes = lazy(() => import('./pages/Quotes').then(module => ({ default: module.Quotes })));
+const KnowledgeBase = lazy(() => import('./pages/KnowledgeBase').then(module => ({ default: module.KnowledgeBase })));
+const AiObservability = lazy(() => import('./pages/AiObservability').then(module => ({ default: module.AiObservability })));
+const NotFound = lazy(() => import('./pages/NotFound').then(module => ({ default: module.NotFound })));
 
 // Páginas de Auth
 const Login = lazy(() => import('./pages/auth/Login').then(module => ({ default: module.Login })));
@@ -100,6 +109,45 @@ function App() {
                 <Campaigns />
               </Suspense>
             } />
+            {/* Ventas & CRM (IA) */}
+            <Route path="crm" element={
+              <Suspense fallback={<LoadingFallback />}>
+                <CRM />
+              </Suspense>
+            } />
+            <Route path="inbox" element={
+              <Suspense fallback={<LoadingFallback />}>
+                <WhatsAppInbox />
+              </Suspense>
+            } />
+            <Route path="whatsapp" element={
+              <Suspense fallback={<LoadingFallback />}>
+                <WhatsAppInbox />
+              </Suspense>
+            } />
+            <Route path="catalog" element={
+              <Suspense fallback={<LoadingFallback />}>
+                <Catalog />
+              </Suspense>
+            } />
+            <Route path="quotes" element={
+              <Suspense fallback={<LoadingFallback />}>
+                <Quotes />
+              </Suspense>
+            } />
+
+            {/* Cerebro IA & RAG */}
+            <Route path="knowledge" element={
+              <Suspense fallback={<LoadingFallback />}>
+                <KnowledgeBase />
+              </Suspense>
+            } />
+            <Route path="observability" element={
+              <Suspense fallback={<LoadingFallback />}>
+                <AiObservability />
+              </Suspense>
+            } />
+
             <Route path="settings" element={
               <Suspense fallback={<LoadingFallback />}>
                 <Settings />
@@ -130,7 +178,21 @@ function App() {
                 <SuperAdmin />
               </Suspense>
             } />
+
+            {/* 404 Interno */}
+            <Route path="*" element={
+              <Suspense fallback={<LoadingFallback />}>
+                <NotFound />
+              </Suspense>
+            } />
           </Route>
+
+          {/* 404 Externo / Global */}
+          <Route path="*" element={
+            <Suspense fallback={<LoadingFallback />}>
+              <NotFound />
+            </Suspense>
+          } />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

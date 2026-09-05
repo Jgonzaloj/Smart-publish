@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.conversationsRoutes = void 0;
+const express_1 = require("express");
+const conversations_controller_1 = require("../controllers/conversations.controller");
+const auth_middleware_1 = require("../middlewares/auth.middleware");
+const tenant_middleware_1 = require("../middlewares/tenant.middleware");
+exports.conversationsRoutes = (0, express_1.Router)();
+exports.conversationsRoutes.use(auth_middleware_1.authMiddleware, tenant_middleware_1.tenantMiddleware);
+exports.conversationsRoutes.get('/', conversations_controller_1.ConversationsController.getConversations);
+exports.conversationsRoutes.post('/:id/messages', conversations_controller_1.ConversationsController.sendMessage);
+exports.conversationsRoutes.patch('/:id/ai-status', conversations_controller_1.ConversationsController.toggleAiMode);

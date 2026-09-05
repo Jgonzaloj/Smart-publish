@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.observabilityRoutes = void 0;
+const express_1 = require("express");
+const observability_controller_1 = require("../controllers/observability.controller");
+const auth_middleware_1 = require("../middlewares/auth.middleware");
+const tenant_middleware_1 = require("../middlewares/tenant.middleware");
+exports.observabilityRoutes = (0, express_1.Router)();
+exports.observabilityRoutes.use(auth_middleware_1.authMiddleware, tenant_middleware_1.tenantMiddleware);
+exports.observabilityRoutes.get('/metrics', observability_controller_1.ObservabilityController.getMetrics);

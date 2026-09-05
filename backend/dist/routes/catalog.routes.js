@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.catalogRoutes = void 0;
+const express_1 = require("express");
+const catalog_controller_1 = require("../controllers/catalog.controller");
+const auth_middleware_1 = require("../middlewares/auth.middleware");
+const tenant_middleware_1 = require("../middlewares/tenant.middleware");
+exports.catalogRoutes = (0, express_1.Router)();
+exports.catalogRoutes.use(auth_middleware_1.authMiddleware, tenant_middleware_1.tenantMiddleware);
+exports.catalogRoutes.get('/', catalog_controller_1.CatalogController.getCatalog);
+exports.catalogRoutes.post('/', catalog_controller_1.CatalogController.createService);
+exports.catalogRoutes.get('/:serviceId/price', catalog_controller_1.CatalogController.getPrice);

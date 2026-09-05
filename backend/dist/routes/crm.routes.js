@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.crmRoutes = void 0;
+const express_1 = require("express");
+const crm_controller_1 = require("../controllers/crm.controller");
+const auth_middleware_1 = require("../middlewares/auth.middleware");
+const tenant_middleware_1 = require("../middlewares/tenant.middleware");
+exports.crmRoutes = (0, express_1.Router)();
+exports.crmRoutes.use(auth_middleware_1.authMiddleware, tenant_middleware_1.tenantMiddleware);
+exports.crmRoutes.get('/leads', crm_controller_1.CrmController.getLeads);
+exports.crmRoutes.post('/leads', crm_controller_1.CrmController.createLead);
+exports.crmRoutes.patch('/leads/:id/status', crm_controller_1.CrmController.updateLeadStatus);

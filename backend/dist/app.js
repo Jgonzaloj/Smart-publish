@@ -21,6 +21,11 @@ const team_routes_1 = require("./routes/team.routes");
 const superadmin_routes_1 = require("./routes/superadmin.routes");
 const webhooks_routes_1 = require("./routes/webhooks.routes");
 const post_routes_1 = require("./routes/post.routes");
+const crm_routes_1 = require("./routes/crm.routes");
+const catalog_routes_1 = require("./routes/catalog.routes");
+const quotes_routes_1 = require("./routes/quotes.routes");
+const conversations_routes_1 = require("./routes/conversations.routes");
+const observability_routes_1 = require("./routes/observability.routes");
 const error_middleware_1 = require("./middlewares/error.middleware");
 const path_1 = __importDefault(require("path"));
 const app = (0, express_1.default)();
@@ -73,6 +78,11 @@ app.use('/api/team', team_routes_1.teamRoutes);
 app.use('/api/superadmin', superadmin_routes_1.superAdminRoutes);
 app.use('/api/webhooks', webhooks_routes_1.webhooksRoutes);
 app.use('/api/posts', post_routes_1.postRoutes);
+app.use('/api/crm', crm_routes_1.crmRoutes);
+app.use('/api/catalog', catalog_routes_1.catalogRoutes);
+app.use('/api/quotes', quotes_routes_1.quotesRoutes);
+app.use('/api/conversations', conversations_routes_1.conversationsRoutes);
+app.use('/api/observability', observability_routes_1.observabilityRoutes);
 // Manejo seguro de Errores al final de todas las rutas
 app.use(error_middleware_1.errorHandler);
 // Inicializar Workers (BullMQ)
