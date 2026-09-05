@@ -1,14 +1,20 @@
 import Stripe from 'stripe';
 import { WorkspaceRepository } from '../repositories/WorkspaceRepository';
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecretKey && process.env.NODE_ENV === 'production') {
-    throw new Error('FATAL ERROR: STRIPE_SECRET_KEY no está configurado en las variables de entorno.');
-}
+let stripeClient: Stripe | null = null;
 
-const stripe = new Stripe(stripeSecretKey || '', {
-    apiVersion: '2024-04-10' as any,
-});
+function getStripe(): Stripe {
+    if (!stripeClient) {
+        const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+        if (!stripeSecretKey) {
+            throw new Error('STRIPE_SECRET_KEY no está configurado en las variables de entorno.');
+        }
+        stripeClient = new Stripe(stripeSecretKey, {
+            apiVersion: '2024-04-10' as any,
+        });
+    }
+    return stripeClient;
+}
 
 const workspaceRepository = new WorkspaceRepository();
 
@@ -24,7 +30,7 @@ export class StripeService {
             return workspace.stripe_customer_id;
         }
 
-        const customer = await stripe.customers.create({
+        const customer = await getStripe().customers.create({
             email,
             name,
             metadata: {
@@ -38,7 +44,7 @@ export class StripeService {
 
     // Create a Checkout Session
     async createCheckoutSession(customerId: string, priceId: string, successUrl: string, cancelUrl: string): Promise<string> {
-        const session = await stripe.checkout.sessions.create({
+        const session = await getStripe().checkout.sessions.create({
             customer: customerId,
             payment_method_types: ['card'],
             line_items: [
@@ -57,7 +63,7 @@ export class StripeService {
 
     // Create a Customer Portal Session
     async createPortalSession(customerId: string, returnUrl: string): Promise<string> {
-        const session = await stripe.billingPortal.sessions.create({
+        const session = await getStripe().billingPortal.sessions.create({
             customer: customerId,
             return_url: returnUrl,
         });
@@ -75,7 +81,7 @@ export class StripeService {
         let event: Stripe.Event;
 
         try {
-            event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+            event = getStripe().webhooks.constructEvent(payload, signature, webhookSecret);
         } catch (err: any) {
             console.error('Webhook signature verification failed.', err.message);
             throw new Error(`Webhook Error: ${err.message}`);

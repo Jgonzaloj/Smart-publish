@@ -1,8 +1,8 @@
+import './config/env';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 import { authRoutes } from './routes/auth.routes';
 import { facebookRoutes } from './routes/facebook.routes';
 import { tiktokRoutes } from './routes/tiktok.routes';
@@ -19,7 +19,6 @@ import { postRoutes } from './routes/post.routes';
 import { errorHandler } from './middlewares/error.middleware';
 
 import path from 'path';
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3000;

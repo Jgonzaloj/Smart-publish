@@ -3,11 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+require("./config/env");
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
-const dotenv_1 = __importDefault(require("dotenv"));
 const auth_routes_1 = require("./routes/auth.routes");
 const facebook_routes_1 = require("./routes/facebook.routes");
 const tiktok_routes_1 = require("./routes/tiktok.routes");
@@ -23,7 +23,6 @@ const webhooks_routes_1 = require("./routes/webhooks.routes");
 const post_routes_1 = require("./routes/post.routes");
 const error_middleware_1 = require("./middlewares/error.middleware");
 const path_1 = __importDefault(require("path"));
-dotenv_1.default.config({ path: path_1.default.resolve(__dirname, '../.env') });
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
 // Hardening de seguridad con Helmet
