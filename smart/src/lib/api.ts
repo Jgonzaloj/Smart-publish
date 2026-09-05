@@ -1,8 +1,14 @@
 import axios from 'axios';
 
+const getBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (import.meta.env.PROD) return 'https://api.redes.inversionesvawi.com/api';
+  return 'http://localhost:3000/api';
+};
+
 // Instancia global de Axios
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api', // Conexión local o servidor en producción
+  baseURL: getBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
