@@ -8,7 +8,7 @@ const database_1 = require("../config/database");
 const crypto_1 = __importDefault(require("crypto"));
 class CatalogController {
     static async getCatalog(req, res) {
-        const workspaceId = req.headers['x-workspace-id'];
+        const workspaceId = req.user?.workspace_id || req.workspaceId;
         try {
             const [services] = await database_1.pool.query(`SELECT s.*, p.amount, p.currency, p.conditions, p.duration, c.name as category_name 
                  FROM services s 
@@ -31,7 +31,7 @@ class CatalogController {
         }
     }
     static async createService(req, res) {
-        const workspaceId = req.headers['x-workspace-id'];
+        const workspaceId = req.user?.workspace_id || req.workspaceId;
         const { name, category, amount, currency, duration, conditions } = req.body;
         if (!name || !amount) {
             res.status(400).json({ success: false, message: 'Nombre y precio son obligatorios' });
@@ -59,6 +59,14 @@ class CatalogController {
     }
     static async getPrice(req, res) {
         const { serviceId } = req.params;
+        try {
+            const [prices] = await database_1.pool.query(`SELECT amount, currency, duration, conditions FROM prices WHERE service_id = ? LIMIT 1`, [serviceId]);
+            if (prices.length > 0) {
+                res.json({ success: true, serviceId, price: prices[0].amount, currency: prices[0].currency, duration: prices[0].duration });
+                return;
+            }
+        }
+        catch (err) { }
         res.json({ success: true, serviceId, price: 250.00, currency: 'USD' });
     }
 }

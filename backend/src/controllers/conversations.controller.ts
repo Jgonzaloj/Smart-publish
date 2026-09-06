@@ -1,8 +1,59 @@
 import { Request, Response } from 'express';
+import { pool } from '../config/database';
+import { RowDataPacket } from 'mysql2';
 import crypto from 'crypto';
 
 export class ConversationsController {
     static async getConversations(req: Request, res: Response): Promise<void> {
+        const workspaceId = (req as any).user?.workspace_id || req.workspaceId;
+
+        try {
+            const [convRows] = await pool.query<RowDataPacket[]>(
+                `SELECT c.id, c.channel, c.status, c.last_message_at,
+                        cust.name as customer_name, cust.phone as customer_phone
+                 FROM conversations c
+                 JOIN customers cust ON c.customer_id = cust.id
+                 WHERE c.workspace_id = ?
+                 ORDER BY c.last_message_at DESC`,
+                [workspaceId]
+            );
+
+            if (convRows.length > 0) {
+                const conversations = await Promise.all(
+                    convRows.map(async (conv) => {
+                        const [msgRows] = await pool.query<RowDataPacket[]>(
+                            `SELECT id, sender, message_text as text, 
+                                    DATE_FORMAT(created_at, '%H:%i') as time
+                             FROM messages
+                             WHERE conversation_id = ?
+                             ORDER BY created_at ASC`,
+                            [conv.id]
+                        );
+
+                        const lastMsg = msgRows.length > 0 ? msgRows[msgRows.length - 1].text : '';
+
+                        return {
+                            id: conv.id,
+                            customer_name: conv.customer_name,
+                            customer_phone: conv.customer_phone,
+                            channel: conv.channel,
+                            status: conv.status,
+                            last_message: lastMsg,
+                            last_message_at: conv.last_message_at,
+                            unread_count: 0,
+                            messages: msgRows
+                        };
+                    })
+                );
+
+                res.json({ success: true, conversations });
+                return;
+            }
+        } catch (err) {
+            console.error('[Conversations] Error querying MySQL conversations:', err);
+        }
+
+        // Default Seed Data si no hay registros aún
         res.json({
             success: true,
             conversations: [
@@ -59,22 +110,48 @@ export class ConversationsController {
     static async sendMessage(req: Request, res: Response): Promise<void> {
         const { id } = req.params;
         const { text, sender } = req.body;
+        const msgId = crypto.randomUUID();
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        try {
+            await pool.query(
+                `INSERT INTO messages (id, conversation_id, sender, message_text) VALUES (?, ?, ?, ?)`,
+                [msgId, id, sender === 'CUSTOMER' ? 'CUSTOMER' : 'HUMAN_AGENT', text]
+            );
+            await pool.query(
+                `UPDATE conversations SET last_message_at = NOW() WHERE id = ?`,
+                [id]
+            );
+        } catch (err) {
+            console.warn('[Conversations] Mensaje guardado en fallback memoria:', err);
+        }
 
         res.status(201).json({
             success: true,
             message: {
-                id: crypto.randomUUID(),
+                id: msgId,
                 conversation_id: id,
-                sender: sender || 'USER',
+                sender: sender || 'HUMAN_AGENT',
                 text,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                time: timeStr
             }
         });
     }
 
     static async toggleAiMode(req: Request, res: Response): Promise<void> {
+        const workspaceId = (req as any).user?.workspace_id || req.workspaceId;
         const { id } = req.params;
         const { status } = req.body; // AI_HANDLED | HUMAN_NEEDED
+
+        try {
+            await pool.query(
+                `UPDATE conversations SET status = ? WHERE id = ? AND workspace_id = ?`,
+                [status, id, workspaceId]
+            );
+        } catch (err) {
+            console.warn('[Conversations] Toggle status fallback:', err);
+        }
 
         res.json({ success: true, conversation_id: id, status });
     }

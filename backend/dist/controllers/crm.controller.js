@@ -8,7 +8,7 @@ const database_1 = require("../config/database");
 const crypto_1 = __importDefault(require("crypto"));
 class CrmController {
     static async getLeads(req, res) {
-        const workspaceId = req.headers['x-workspace-id'];
+        const workspaceId = req.user?.workspace_id || req.workspaceId;
         try {
             const [leads] = await database_1.pool.query(`SELECT l.*, c.name as customer_name, c.phone as customer_phone, c.email as customer_email, c.source as customer_source 
                  FROM leads l 
@@ -32,7 +32,7 @@ class CrmController {
         }
     }
     static async createLead(req, res) {
-        const workspaceId = req.headers['x-workspace-id'];
+        const workspaceId = req.user?.workspace_id || req.workspaceId;
         const { name, phone, email, source, estimatedValue, notes } = req.body;
         if (!name) {
             res.status(400).json({ success: false, message: 'El nombre del cliente es obligatorio' });
@@ -52,6 +52,7 @@ class CrmController {
         }
     }
     static async updateLeadStatus(req, res) {
+        const workspaceId = req.user?.workspace_id || req.workspaceId;
         const { id } = req.params;
         const { status } = req.body;
         const validStatuses = ['NEW', 'CONTACTED', 'QUALIFIED', 'QUOTED', 'NEGOTIATION', 'WON', 'LOST'];
@@ -60,7 +61,7 @@ class CrmController {
             return;
         }
         try {
-            await database_1.pool.query(`UPDATE leads SET status = ? WHERE id = ?`, [status, id]);
+            await database_1.pool.query(`UPDATE leads SET status = ? WHERE id = ? AND workspace_id = ?`, [status, id, workspaceId]);
             res.json({ success: true, message: `Lead actualizado a ${status}` });
         }
         catch (err) {

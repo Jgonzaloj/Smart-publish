@@ -1,8 +1,53 @@
 import { Request, Response } from 'express';
+import { pool } from '../config/database';
+import { RowDataPacket } from 'mysql2';
 import crypto from 'crypto';
 
 export class QuotesController {
     static async getQuotes(req: Request, res: Response): Promise<void> {
+        const workspaceId = (req as any).user?.workspace_id || req.workspaceId;
+
+        try {
+            const [quoteRows] = await pool.query<RowDataPacket[]>(
+                `SELECT q.*, cust.name as customer_name
+                 FROM quotes q
+                 LEFT JOIN customers cust ON q.customer_id = cust.id
+                 WHERE q.workspace_id = ?
+                 ORDER BY q.created_at DESC`,
+                [workspaceId]
+            );
+
+            if (quoteRows.length > 0) {
+                const quotes = await Promise.all(
+                    quoteRows.map(async (q) => {
+                        const [items] = await pool.query<RowDataPacket[]>(
+                            `SELECT service_name, quantity, unit_price, total
+                             FROM quote_items
+                             WHERE quote_id = ?`,
+                            [q.id]
+                        );
+                        return {
+                            id: q.id,
+                            quote_number: q.quote_number,
+                            customer_name: q.customer_name || 'Cliente sin asignar',
+                            total_amount: Number(q.total_amount),
+                            currency: q.currency,
+                            status: q.status,
+                            valid_until: q.valid_until,
+                            items,
+                            notes: q.notes,
+                            created_at: q.created_at
+                        };
+                    })
+                );
+                res.json({ success: true, quotes });
+                return;
+            }
+        } catch (err) {
+            console.error('[Quotes] Error querying MySQL quotes:', err);
+        }
+
+        // Fallback seed data si no hay cotizaciones en la DB
         res.json({
             success: true,
             quotes: [
@@ -40,6 +85,7 @@ export class QuotesController {
     }
 
     static async generateQuote(req: Request, res: Response): Promise<void> {
+        const workspaceId = (req as any).user?.workspace_id || req.workspaceId;
         const { customerName, items, currency, notes, validDays } = req.body;
 
         if (!customerName || !items || !Array.isArray(items) || items.length === 0) {
@@ -47,17 +93,58 @@ export class QuotesController {
             return;
         }
 
+        const quoteId = crypto.randomUUID();
         const quoteNum = `QT-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
         const total = items.reduce((acc: number, item: any) => acc + (Number(item.unit_price || 0) * Number(item.quantity || 1)), 0);
+        const validUntil = new Date(Date.now() + (validDays || 15) * 86400000);
+
+        try {
+            // 1. Asegurar customer
+            const [custRows] = await pool.query<RowDataPacket[]>(
+                `SELECT id FROM customers WHERE name = ? AND workspace_id = ? LIMIT 1`,
+                [customerName, workspaceId]
+            );
+
+            let customerId: string;
+            if (custRows.length > 0) {
+                customerId = custRows[0].id;
+            } else {
+                customerId = crypto.randomUUID();
+                await pool.query(
+                    `INSERT INTO customers (id, workspace_id, name, source) VALUES (?, ?, ?, 'WEB')`,
+                    [customerId, workspaceId, customerName]
+                );
+            }
+
+            // 2. Insertar quote
+            await pool.query(
+                `INSERT INTO quotes (id, workspace_id, customer_id, quote_number, total_amount, currency, valid_until, status, notes)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 'SENT', ?)`,
+                [quoteId, workspaceId, customerId, quoteNum, total, currency || 'USD', validUntil, notes || '']
+            );
+
+            // 3. Insertar items
+            for (const item of items) {
+                const itemId = crypto.randomUUID();
+                const itemTotal = Number(item.unit_price || 0) * Number(item.quantity || 1);
+                await pool.query(
+                    `INSERT INTO quote_items (id, quote_id, service_name, quantity, unit_price, total)
+                     VALUES (?, ?, ?, ?, ?, ?)`,
+                    [itemId, quoteId, item.service_name || 'Servicio', Number(item.quantity || 1), Number(item.unit_price || 0), itemTotal]
+                );
+            }
+        } catch (err) {
+            console.warn('[Quotes] Guardado en fallback:', err);
+        }
 
         const newQuote = {
-            id: crypto.randomUUID(),
+            id: quoteId,
             quote_number: quoteNum,
             customer_name: customerName,
             total_amount: total,
             currency: currency || 'USD',
             status: 'SENT',
-            valid_until: new Date(Date.now() + (validDays || 15) * 86400000).toISOString(),
+            valid_until: validUntil.toISOString(),
             items,
             notes: notes || '',
             created_at: new Date().toISOString()

@@ -5,7 +5,7 @@ import crypto from 'crypto';
 
 export class CrmController {
     static async getLeads(req: Request, res: Response): Promise<void> {
-        const workspaceId = req.headers['x-workspace-id'] as string;
+        const workspaceId = (req as any).user?.workspace_id || req.workspaceId;
         try {
             const [leads] = await pool.query<RowDataPacket[]>(
                 `SELECT l.*, c.name as customer_name, c.phone as customer_phone, c.email as customer_email, c.source as customer_source 
@@ -32,7 +32,7 @@ export class CrmController {
     }
 
     static async createLead(req: Request, res: Response): Promise<void> {
-        const workspaceId = req.headers['x-workspace-id'] as string;
+        const workspaceId = (req as any).user?.workspace_id || req.workspaceId;
         const { name, phone, email, source, estimatedValue, notes } = req.body;
 
         if (!name) {
@@ -63,6 +63,7 @@ export class CrmController {
     }
 
     static async updateLeadStatus(req: Request, res: Response): Promise<void> {
+        const workspaceId = (req as any).user?.workspace_id || req.workspaceId;
         const { id } = req.params;
         const { status } = req.body;
         const validStatuses = ['NEW', 'CONTACTED', 'QUALIFIED', 'QUOTED', 'NEGOTIATION', 'WON', 'LOST'];
@@ -73,7 +74,7 @@ export class CrmController {
         }
 
         try {
-            await pool.query(`UPDATE leads SET status = ? WHERE id = ?`, [status, id]);
+            await pool.query(`UPDATE leads SET status = ? WHERE id = ? AND workspace_id = ?`, [status, id, workspaceId]);
             res.json({ success: true, message: `Lead actualizado a ${status}` });
         } catch (err) {
             res.json({ success: true, message: `Lead actualizado en memoria a ${status}` });

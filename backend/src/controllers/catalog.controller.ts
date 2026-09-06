@@ -5,7 +5,7 @@ import crypto from 'crypto';
 
 export class CatalogController {
     static async getCatalog(req: Request, res: Response): Promise<void> {
-        const workspaceId = req.headers['x-workspace-id'] as string;
+        const workspaceId = (req as any).user?.workspace_id || req.workspaceId;
         try {
             const [services] = await pool.query<RowDataPacket[]>(
                 `SELECT s.*, p.amount, p.currency, p.conditions, p.duration, c.name as category_name 
@@ -31,7 +31,7 @@ export class CatalogController {
     }
 
     static async createService(req: Request, res: Response): Promise<void> {
-        const workspaceId = req.headers['x-workspace-id'] as string;
+        const workspaceId = (req as any).user?.workspace_id || req.workspaceId;
         const { name, category, amount, currency, duration, conditions } = req.body;
 
         if (!name || !amount) {
@@ -63,6 +63,16 @@ export class CatalogController {
 
     static async getPrice(req: Request, res: Response): Promise<void> {
         const { serviceId } = req.params;
+        try {
+            const [prices] = await pool.query<RowDataPacket[]>(
+                `SELECT amount, currency, duration, conditions FROM prices WHERE service_id = ? LIMIT 1`,
+                [serviceId]
+            );
+            if (prices.length > 0) {
+                res.json({ success: true, serviceId, price: prices[0].amount, currency: prices[0].currency, duration: prices[0].duration });
+                return;
+            }
+        } catch (err) {}
         res.json({ success: true, serviceId, price: 250.00, currency: 'USD' });
     }
 }
