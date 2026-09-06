@@ -1,8 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
+import { logger } from '../utils/logger';
 
 export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
-    // Loguear el error internamente (idealmente en un sistema como Sentry o Datadog)
-    console.error(`[Global Error Handler] Path: ${req.path} | Error:`, err);
+    // Log estructurado con severidad y contexto de la petición
+    logger.error(`Error no controlado en ${req.method} ${req.path}`, 'GlobalErrorHandler', {
+        method: req.method,
+        path: req.path,
+        error: err.message || err,
+        stack: err.stack,
+        ip: req.ip
+    });
 
     // Evitar filtrar Stack Traces y detalles en producción
     const isProduction = process.env.NODE_ENV === 'production';

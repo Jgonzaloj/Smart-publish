@@ -3,6 +3,11 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+if (process.env.NODE_ENV === 'production' && (!process.env.DB_USER || !process.env.DB_PASSWORD)) {
+    console.error('FATAL SECURITY ERROR: DB_USER y DB_PASSWORD deben estar explícitamente configurados en entorno de producción.');
+    process.exit(1);
+}
+
 const dbHost = process.env.DB_HOST || 'localhost';
 const dbUser = process.env.DB_USER || 'root';
 const dbPassword = process.env.DB_PASSWORD || '';
