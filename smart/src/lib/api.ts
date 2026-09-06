@@ -14,8 +14,13 @@ export const api = axios.create({
   },
 });
 
-// Interceptor para inyectar el JWT y el WorkspaceID en cada petición
+// Interceptor para inyectar el JWT, WorkspaceID y normalizar URLs
 api.interceptors.request.use((config) => {
+  // Evitar duplicar el prefijo /api si la URL relativa ya lo incluye
+  if (config.url && config.url.startsWith('/api/')) {
+    config.url = config.url.substring(4);
+  }
+
   const token = localStorage.getItem('auth_token');
   const userStr = localStorage.getItem('auth_user');
   

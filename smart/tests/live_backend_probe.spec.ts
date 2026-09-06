@@ -34,11 +34,11 @@ test.describe('Live Backend API Probing - api.redes.inversionesvawi.com', () => 
 
   test('4. AI & Automation Endpoints Probe (SKILL-14 / SKILL-20)', async ({ request }) => {
     try {
-      const res = await request.post(`${API_BASE}/api/ai/generate-post`, {
+      const res = await request.post(`${API_BASE}/api/ai/suggest`, {
         data: { topic: 'Café de especialidad' }
       });
-      console.log(`[API AI GENERATE STATUS]: ${res.status()}`);
-      console.log(`[API AI GENERATE BODY]:`, await res.text());
+      console.log(`[API AI SUGGEST STATUS]: ${res.status()}`);
+      console.log(`[API AI SUGGEST BODY]:`, await res.text());
     } catch (e: any) {
       console.log(`[API AI ERROR]:`, e.message);
     }
@@ -46,9 +46,11 @@ test.describe('Live Backend API Probing - api.redes.inversionesvawi.com', () => 
 
   test('5. Billing Endpoints Probe (SKILL-23)', async ({ request }) => {
     try {
-      const res = await request.get(`${API_BASE}/api/billing/plans`);
-      console.log(`[API BILLING PLANS STATUS]: ${res.status()}`);
-      console.log(`[API BILLING PLANS BODY]:`, await res.text());
+      const res = await request.post(`${API_BASE}/api/billing/create-checkout-session`, {
+        data: { priceId: 'price_test_123' }
+      });
+      console.log(`[API BILLING STATUS]: ${res.status()}`);
+      console.log(`[API BILLING BODY]:`, await res.text());
     } catch (e: any) {
       console.log(`[API BILLING PLANS ERROR]:`, e.message);
     }
