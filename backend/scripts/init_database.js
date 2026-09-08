@@ -36,22 +36,9 @@ async function initDatabase() {
       console.log(`[Init DB] Aplicando esquema desde ${schemaPath}...`);
       const schemaSql = fs.readFileSync(schemaPath, 'utf8');
       
-      // Separar por punto y coma para ejecutar cada sentencia limpiamente
-      const statements = schemaSql
-        .split(';')
-        .map(s => s.trim())
-        .filter(s => s.length > 0 && !s.startsWith('--'));
-
-      for (const statement of statements) {
-        try {
-          await dbConn.query(statement);
-        } catch (stmtErr) {
-          // Ignorar advertencias si la tabla ya existe
-          if (!stmtErr.message.includes('already exists')) {
-            console.warn(`[Init DB] Nota en sentencia: ${stmtErr.message}`);
-          }
-        }
-      }
+      await dbConn.query('SET FOREIGN_KEY_CHECKS = 0;');
+      await dbConn.query(schemaSql);
+      await dbConn.query('SET FOREIGN_KEY_CHECKS = 1;');
       console.log(`[Init DB] ✅ Todas las tablas de schema.sql han sido creadas/verificadas con éxito.`);
     }
 
