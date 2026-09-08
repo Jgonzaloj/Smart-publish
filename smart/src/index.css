@@ -4,19 +4,19 @@
 
 @layer base {
   :root {
-    --bg-color: #0F1115;
-    --text-color: #FFFFFF;
-    color-scheme: dark;
+    --bg-color: #F5F7FA;
+    --text-color: #101828;
+    color-scheme: light;
   }
 
   html.dark {
-    --bg-color: #0F1115;
-    --text-color: #FFFFFF;
+    --bg-color: #0F172A;
+    --text-color: #F8FAFC;
     color-scheme: dark;
   }
 
   body {
-    @apply bg-canvas text-white antialiased font-sans selection:bg-accent/30 selection:text-white;
+    @apply bg-canvas text-text-primary antialiased font-sans selection:bg-accent/20 selection:text-text-primary;
   }
 
   /* Custom scrollbar */
@@ -40,15 +40,15 @@
 
 @layer components {
   .input-field {
-    @apply w-full px-3.5 py-2.5 bg-surface border border-borderc rounded-lg text-sm text-white placeholder:text-text-secondary/60 focus:border-accent focus:ring-1 focus:ring-accent/30 outline-none transition-colors;
+    @apply w-full px-3.5 py-2.5 bg-surface border border-borderc rounded-xl text-sm text-text-primary placeholder:text-text-secondary/60 focus:border-accent focus:ring-1 focus:ring-accent/30 outline-none transition-colors;
   }
 
   .btn-primary {
-    @apply px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2;
+    @apply px-4 py-2.5 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm;
   }
 
   .btn-secondary {
-    @apply px-4 py-2 bg-surface hover:bg-surface-raised border border-borderc text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2;
+    @apply px-4 py-2.5 bg-surface hover:bg-surface-raised border border-borderc text-text-primary text-sm font-medium rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm;
   }
 
   .animate-float {

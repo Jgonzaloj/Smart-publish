@@ -8,36 +8,51 @@ export default {
   theme: {
     extend: {
       colors: {
-        canvas: '#0F1115',
+        // Fondo de página y tarjetas — tema claro
+        canvas: '#F5F7FA',
         surface: {
-          DEFAULT: '#171A21',
-          raised: '#1E222B',
+          DEFAULT: '#FFFFFF',
+          raised: '#EFF6F1', // tinte sutil hacia el teal
         },
-        borderc: '#2A2F3A',
+        borderc: '#E2E9E4',
+
+        // Texto
+        text: {
+          primary: '#101828',
+          secondary: '#667085',
+        },
+
+        // Acento principal (CTA, nav activo) — teal
         accent: {
-          DEFAULT: '#6366F1',
-          hover: '#7B7EF5',
+          DEFAULT: '#12B76A',
+          hover: '#0F6E56',
         },
-        success: '#34C77B',
-        warning: '#F0A93E',
-        danger: '#EF5350',
-        purple: {
-          DEFAULT: '#8B5CF6',
-          hover: '#9D74FF',
+
+        // Acento secundario — coral, para distinguir estados del teal
+        coral: {
+          DEFAULT: '#D85A30',
+          hover: '#B84A26',
         },
-        'text-primary': '#FFFFFF',
-        'text-secondary': '#94A3B8',
+
+        // Semánticos
+        success: '#12B76A',
+        warning: '#F79009',
+        danger: '#F04438',
+        purple: '#7A5AF8', // reservado para IA
+
+        // Legacy: recoloreado de azul cielo a teal para que Composer/Login/Settings/etc.
+        // (aún sin migrar al sistema de tokens nuevo) hereden la nueva dirección visual
         brand: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9', // Primary brand color
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          50: '#ECFDF5',
+          100: '#D1FAE5',
+          200: '#A7F3D0',
+          300: '#6EE7B7',
+          400: '#34D399',
+          500: '#12B76A',
+          600: '#0F9D63',
+          700: '#0F6E56',
+          800: '#065F46',
+          900: '#064E3B',
         },
         dark: {
           bg: '#0f172a',
@@ -48,7 +63,7 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'monospace'],
       },
       animation: {
