@@ -1,0 +1,13 @@
+# Credenciales sensibles
+config/config.php
+*.env
+
+# Archivos de log y temporales
+error_log
+*.log
+clean_text*.txt
+cgi-bin/
+
+# Archivos multimedia subidos por usuarios
+assets/uploads/*
+!assets/uploads/.gitkeep

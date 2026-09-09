@@ -1,0 +1,313 @@
+/* Tipografía Inter */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* Variables de paleta corporativa Premium */
+:root {
+    --primary-color: #6C5DD3;
+    --primary-dark: #121323;
+    --warning-kpi: #F4B400;
+    --cyan-map: #00B8D9;
+    --success-color: #00B894;
+    --bg-color: #F8FAFC;
+    --text-color: #1E293B;
+    
+    --card-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px rgba(16, 24, 40, 0.06);
+    --card-shadow-hover: 0 16px 40px rgba(0, 0, 0, 0.10);
+    --border-radius-custom: 20px;
+}
+
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--text-color);
+    background-color: var(--bg-color);
+}
+
+/* Optimización de Tarjetas Premium */
+.card, .module-card {
+    border-radius: var(--border-radius-custom) !important;
+    border: 1px solid #E6ECF5;
+    box-shadow: var(--card-shadow);
+    transition: all 0.18s ease;
+}
+
+.module-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--card-shadow-hover);
+}
+
+/* Formularios */
+.form-control, .form-select {
+    background-color: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    padding: 0.65rem 1rem;
+    border-radius: 10px;
+}
+.form-control:focus, .form-select:focus {
+    background-color: #FFFFFF;
+    box-shadow: 0 0 0 0.25rem rgba(108, 93, 211, 0.15);
+    border-color: var(--primary-color);
+}
+
+/* Sidebar Colapsable (Estilo Lampo) */
+#sidebar {
+    min-height: 100vh;
+    background-color: #121323; /* Dark violet/navy */
+    color: #8B8DAB;
+    width: 260px;
+    transition: width 0.3s ease;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+#sidebar.collapsed {
+    width: 80px;
+}
+
+#sidebar.collapsed .nav-text, 
+#sidebar.collapsed .sidebar-header h4,
+#sidebar.collapsed .sidebar-header small,
+#sidebar.collapsed .search-box,
+#sidebar.collapsed .user-info,
+#sidebar.collapsed .sidebar-section-title {
+    display: none !important;
+}
+
+#sidebar.collapsed .sidebar-header {
+    padding: 1.5rem 0 !important;
+    text-align: center;
+}
+
+#sidebar.collapsed .nav-link {
+    justify-content: center;
+    padding: 0.8rem 0;
+}
+
+#sidebar .nav-link {
+    color: #8B8DAB;
+    padding: 0.8rem 1rem;
+    font-weight: 500;
+    border-radius: 8px;
+    margin: 0.2rem 1rem;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s;
+    position: relative;
+    text-decoration: none;
+}
+
+#sidebar .nav-link i {
+    width: 24px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+#sidebar .nav-text {
+    margin-left: 12px;
+    white-space: nowrap;
+}
+
+#sidebar .nav-link:hover {
+    color: #FFFFFF;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+#sidebar .nav-link.active {
+    color: #FFFFFF;
+    background-color: #27294A; /* Soft active background */
+}
+
+#sidebar .nav-link.active::before {
+    content: '';
+    position: absolute;
+    left: -1rem; /* Posición de la barra */
+    top: 15%;
+    height: 70%;
+    width: 4px;
+    background-color: #6C5DD3; /* Color acento Lampo */
+    border-radius: 0 4px 4px 0;
+}
+
+.sidebar-toggle {
+    position: absolute;
+    right: -12px;
+    top: 40px;
+    background: #27294A;
+    color: white;
+    border: 1px solid #121323;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    z-index: 10;
+    transition: transform 0.3s;
+    font-size: 0.75rem;
+}
+
+#sidebar.collapsed .sidebar-toggle {
+    transform: rotate(180deg);
+}
+
+.search-box {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    margin: 0 1rem 1rem 1rem;
+    display: flex;
+    align-items: center;
+}
+.search-box input {
+    background: transparent;
+    border: none;
+    color: white;
+    margin-left: 10px;
+    width: 100%;
+}
+.search-box input:focus {
+    outline: none;
+}
+.search-box input::placeholder {
+    color: #8B8DAB;
+}
+.search-box i {
+    color: #8B8DAB;
+}
+
+.sidebar-section-title {
+    color: #555770;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 1.5rem 1rem 0.5rem 1rem;
+}
+
+.brand-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #6C5DD3, #9D88FF);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+}
+
+#page-content-wrapper {
+    flex-grow: 1;
+    width: calc(100% - 260px);
+    transition: width 0.3s ease;
+    overflow-x: hidden;
+}
+
+#sidebar.collapsed ~ #page-content-wrapper {
+    width: calc(100% - 80px);
+}
+
+/* Layout Login Pantalla Completa */
+.login-fullscreen {
+    min-height: 100vh;
+    width: 100%;
+    position: relative;
+    background: url('../img/login_bg.png') no-repeat center center;
+    background-size: cover;
+}
+
+.login-fullscreen-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(11,31,58,0.70) 0%, rgba(108,93,211,0.50) 100%);
+}
+
+.login-glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+    padding: 3rem;
+    width: 100%;
+    max-width: 440px;
+    border-radius: 24px;
+}
+
+@media (max-width: 576px) {
+    .login-glass-card {
+        padding: 2rem;
+        margin: 1rem;
+    }
+}
+
+/* Área Dropzone de carga fluida */
+.dropzone-area {
+    border: 2px dashed #dee2e6;
+    background-color: #f8f9fa;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+}
+
+.dropzone-area:hover {
+    border-color: var(--primary-color);
+    background-color: #f1f3f5;
+}
+
+/* Contenedor del Mapa */
+#map {
+    z-index: 1;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    border-radius: 12px;
+}
+
+/* Compatibilidad Nativa Completa con Modo Oscuro de Bootstrap 5.3+ */
+[data-bs-theme="dark"] .dropzone-area {
+    background-color: #212529;
+    border-color: #495057;
+}
+
+[data-bs-theme="dark"] .bg-light {
+    background-color: #121212 !important;
+}
+
+/* Miniaturas adaptativas */
+.img-thumbnail {
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+/* ====== RESPONSIVE MOBILE ====== */
+@media (max-width: 768px) {
+    #sidebar {
+        position: fixed;
+        left: -260px;
+        top: 0;
+        bottom: 0;
+        z-index: 1040;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+    }
+    #sidebar.show-mobile {
+        left: 0;
+    }
+    #page-content-wrapper {
+        width: 100% !important;
+    }
+    .sidebar-toggle {
+        display: none;
+    }
+    .mobile-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1030;
+        display: none;
+    }
+    .mobile-overlay.show {
+        display: block;
+    }
+}
