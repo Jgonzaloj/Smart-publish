@@ -1,0 +1,61 @@
+name: Build CrediYa APK
+
+on:
+  push:
+    branches: [ crediya ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build APK with Gradle Wrapper
+        working-directory: android
+        run: |
+          gradle wrapper --gradle-version 8.5
+          chmod +x gradlew
+          ./gradlew assembleRelease --stacktrace
+
+      - name: Rename APK
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk CrediYa.apk
+
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CrediYa-APK
+          path: CrediYa.apk
+
+      - name: Create Release with APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0-apk
+          name: "CrediYa Mobile APK v1.0.0"
+          body: |
+            ## CrediYa - Aplicación Android Oficial (APK)
+            
+            - **URL conectada:** `http://165.22.12.64:3010`
+            - **Diseño:** Paleta Cálida Crema (#FAF7EE)
+            - **Compatible:** Android 7.0 (Nougat) o superior
+            
+            Descarga el archivo `CrediYa.apk` adjunto abajo e instálalo directamente en cualquier celular.
+          files: CrediYa.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
