@@ -776,7 +776,10 @@ function setTab(tabId) {
   if (tabId === 'renovar') cargarClientesParaRenovacion();
   if (tabId === 'caja') cargarCuadreCaja();
   if (tabId === 'usuarios') cargarUsuarios();
-  if (tabId === 'nuevo') actualizarEtiquetasNuevoCredito();
+  if (tabId === 'nuevo') {
+    actualizarEtiquetasNuevoCredito();
+    poblarSelectorVendedorNuevoCliente();
+  }
 
   // Scroll suave al inicio de la página
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -799,8 +802,8 @@ async function cargarRutaHoy() {
     let url = '/rutas/hoy';
     if (state.role === 'admin') {
       const selectVendedor = document.getElementById('filtro-ruta-vendedor');
-      const vid = selectVendedor ? selectVendedor.value : 'u-cobrador-001';
-      url = vid ? `/rutas/hoy?vendedorId=${vid}` : '/rutas/hoy?vendedorId=u-cobrador-001';
+      const vid = selectVendedor ? selectVendedor.value : '';
+      url = vid ? `/rutas/hoy?vendedorId=${encodeURIComponent(vid)}` : '/rutas/hoy?vendedorId=todos';
     }
     const data = await api(url);
     state.rutaActual = data;
@@ -1705,6 +1708,11 @@ async function crearNuevoCliente(e) {
     formaPago: document.getElementById('cre-forma').value,
   };
 
+  const selVend = document.getElementById('cli-vendedor');
+  if (selVend && selVend.value) {
+    dto.vendedorId = selVend.value;
+  }
+
   try {
     await api('/clientes', {
       method: 'POST',
@@ -1851,7 +1859,15 @@ async function poblarSelectorVendedores() {
 
   try {
     const usuarios = await api('/usuarios?rol=VENDEDOR').catch(() => []);
-    sel.innerHTML = '<option value="">👤 Todos los Cobradores (Supervisión)</option>';
+    sel.innerHTML = '<option value="" selected>🌐 Toda la Empresa / Todos los Clientes (Supervisión)</option>';
+
+    if (state.user?.id) {
+      const optAdmin = document.createElement('option');
+      optAdmin.value = state.user.id;
+      optAdmin.textContent = `👑 Mi Cartera (${state.user.nombre || 'Administrador'})`;
+      sel.appendChild(optAdmin);
+    }
+
     usuarios.forEach((u) => {
       const opt = document.createElement('option');
       opt.value = u.id;
@@ -1859,11 +1875,42 @@ async function poblarSelectorVendedores() {
       sel.appendChild(opt);
     });
 
-    // Seleccionar por defecto a Carlos si existe
-    const carlos = usuarios.find((u) => u.email.includes('carlos') || u.id === 'u-cobrador-001');
-    if (carlos) sel.value = carlos.id;
+    sel.value = '';
   } catch (err) {
     console.warn('No se pudo poblar selector de vendedores:', err);
+  }
+}
+
+async function poblarSelectorVendedorNuevoCliente() {
+  const sel = document.getElementById('cli-vendedor');
+  const group = document.getElementById('group-cli-vendedor');
+  if (!sel || !group) return;
+
+  if (state.role !== 'admin') {
+    group.style.display = 'none';
+    return;
+  }
+
+  group.style.display = 'block';
+  try {
+    const usuarios = await api('/usuarios?rol=VENDEDOR').catch(() => []);
+    sel.innerHTML = '';
+
+    if (state.user?.id) {
+      const optAdmin = document.createElement('option');
+      optAdmin.value = state.user.id;
+      optAdmin.textContent = `👑 Yo (${state.user.nombre || 'Administrador'})`;
+      sel.appendChild(optAdmin);
+    }
+
+    usuarios.forEach((u) => {
+      const opt = document.createElement('option');
+      opt.value = u.id;
+      opt.textContent = `👤 ${u.nombre} (${u.posicion || 'Ruta'})`;
+      sel.appendChild(opt);
+    });
+  } catch (err) {
+    console.warn('No se pudo poblar selector de vendedor para nuevo cliente:', err);
   }
 }
 

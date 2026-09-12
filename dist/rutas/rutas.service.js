@@ -26,27 +26,40 @@ let RutasService = class RutasService {
         return { inicioDia, finDia, fechaTexto };
     }
     async obtenerRutaHoy(user, query) {
-        const vendedorId = user.rol === 'VENDEDOR' ? user.sub : query.vendedorId || user.sub;
         const { inicioDia, finDia, fechaTexto } = this.parsearRangoDia(query.fecha);
         return this.prisma.withTenant(user.tenantId, async (tx) => {
-            const vendedor = await tx.usuario.findFirst({
-                where: { id: vendedorId, tenantId: user.tenantId },
-                select: { id: true, nombre: true },
-            });
-            if (!vendedor) {
-                throw new common_1.NotFoundException('Vendedor no encontrado');
+            const esAdmin = user.rol === 'ADMIN';
+            const filtrarVendedor = user.rol === 'VENDEDOR' || (query.vendedorId && query.vendedorId !== 'todos' && query.vendedorId !== '');
+            const vendedorIdFinal = filtrarVendedor ? (user.rol === 'VENDEDOR' ? user.sub : query.vendedorId) : null;
+            let vendedorNombre = 'Todos los Cobradores (Supervisión)';
+            let nombreRuta = 'Ruta General';
+            if (vendedorIdFinal) {
+                const vendedor = await tx.usuario.findFirst({
+                    where: { id: vendedorIdFinal, tenantId: user.tenantId },
+                    select: { id: true, nombre: true, posicion: true },
+                });
+                if (!vendedor && user.rol === 'VENDEDOR') {
+                    throw new common_1.NotFoundException('Vendedor no encontrado');
+                }
+                if (vendedor) {
+                    vendedorNombre = vendedor.nombre;
+                    nombreRuta = vendedor.posicion || 'Ruta Principal';
+                }
             }
-            const ruta = await tx.ruta.findFirst({
-                where: { tenantId: user.tenantId, vendedorId },
-            });
+            const ruta = vendedorIdFinal
+                ? await tx.ruta.findFirst({
+                    where: { tenantId: user.tenantId, vendedorId: vendedorIdFinal },
+                })
+                : null;
             const ordenConfig = Array.isArray(ruta?.ordenVisitas)
                 ? ruta.ordenVisitas
                 : [];
+            const whereCliente = { tenantId: user.tenantId };
+            if (vendedorIdFinal) {
+                whereCliente.vendedorId = vendedorIdFinal;
+            }
             const clientes = await tx.cliente.findMany({
-                where: {
-                    tenantId: user.tenantId,
-                    vendedorId,
-                },
+                where: whereCliente,
                 include: {
                     creditos: {
                         where: {
@@ -137,9 +150,9 @@ let RutasService = class RutasService {
             const totalClientes = items.length;
             const pendientesHoy = Math.max(0, totalClientes - cobradosHoy - ausentesHoy);
             return {
-                vendedorId,
-                vendedorNombre: vendedor.nombre,
-                nombreRuta: ruta?.nombreRuta || 'Ruta Principal',
+                vendedorId: vendedorIdFinal || 'todos',
+                vendedorNombre,
+                nombreRuta: ruta?.nombreRuta || nombreRuta,
                 fecha: fechaTexto,
                 metricas: {
                     totalClientes,

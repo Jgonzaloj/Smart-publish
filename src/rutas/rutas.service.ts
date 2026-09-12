@@ -36,35 +36,50 @@ export class RutasService {
    * saldo pendiente, cuotas atrasadas, estado de visita e indicador de pago de hoy.
    */
   async obtenerRutaHoy(user: JwtPayload, query: ConsultaRutaDto): Promise<ResumenRutaHoy> {
-    const vendedorId = user.rol === 'VENDEDOR' ? user.sub : query.vendedorId || user.sub;
     const { inicioDia, finDia, fechaTexto } = this.parsearRangoDia(query.fecha);
 
     return this.prisma.withTenant(user.tenantId, async (tx) => {
-      // Verificar vendedor
-      const vendedor = await tx.usuario.findFirst({
-        where: { id: vendedorId, tenantId: user.tenantId },
-        select: { id: true, nombre: true },
-      });
+      const esAdmin = user.rol === 'ADMIN';
+      const filtrarVendedor = user.rol === 'VENDEDOR' || (query.vendedorId && query.vendedorId !== 'todos' && query.vendedorId !== '');
+      const vendedorIdFinal = filtrarVendedor ? (user.rol === 'VENDEDOR' ? user.sub : query.vendedorId) : null;
 
-      if (!vendedor) {
-        throw new NotFoundException('Vendedor no encontrado');
+      let vendedorNombre = 'Todos los Cobradores (Supervisión)';
+      let nombreRuta = 'Ruta General';
+
+      if (vendedorIdFinal) {
+        const vendedor = await tx.usuario.findFirst({
+          where: { id: vendedorIdFinal, tenantId: user.tenantId },
+          select: { id: true, nombre: true, posicion: true },
+        });
+
+        if (!vendedor && user.rol === 'VENDEDOR') {
+          throw new NotFoundException('Vendedor no encontrado');
+        }
+        if (vendedor) {
+          vendedorNombre = vendedor.nombre;
+          nombreRuta = vendedor.posicion || 'Ruta Principal';
+        }
       }
 
-      // Obtener configuración de orden de ruta existente
-      const ruta = await tx.ruta.findFirst({
-        where: { tenantId: user.tenantId, vendedorId },
-      });
+      // Obtener configuración de orden de ruta existente (si aplica a un vendedor)
+      const ruta = vendedorIdFinal
+        ? await tx.ruta.findFirst({
+            where: { tenantId: user.tenantId, vendedorId: vendedorIdFinal },
+          })
+        : null;
 
       const ordenConfig: string[] = Array.isArray(ruta?.ordenVisitas)
         ? (ruta.ordenVisitas as string[])
         : [];
 
-      // Obtener clientes del vendedor con su crédito activo más reciente
+      // Obtener clientes del vendedor (o de toda la empresa si es Admin en modo Todos)
+      const whereCliente: any = { tenantId: user.tenantId };
+      if (vendedorIdFinal) {
+        whereCliente.vendedorId = vendedorIdFinal;
+      }
+
       const clientes = await tx.cliente.findMany({
-        where: {
-          tenantId: user.tenantId,
-          vendedorId,
-        },
+        where: whereCliente,
         include: {
           creditos: {
             where: {
@@ -175,9 +190,9 @@ export class RutasService {
       const pendientesHoy = Math.max(0, totalClientes - cobradosHoy - ausentesHoy);
 
       return {
-        vendedorId,
-        vendedorNombre: vendedor.nombre,
-        nombreRuta: ruta?.nombreRuta || 'Ruta Principal',
+        vendedorId: vendedorIdFinal || 'todos',
+        vendedorNombre,
+        nombreRuta: ruta?.nombreRuta || nombreRuta,
         fecha: fechaTexto,
         metricas: {
           totalClientes,

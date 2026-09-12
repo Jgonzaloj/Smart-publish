@@ -51,10 +51,12 @@ export class ClientesService {
       const valorConInteres = dto.valorPrestamo * (1 + dto.interes / 100);
       const valorCuota = Number((valorConInteres / dto.numeroCuotas).toFixed(2));
 
+      const vendedorIdAsignado = (user.rol === 'ADMIN' && dto.vendedorId) ? dto.vendedorId : user.sub;
+
       const cliente = await tx.cliente.create({
         data: {
           tenantId: user.tenantId,
-          vendedorId: user.sub,
+          vendedorId: vendedorIdAsignado,
           documento: dto.documento,
           nombresAlias: dto.nombresAlias,
           apellidos: dto.apellidos,
@@ -68,7 +70,7 @@ export class ClientesService {
         data: {
           tenantId: user.tenantId,
           clienteId: cliente.id,
-          vendedorId: user.sub,
+          vendedorId: vendedorIdAsignado,
           productoId: producto.id,
           codigoCredito: this.generarCodigoCredito(),
           valorPrestamo: dto.valorPrestamo,

@@ -14,6 +14,7 @@ export class CrearClienteDto {
   @IsOptional() @IsString() codeudorMovil?: string;
 
   // Detalles de la venta / crédito
+  @IsOptional() @IsString() vendedorId?: string;
   @IsOptional() @IsString() productoId?: string;
   @IsNumber() @Min(0.01) valorPrestamo: number;
   @IsInt() @Min(1) numeroCuotas: number;
