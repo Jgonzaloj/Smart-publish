@@ -71,6 +71,14 @@ let AuthService = class AuthService {
                 activo: true,
             },
         });
+        await this.prisma.productoCredito.create({
+            data: {
+                tenantId: tenant.id,
+                nombre: 'Crédito General',
+                interesDefault: 20.0,
+                activo: true,
+            },
+        });
         return this.login({ email, password });
     }
     async actualizarMonedaTenant(tenantId, moneda) {

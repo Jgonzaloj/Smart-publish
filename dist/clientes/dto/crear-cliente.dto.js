@@ -58,11 +58,13 @@ __decorate([
     __metadata("design:type", String)
 ], CrearClienteDto.prototype, "codeudorMovil", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CrearClienteDto.prototype, "productoId", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.01),
     __metadata("design:type", Number)
 ], CrearClienteDto.prototype, "valorPrestamo", void 0);
 __decorate([
@@ -86,12 +88,13 @@ __decorate([
     __metadata("design:type", String)
 ], RenovarCreditoDto.prototype, "creditoAnteriorId", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], RenovarCreditoDto.prototype, "productoId", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(1000),
+    (0, class_validator_1.Min)(0.01),
     __metadata("design:type", Number)
 ], RenovarCreditoDto.prototype, "valorPrestamo", void 0);
 __decorate([

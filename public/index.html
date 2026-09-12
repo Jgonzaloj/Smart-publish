@@ -7,6 +7,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    .hidden { display: none !important; }
+    .modal-backdrop.hidden, .pin-overlay.hidden { display: none !important; }
+  </style>
+  <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="style.css">
   <meta name="theme-color" content="#6366f1">
   <meta name="mobile-web-app-capable" content="yes">
@@ -633,7 +638,7 @@
           <div class="form-row">
             <div class="form-group">
               <label>Nuevo Préstamo ($)</label>
-              <input type="number" id="ren-monto" value="250000" min="10000" step="5000" oninput="actualizarPrecalculoRenovacion()">
+              <input type="number" id="ren-monto" placeholder="Ej. 200" min="0.01" step="any" oninput="actualizarPrecalculoRenovacion()">
             </div>
             <div class="form-group">
               <label>Número de Cuotas</label>
@@ -788,7 +793,7 @@
           <div class="form-row">
             <div class="form-group">
               <label id="lbl-cre-monto">Valor Préstamo ($) *</label>
-              <input type="number" id="cre-monto" required value="200000" min="10000" step="5000">
+              <input type="number" id="cre-monto" required placeholder="Ej. 200" min="0.01" step="any">
             </div>
             <div class="form-group">
               <label>Número de Cuotas *</label>
@@ -1167,7 +1172,7 @@
 
         <div class="form-group" style="margin-top: 15px;">
           <label>Valor a Abonar ($)</label>
-          <input type="number" id="modal-abono-monto" min="100" step="100">
+          <input type="number" id="modal-abono-monto" min="0.01" step="any" placeholder="0.00">
         </div>
       </div>
       <div class="modal-footer">
@@ -1220,7 +1225,7 @@
         </div>
         <div class="form-group">
           <label>Valor ($)</label>
-          <input type="number" id="mov-valor" min="100">
+          <input type="number" id="mov-valor" min="0.01" step="any" placeholder="0.00">
         </div>
       </div>
       <div class="modal-footer">
@@ -1245,7 +1250,7 @@
         </div>
         <div class="form-group" style="margin-top: 15px;">
           <label>Valor a Retirar ($) *</label>
-          <input type="number" id="ret-valor" min="100" step="100" placeholder="0">
+          <input type="number" id="ret-valor" min="0.01" step="any" placeholder="0.00">
         </div>
       </div>
       <div class="modal-footer">

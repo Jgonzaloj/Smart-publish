@@ -21,9 +21,11 @@ async function bootstrap() {
           styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
           fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
           imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-          connectSrc: ["'self'", 'http://localhost:*', 'https:'],
+          connectSrc: ["'self'", 'http://localhost:*', 'http://*:*', 'https:'],
+          upgradeInsecureRequests: null,
         },
       },
+      hsts: false,
       crossOriginEmbedderPolicy: false,
     }),
   );

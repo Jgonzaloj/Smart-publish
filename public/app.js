@@ -1698,7 +1698,7 @@ async function crearNuevoCliente(e) {
     documento: document.getElementById('cli-documento').value,
     movil: document.getElementById('cli-movil').value,
     direccion: document.getElementById('cli-direccion').value,
-    productoId: 'prod-001',
+    productoId: state.productoActual?.id,
     valorPrestamo: Number(document.getElementById('cre-monto').value),
     numeroCuotas: Number(document.getElementById('cre-cuotas').value),
     interes: Number(document.getElementById('cre-interes').value),

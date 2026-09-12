@@ -91,6 +91,16 @@ export class AuthService {
       },
     });
 
+    // Crear producto de crédito por defecto para el nuevo negocio
+    await this.prisma.productoCredito.create({
+      data: {
+        tenantId: tenant.id,
+        nombre: 'Crédito General',
+        interesDefault: 20.0,
+        activo: true,
+      },
+    });
+
     return this.login({ email, password });
   }
 

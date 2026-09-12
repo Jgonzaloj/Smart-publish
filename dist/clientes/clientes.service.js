@@ -27,11 +27,26 @@ let ClientesService = class ClientesService {
     }
     async crear(dto, user) {
         return this.prisma.withTenant(user.tenantId, async (tx) => {
-            const producto = await tx.productoCredito.findFirst({
-                where: { id: dto.productoId, tenantId: user.tenantId },
-            });
-            if (!producto)
-                throw new common_1.NotFoundException('Producto de crédito no encontrado');
+            let producto = dto.productoId
+                ? await tx.productoCredito.findFirst({
+                    where: { id: dto.productoId, tenantId: user.tenantId },
+                })
+                : null;
+            if (!producto) {
+                producto = await tx.productoCredito.findFirst({
+                    where: { tenantId: user.tenantId, activo: true },
+                });
+            }
+            if (!producto) {
+                producto = await tx.productoCredito.create({
+                    data: {
+                        tenantId: user.tenantId,
+                        nombre: 'Crédito General',
+                        interesDefault: dto.interes || 20.0,
+                        activo: true,
+                    },
+                });
+            }
             const valorConInteres = dto.valorPrestamo * (1 + dto.interes / 100);
             const valorCuota = Number((valorConInteres / dto.numeroCuotas).toFixed(2));
             const cliente = await tx.cliente.create({
@@ -51,7 +66,7 @@ let ClientesService = class ClientesService {
                     tenantId: user.tenantId,
                     clienteId: cliente.id,
                     vendedorId: user.sub,
-                    productoId: dto.productoId,
+                    productoId: producto.id,
                     codigoCredito: this.generarCodigoCredito(),
                     valorPrestamo: dto.valorPrestamo,
                     valorCuota,
@@ -146,13 +161,20 @@ let ClientesService = class ClientesService {
                     },
                 });
             }
+            let prod = dto.productoId
+                ? await tx.productoCredito.findFirst({ where: { id: dto.productoId, tenantId: user.tenantId } })
+                : null;
+            if (!prod) {
+                prod = await tx.productoCredito.findFirst({ where: { tenantId: user.tenantId, activo: true } });
+            }
+            const prodId = prod?.id || creditoAnterior.productoId;
             const codigoNuevo = this.generarCodigoCredito();
             const creditoNuevo = await tx.credito.create({
                 data: {
                     tenantId: user.tenantId,
                     clienteId: creditoAnterior.clienteId,
                     vendedorId: user.sub,
-                    productoId: dto.productoId,
+                    productoId: prodId,
                     codigoCredito: codigoNuevo,
                     valorPrestamo: dto.valorPrestamo,
                     valorCuota,

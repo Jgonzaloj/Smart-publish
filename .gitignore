@@ -7,3 +7,9 @@ test.pdf
 test-results/
 playwright-report/
 .system_generated/
+.gradle/
+build/
+android/.gradle/
+android/build/
+android/app/build/
+*.apk

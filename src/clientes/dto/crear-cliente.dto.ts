@@ -14,8 +14,8 @@ export class CrearClienteDto {
   @IsOptional() @IsString() codeudorMovil?: string;
 
   // Detalles de la venta / crédito
-  @IsString() productoId: string;
-  @IsNumber() valorPrestamo: number;
+  @IsOptional() @IsString() productoId?: string;
+  @IsNumber() @Min(0.01) valorPrestamo: number;
   @IsInt() @Min(1) numeroCuotas: number;
   @IsNumber() interes: number;
   @IsString() formaPago: string; // diario / semanal / quincenal
@@ -23,8 +23,8 @@ export class CrearClienteDto {
 
 export class RenovarCreditoDto {
   @IsString() creditoAnteriorId: string;
-  @IsString() productoId: string;
-  @IsNumber() @Min(1000) valorPrestamo: number;
+  @IsOptional() @IsString() productoId?: string;
+  @IsNumber() @Min(0.01) valorPrestamo: number;
   @IsInt() @Min(1) numeroCuotas: number;
   @IsNumber() interes: number;
   @IsString() formaPago: string; // diario / semanal / quincenal / mensual
