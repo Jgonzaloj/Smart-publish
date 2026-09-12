@@ -23,17 +23,36 @@ async function ejecutarArchivoSql(prisma, sqlPath, etiqueta) {
 
   const sql = fs.readFileSync(sqlPath, 'utf-8');
 
-  // Elimina comentarios de línea completa antes de separar por ';' para no
-  // cortar sentencias a la mitad si un comentario contiene un punto y coma.
-  const sqlSinComentarios = sql
-    .split('\n')
-    .filter((linea) => !linea.trim().startsWith('--'))
-    .join('\n');
+  // Separador de sentencias SQL respetando bloques de funciones ($$ ... $$)
+  const statements = [];
+  let current = '';
+  let inDollarQuote = false;
 
-  const statements = sqlSinComentarios
-    .split(';')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+  const lines = sql.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('--')) continue;
+
+    // Detectar si la línea abre o cierra un bloque $$
+    const dollarMatches = (line.match(/\$\$/g) || []).length;
+    if (dollarMatches % 2 !== 0) {
+      inDollarQuote = !inDollarQuote;
+    }
+
+    current += line + '\n';
+
+    if (!inDollarQuote && trimmed.endsWith(';')) {
+      const cleanStmt = current.trim();
+      if (cleanStmt.length > 0) {
+        statements.push(cleanStmt);
+      }
+      current = '';
+    }
+  }
+
+  if (current.trim().length > 0) {
+    statements.push(current.trim());
+  }
 
   let huboErrorFatal = false;
 
