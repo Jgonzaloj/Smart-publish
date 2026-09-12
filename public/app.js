@@ -484,7 +484,9 @@ function togglePassVisibility(inputId, btn) {
 
 // PORTADA: MANEJAR LOGIN REAL
 async function manejarPortalLogin(e) {
-  e.preventDefault();
+  if (e && typeof e.preventDefault === 'function') {
+    e.preventDefault();
+  }
 
   const email = document.getElementById('portal-email').value.trim();
   const password = document.getElementById('portal-password').value;
@@ -545,9 +547,11 @@ async function manejarPortalLogin(e) {
 // PORTADA: ACCESO RÁPIDO DEMO EN 1 CLIC
 async function accesoRapidoDemo(rol) {
   const creds = DEMO_USERS[rol];
-  document.getElementById('portal-email').value = creds.email;
-  document.getElementById('portal-password').value = creds.password;
-  document.getElementById('form-portal-login').dispatchEvent(new Event('submit'));
+  const emailInput = document.getElementById('portal-email');
+  const passInput = document.getElementById('portal-password');
+  if (emailInput) emailInput.value = creds.email;
+  if (passInput) passInput.value = creds.password;
+  await manejarPortalLogin();
 }
 
 // PORTADA: REGISTRO DE NUEVA EMPRESA (MULTI-TENANT)

@@ -42,7 +42,9 @@ public class MainActivity extends AppCompatActivity {
         settings.setSupportZoom(false);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
             settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+            android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
         }
+        android.webkit.CookieManager.getInstance().setAcceptCookie(true);
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -68,8 +70,17 @@ public class MainActivity extends AppCompatActivity {
             public void onProgressChanged(WebView view, int newProgress) {
                 progressBar.setProgress(newProgress);
             }
+
+            @Override
+            public boolean onJsAlert(WebView view, String url, String message, android.webkit.JsResult result) {
+                result.confirm();
+                return true;
+            }
         });
 
+        webView.getViewTreeObserver().addOnScrollChangedListener(() -> {
+            swipeRefresh.setEnabled(webView.getScrollY() == 0);
+        });
         swipeRefresh.setOnRefreshListener(() -> webView.reload());
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
