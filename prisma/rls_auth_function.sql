@@ -23,8 +23,8 @@
 
 CREATE OR REPLACE FUNCTION buscar_credenciales_login(p_email text)
 RETURNS TABLE (
-  id uuid,
-  tenant_id uuid,
+  id text,
+  tenant_id text,
   password_hash text,
   rol text,
   nombre text,

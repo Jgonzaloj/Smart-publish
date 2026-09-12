@@ -29,34 +29,34 @@ ALTER TABLE rutas                 ENABLE ROW LEVEL SECURITY;
 --    la comparación falla y no se ve NADA (falla cerrado, no abierto).
 
 CREATE POLICY tenant_isolation_usuarios ON usuarios
-  USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
+  USING (tenant_id = current_setting('app.tenant_id', true));
 
 CREATE POLICY tenant_isolation_productos_credito ON productos_credito
-  USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
+  USING (tenant_id = current_setting('app.tenant_id', true));
 
 CREATE POLICY tenant_isolation_clientes ON clientes
-  USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
+  USING (tenant_id = current_setting('app.tenant_id', true));
 
 CREATE POLICY tenant_isolation_codeudores ON codeudores
-  USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
+  USING (tenant_id = current_setting('app.tenant_id', true));
 
 CREATE POLICY tenant_isolation_creditos ON creditos
-  USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
+  USING (tenant_id = current_setting('app.tenant_id', true));
 
 CREATE POLICY tenant_isolation_seguros ON seguros
-  USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
+  USING (tenant_id = current_setting('app.tenant_id', true));
 
 CREATE POLICY tenant_isolation_abonos ON abonos
-  USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
+  USING (tenant_id = current_setting('app.tenant_id', true));
 
 CREATE POLICY tenant_isolation_movimientos_caja ON movimientos_caja
-  USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
+  USING (tenant_id = current_setting('app.tenant_id', true));
 
 CREATE POLICY tenant_isolation_cuadres_caja ON cuadres_caja
-  USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
+  USING (tenant_id = current_setting('app.tenant_id', true));
 
 CREATE POLICY tenant_isolation_rutas ON rutas
-  USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
+  USING (tenant_id = current_setting('app.tenant_id', true));
 
 -- 3. IMPORTANTE: el usuario de base de datos que usa la app NO debe ser
 --    "superuser" ni el dueño de las tablas (BYPASSRLS), porque esos roles
