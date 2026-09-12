@@ -10,6 +10,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma db push && node scripts/apply-rls.js",
     "db:push": "prisma db push",
+    "db:seed": "node scripts/seed-db.js",
     "db:apply-rls": "node scripts/apply-rls.js",
     "prisma:studio": "prisma studio",
     "test:e2e": "playwright test"
