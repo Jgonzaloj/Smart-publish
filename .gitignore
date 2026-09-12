@@ -1,0 +1,9 @@
+node_modules/
+*.log
+.env
+crediya-completo.zip
+Manual-Operativo-CrediYa.pdf
+test.pdf
+test-results/
+playwright-report/
+.system_generated/

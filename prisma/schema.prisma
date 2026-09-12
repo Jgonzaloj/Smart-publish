@@ -1,0 +1,251 @@
+// Schema de base de datos - Sistema de créditos personales multi-tenant
+// PostgreSQL + Row Level Security (RLS) para aislar datos por empresa (tenant)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Rol {
+  ADMIN
+  VENDEDOR
+}
+
+enum EstadoCredito {
+  ACTIVO
+  PAGADO
+  EN_MORA
+  RENOVADO
+  CANCELADO
+}
+
+enum TipoMovimiento {
+  INGRESO
+  EGRESO
+}
+
+enum EstadoVisita {
+  AL_DIA
+  ATRASADO
+  AUSENTE
+}
+
+model Tenant {
+  id            String   @id @default(uuid())
+  nombreNegocio String   @map("nombre_negocio")
+  plan          String   @default("free")
+  activo        Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  usuarios          Usuario[]
+  clientes          Cliente[]
+  productosCredito  ProductoCredito[]
+  creditos          Credito[]
+  abonos            Abono[]
+  movimientosCaja   MovimientoCaja[]
+  cuadresCaja       CuadreCaja[]
+  rutas             Ruta[]
+
+  @@map("tenants")
+}
+
+model Usuario {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  nombre       String
+  rol          Rol
+  email        String?
+  telefono     String?
+  passwordHash String   @map("password_hash")
+  pinHash      String?  @map("pin_hash") // "Proteger Aplicación"
+  posicion     String?  // ruta/código del vendedor
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  clientesRegistrados Cliente[]         @relation("VendedorCliente")
+  creditosRegistrados Credito[]         @relation("VendedorCredito")
+  abonosRegistrados   Abono[]
+  movimientosCaja     MovimientoCaja[]
+  cuadresCaja         CuadreCaja[]
+  rutas               Ruta[]
+
+  @@index([tenantId])
+  @@map("usuarios")
+}
+
+model ProductoCredito {
+  id             String  @id @default(uuid())
+  tenantId       String  @map("tenant_id")
+  nombre         String  // "Crédito en efectivo"
+  interesDefault Decimal @map("interes_default") @db.Decimal(6, 2)
+  activo         Boolean @default(true)
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  creditos Credito[]
+
+  @@index([tenantId])
+  @@map("productos_credito")
+}
+
+model Cliente {
+  id            String       @id @default(uuid())
+  tenantId      String       @map("tenant_id")
+  vendedorId    String       @map("vendedor_id")
+  consecutivo   Int?
+  documento     String?
+  nombresAlias  String       @map("nombres_alias")
+  apellidos     String?
+  movil         String
+  telefono      String?
+  direccion     String?
+  estadoVisita  EstadoVisita @default(AL_DIA) @map("estado_visita")
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  vendedor Usuario   @relation("VendedorCliente", fields: [vendedorId], references: [id])
+  creditos Credito[]
+
+  @@index([tenantId])
+  @@index([tenantId, documento])
+  @@map("clientes")
+}
+
+model Codeudor {
+  id           String  @id @default(uuid())
+  tenantId     String  @map("tenant_id")
+  creditoId    String  @map("credito_id")
+  nombresAlias String  @map("nombres_alias")
+  apellidos    String?
+  documento    String?
+  movil        String?
+  direccion    String?
+
+  credito Credito @relation(fields: [creditoId], references: [id])
+
+  @@index([tenantId])
+  @@map("codeudores")
+}
+
+model Credito {
+  id                 String        @id @default(uuid())
+  tenantId           String        @map("tenant_id")
+  clienteId          String        @map("cliente_id")
+  vendedorId         String        @map("vendedor_id")
+  productoId         String        @map("producto_id")
+  codigoCredito       String        @unique @map("codigo_credito")
+  valorPrestamo      Decimal       @map("valor_prestamo") @db.Decimal(12, 2)
+  valorCuota         Decimal       @map("valor_cuota") @db.Decimal(12, 2)
+  interes            Decimal       @db.Decimal(6, 2)
+  numeroCuotasTotal  Int           @map("numero_cuotas_total")
+  cuotasPagadas      Int           @default(0) @map("cuotas_pagadas")
+  formaPago          String        @map("forma_pago") // diario / semanal / quincenal
+  saldoActual        Decimal       @map("saldo_actual") @db.Decimal(12, 2)
+  fechaInicio        DateTime      @default(now()) @map("fecha_inicio")
+  fechaVencimiento   DateTime      @map("fecha_vencimiento")
+  estado             EstadoCredito @default(ACTIVO)
+  renovadoDeId       String?       @map("renovado_de_id")
+  tieneSeguro        Boolean       @default(false) @map("tiene_seguro")
+
+  tenant    Tenant           @relation(fields: [tenantId], references: [id])
+  cliente   Cliente          @relation(fields: [clienteId], references: [id])
+  vendedor  Usuario          @relation("VendedorCredito", fields: [vendedorId], references: [id])
+  producto  ProductoCredito  @relation(fields: [productoId], references: [id])
+  codeudores Codeudor[]
+  seguro    Seguro?
+  abonos    Abono[]
+
+  @@index([tenantId])
+  @@index([tenantId, vendedorId])
+  @@map("creditos")
+}
+
+model Seguro {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  creditoId   String   @unique @map("credito_id")
+  tipoSeguro  String   @map("tipo_seguro")
+  valorSeguro Decimal  @map("valor_seguro") @db.Decimal(10, 2)
+  vigencia    DateTime?
+
+  credito Credito @relation(fields: [creditoId], references: [id])
+
+  @@index([tenantId])
+  @@map("seguros")
+}
+
+model Abono {
+  id               String   @id @default(uuid())
+  tenantId         String   @map("tenant_id")
+  creditoId        String   @map("credito_id")
+  usuarioId        String   @map("usuario_id")
+  fecha            DateTime @default(now())
+  saldoAnterior    Decimal  @map("saldo_anterior") @db.Decimal(12, 2)
+  valorAbonado     Decimal  @map("valor_abonado") @db.Decimal(12, 2)
+  saldoNuevo       Decimal  @map("saldo_nuevo") @db.Decimal(12, 2)
+  numeroCuota      Int      @map("numero_cuota")
+  cuotasAtrasadas  Int      @default(0) @map("cuotas_atrasadas")
+  latitud          Decimal? @db.Decimal(10, 7)
+  longitud         Decimal? @db.Decimal(10, 7)
+  precisionGps     Decimal? @map("precision_gps") @db.Decimal(8, 2)
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  credito Credito @relation(fields: [creditoId], references: [id])
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, creditoId])
+  @@map("abonos")
+}
+
+model MovimientoCaja {
+  id         String         @id @default(uuid())
+  tenantId   String         @map("tenant_id")
+  vendedorId String         @map("vendedor_id")
+  tipo       TipoMovimiento
+  concepto   String
+  valor      Decimal        @db.Decimal(12, 2)
+  fecha      DateTime       @default(now())
+
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+  vendedor Usuario @relation(fields: [vendedorId], references: [id])
+
+  @@index([tenantId])
+  @@map("movimientos_caja")
+}
+
+model CuadreCaja {
+  id                  String   @id @default(uuid())
+  tenantId            String   @map("tenant_id")
+  vendedorId          String   @map("vendedor_id")
+  fecha               DateTime @default(now())
+  totalCobrado        Decimal  @default(0) @map("total_cobrado") @db.Decimal(12, 2)
+  totalPrestadoNuevo  Decimal  @default(0) @map("total_prestado_nuevo") @db.Decimal(12, 2)
+  totalRetiros        Decimal  @default(0) @map("total_retiros") @db.Decimal(12, 2)
+  observaciones       String?
+
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+  vendedor Usuario @relation(fields: [vendedorId], references: [id])
+
+  @@index([tenantId])
+  @@map("cuadres_caja")
+}
+
+model Ruta {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  vendedorId   String   @map("vendedor_id")
+  nombreRuta   String   @map("nombre_ruta")
+  ordenVisitas Json     @map("orden_visitas") // array ordenado de clienteId
+
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+  vendedor Usuario @relation(fields: [vendedorId], references: [id])
+
+  @@index([tenantId])
+  @@map("rutas")
+}

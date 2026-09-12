@@ -1,0 +1,314 @@
+{
+  "tenants": [
+    {
+      "id": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "nombreNegocio": "CrediYa Microfinanzas",
+      "plan": "premium",
+      "activo": true,
+      "createdAt": "2026-09-10T13:48:33.406Z",
+      "moneda": "PEN",
+      "pais": "Perú"
+    },
+    {
+      "nombreNegocio": "Microcréditos El Sol 6288",
+      "id": "0ntj8ht64-1789061218380",
+      "createdAt": "2026-09-10T17:26:58.380Z"
+    },
+    {
+      "activo": true,
+      "nombreNegocio": "Microcréditos El Sol 1648",
+      "id": "fyhld9krm-1789061332115",
+      "createdAt": "2026-09-10T17:28:52.115Z"
+    }
+  ],
+  "usuarios": [
+    {
+      "id": "u-admin-001",
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "nombre": "Juan Pérez (Administrador)",
+      "rol": "ADMIN",
+      "email": "admin@crediya.com",
+      "telefono": "3001002030",
+      "passwordHash": "$2b$10$xntpFpn.XQS/i3JT10M0FOdRzVyB/yTsaXpBULL/WUyhG/2lXVe9C",
+      "pinHash": "$2b$10$O.rQUizk8BCqI7FitwFsFe4IWjnu03BH/G0VrjTsv2PLlFHan3CgC",
+      "posicion": "Oficina Central",
+      "activo": true,
+      "createdAt": "2026-09-10T13:48:33.406Z"
+    },
+    {
+      "id": "u-cobrador-001",
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "nombre": "Carlos Cobrador",
+      "rol": "VENDEDOR",
+      "email": "carlos@crediya.com",
+      "telefono": "3109876543",
+      "passwordHash": "$2b$10$11jWpjfDgW9zzFxZfxKZv.tTJ5wPY4pbEa0OtrAi1wltgwSM4a2DG",
+      "pinHash": "$2b$10$O.rQUizk8BCqI7FitwFsFe4IWjnu03BH/G0VrjTsv2PLlFHan3CgC",
+      "posicion": "Ruta 1 - Centro",
+      "activo": true,
+      "createdAt": "2026-09-10T13:48:33.406Z"
+    },
+    {
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "nombre": "Marta Cobradora 481",
+      "email": "marta481@crediya.com",
+      "passwordHash": "$2b$10$yBjhfRMXhmojVtjxorPC.OYoe5B8hklYUe.o0sdTN5L8myEuGJiTS",
+      "pinHash": "$2b$10$fbfQzVwqrtNNXHyj4fmjy.QgcLRtSN7qHTmFwKq0jDvIePnfcMKle",
+      "rol": "VENDEDOR",
+      "telefono": "3150001122",
+      "posicion": "Ruta 3 - Sur Ampliada",
+      "activo": false,
+      "id": "46e07kqma-1789058090461",
+      "createdAt": "2026-09-10T16:34:50.461Z"
+    },
+    {
+      "tenantId": "0ntj8ht64-1789061218380",
+      "nombre": "Rodrigo Mendoza 6288",
+      "email": "rodrigo6288@elsol.com",
+      "rol": "ADMIN",
+      "passwordHash": "$2b$10$doAOGTFdW7q71FVT..YzhOuu4ZVlEewmzsKs1OEPo7xLRulHbC/ye",
+      "id": "7iro0w5r3-1789061218380",
+      "createdAt": "2026-09-10T17:26:58.380Z"
+    },
+    {
+      "activo": true,
+      "tenantId": "fyhld9krm-1789061332115",
+      "nombre": "Rodrigo Mendoza 1648",
+      "email": "rodrigo1648@elsol.com",
+      "rol": "ADMIN",
+      "passwordHash": "$2b$10$bPKSvpQPnRh2mmdg5RPsDerz.aHylVVT//EpzS/cMENFY4GOGNN72",
+      "id": "psyoi829y-1789061332115",
+      "createdAt": "2026-09-10T17:28:52.115Z"
+    }
+  ],
+  "productosCredito": [
+    {
+      "id": "prod-001",
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "nombre": "Crédito Diario 20%",
+      "interesDefault": 20,
+      "activo": true
+    }
+  ],
+  "clientes": [
+    {
+      "id": "cli-001",
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "vendedorId": "u-cobrador-001",
+      "nombresAlias": "Doña Marta Gómez",
+      "apellidos": "Vargas",
+      "documento": "52147896",
+      "movil": "3001234567",
+      "telefono": "601234567",
+      "direccion": "Calle 10 # 4-20 (Tienda Don Pedro)",
+      "estadoVisita": "AL_DIA",
+      "createdAt": "2026-09-10T13:48:33.406Z"
+    },
+    {
+      "id": "cli-002",
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "vendedorId": "u-cobrador-001",
+      "nombresAlias": "Don Jorge Ramírez",
+      "apellidos": "Castro",
+      "documento": "79654123",
+      "movil": "3157894561",
+      "telefono": null,
+      "direccion": "Carrera 15 # 8-32 (Taller Mecánico)",
+      "estadoVisita": "AUSENTE",
+      "createdAt": "2026-09-05T13:48:33.298Z"
+    },
+    {
+      "id": "cli-003",
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "vendedorId": "u-cobrador-001",
+      "nombresAlias": "Lucía Herrera",
+      "apellidos": "Morales",
+      "documento": "1023456789",
+      "movil": "3206549870",
+      "telefono": null,
+      "direccion": "Av 6 # 12-50 (Salón de Belleza)",
+      "estadoVisita": "AL_DIA",
+      "createdAt": "2026-08-21T13:48:33.298Z"
+    }
+  ],
+  "codeudores": [],
+  "creditos": [
+    {
+      "id": "cred-001",
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "clienteId": "cli-001",
+      "vendedorId": "u-cobrador-001",
+      "productoId": "prod-001",
+      "codigoCredito": "CR-784521",
+      "valorPrestamo": 300000,
+      "valorCuota": 15000,
+      "interes": 20,
+      "numeroCuotasTotal": 24,
+      "cuotasPagadas": 13,
+      "formaPago": "diario",
+      "saldoActual": 165000,
+      "fechaInicio": "2026-08-31T13:48:33.406Z",
+      "fechaVencimiento": "2026-09-24T13:48:33.406Z",
+      "estado": "ACTIVO",
+      "renovadoDeId": null,
+      "tieneSeguro": false
+    },
+    {
+      "id": "cred-002",
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "clienteId": "cli-002",
+      "vendedorId": "u-cobrador-001",
+      "productoId": "prod-001",
+      "codigoCredito": "CR-932145",
+      "valorPrestamo": 200000,
+      "valorCuota": 10000,
+      "interes": 20,
+      "numeroCuotasTotal": 24,
+      "cuotasPagadas": 1,
+      "formaPago": "diario",
+      "saldoActual": 230000,
+      "fechaInicio": "2026-09-05T13:48:33.298Z",
+      "fechaVencimiento": "2026-09-29T13:48:33.406Z",
+      "estado": "EN_MORA",
+      "renovadoDeId": null,
+      "tieneSeguro": false
+    },
+    {
+      "id": "cred-003",
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "clienteId": "cli-003",
+      "vendedorId": "u-cobrador-001",
+      "productoId": "prod-001",
+      "codigoCredito": "CR-451236",
+      "valorPrestamo": 150000,
+      "valorCuota": 7500,
+      "interes": 20,
+      "numeroCuotasTotal": 24,
+      "cuotasPagadas": 21,
+      "formaPago": "diario",
+      "saldoActual": 22500,
+      "fechaInicio": "2026-08-21T13:48:33.298Z",
+      "fechaVencimiento": "2026-09-14T13:48:33.406Z",
+      "estado": "ACTIVO",
+      "renovadoDeId": null,
+      "tieneSeguro": false
+    }
+  ],
+  "abonos": [
+    {
+      "id": "abono-demo-001",
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "creditoId": "cred-001",
+      "usuarioId": "u-cobrador-001",
+      "fecha": "2026-09-10T13:48:33.406Z",
+      "saldoAnterior": 225000,
+      "valorAbonado": 15000,
+      "saldoNuevo": 210000,
+      "numeroCuota": 10,
+      "cuotasAtrasadas": 0
+    },
+    {
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "creditoId": "cred-001",
+      "usuarioId": "u-cobrador-001",
+      "saldoAnterior": 210000,
+      "valorAbonado": 15000,
+      "saldoNuevo": 195000,
+      "numeroCuota": 11,
+      "cuotasAtrasadas": 0,
+      "latitud": 4.711,
+      "longitud": -74.0721,
+      "precisionGps": 12.5,
+      "id": "7evfs6fcg-1789050337661",
+      "createdAt": "2026-09-10T14:25:37.661Z"
+    },
+    {
+      "activo": true,
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "creditoId": "cred-003",
+      "usuarioId": "u-admin-001",
+      "saldoAnterior": 30000,
+      "valorAbonado": 7500,
+      "saldoNuevo": 22500,
+      "fecha": "2026-09-10T19:11:03.895Z",
+      "numeroCuota": 21,
+      "cuotasAtrasadas": 0,
+      "latitud": -14.0641,
+      "longitud": -75.7292,
+      "precisionGps": 500000,
+      "id": "qe45fov3q-1789067463895",
+      "createdAt": "2026-09-10T19:11:03.895Z"
+    },
+    {
+      "activo": true,
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "creditoId": "cred-001",
+      "usuarioId": "u-admin-001",
+      "saldoAnterior": 195000,
+      "valorAbonado": 15000,
+      "saldoNuevo": 180000,
+      "fecha": "2026-09-11T17:19:08.814Z",
+      "numeroCuota": 12,
+      "cuotasAtrasadas": 0,
+      "latitud": -14.0641,
+      "longitud": -75.7292,
+      "precisionGps": 500000,
+      "id": "57evj5yl3-1789147148814",
+      "createdAt": "2026-09-11T17:19:08.814Z"
+    },
+    {
+      "activo": true,
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "creditoId": "cred-001",
+      "usuarioId": "u-admin-001",
+      "saldoAnterior": 180000,
+      "valorAbonado": 15000,
+      "saldoNuevo": 165000,
+      "fecha": "2026-09-11T17:19:25.981Z",
+      "numeroCuota": 13,
+      "cuotasAtrasadas": 0,
+      "latitud": -14.0641,
+      "longitud": -75.7292,
+      "precisionGps": 500000,
+      "id": "td11ey9cu-1789147165981",
+      "createdAt": "2026-09-11T17:19:25.981Z"
+    }
+  ],
+  "movimientosCaja": [
+    {
+      "id": "mov-001",
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "vendedorId": "u-cobrador-001",
+      "tipo": "INGRESO",
+      "concepto": "Base inicial de caja",
+      "valor": 100000,
+      "fecha": "2026-09-10T13:48:33.406Z"
+    }
+  ],
+  "cuadresCaja": [],
+  "rutas": [
+    {
+      "id": "ruta-001",
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "vendedorId": "u-cobrador-001",
+      "nombreRuta": "Ruta 1 - Centro Comercial",
+      "ordenVisitas": [
+        "cli-001",
+        "cli-002",
+        "cli-003"
+      ]
+    },
+    {
+      "tenantId": "e025b394-4d1a-4d43-85f8-9a3b6e82845c",
+      "vendedorId": "u-admin-001",
+      "nombreRuta": "Ruta Principal",
+      "ordenVisitas": [
+        "cli-002",
+        "cli-001",
+        "cli-003"
+      ],
+      "id": "9qg62nyp6-1789050409794",
+      "createdAt": "2026-09-10T14:26:49.794Z"
+    }
+  ]
+}

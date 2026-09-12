@@ -1,0 +1,32 @@
+import { IsString, IsOptional, IsNumber, IsInt, Min } from 'class-validator';
+
+export class CrearClienteDto {
+  @IsOptional() @IsString() documento?: string;
+  @IsString() nombresAlias: string;
+  @IsOptional() @IsString() apellidos?: string;
+  @IsString() movil: string;
+  @IsOptional() @IsString() telefono?: string;
+  @IsOptional() @IsString() direccion?: string;
+
+  // Codeudor opcional
+  @IsOptional() @IsString() codeudorNombresAlias?: string;
+  @IsOptional() @IsString() codeudorDocumento?: string;
+  @IsOptional() @IsString() codeudorMovil?: string;
+
+  // Detalles de la venta / crédito
+  @IsString() productoId: string;
+  @IsNumber() valorPrestamo: number;
+  @IsInt() @Min(1) numeroCuotas: number;
+  @IsNumber() interes: number;
+  @IsString() formaPago: string; // diario / semanal / quincenal
+}
+
+export class RenovarCreditoDto {
+  @IsString() creditoAnteriorId: string;
+  @IsString() productoId: string;
+  @IsNumber() @Min(1000) valorPrestamo: number;
+  @IsInt() @Min(1) numeroCuotas: number;
+  @IsNumber() interes: number;
+  @IsString() formaPago: string; // diario / semanal / quincenal / mensual
+  @IsOptional() descontarSaldoAnterior?: boolean;
+}

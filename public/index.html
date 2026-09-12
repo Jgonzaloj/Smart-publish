@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>CrediYa — Sistema de Créditos & Cobranza Multi-Tenant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" type="image/png" href="/icon.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <script>
+    (function() {
+      var saved = localStorage.getItem('crediya_theme') || 'cream';
+      if (saved === 'dark') {
+        document.documentElement.classList.add('theme-dark');
+      }
+    })();
+  </script>
+</head>
+<body class="theme-cream">
+  <!-- Overlay PIN de Seguridad -->
+  <div id="pin-overlay" class="pin-overlay hidden">
+    <div class="pin-card">
+      <div class="pin-icon">🔒</div>
+      <h2>Aplicación Protegida</h2>
+      <p>Ingresa tu PIN de 4 dígitos para continuar</p>
+      <div class="pin-dots">
+        <span class="pin-dot" id="dot-0"></span>
+        <span class="pin-dot" id="dot-1"></span>
+        <span class="pin-dot" id="dot-2"></span>
+        <span class="pin-dot" id="dot-3"></span>
+      </div>
+      <div class="pin-keypad">
+        <button class="pin-btn" onclick="pressPin('1')">1</button>
+        <button class="pin-btn" onclick="pressPin('2')">2</button>
+        <button class="pin-btn" onclick="pressPin('3')">3</button>
+        <button class="pin-btn" onclick="pressPin('4')">4</button>
+        <button class="pin-btn" onclick="pressPin('5')">5</button>
+        <button class="pin-btn" onclick="pressPin('6')">6</button>
+        <button class="pin-btn" onclick="pressPin('7')">7</button>
+        <button class="pin-btn" onclick="pressPin('8')">8</button>
+        <button class="pin-btn" onclick="pressPin('9')">9</button>
+        <button class="pin-btn pin-action" onclick="clearPin()">C</button>
+        <button class="pin-btn" onclick="pressPin('0')">0</button>
+        <button class="pin-btn pin-action" onclick="deletePin()">⌫</button>
+      </div>
+      <div class="pin-hint">PIN por defecto: <strong>1234</strong></div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- PORTADA DE INGRESO Y LOGIN PORTAL FINTECH                     -->
+  <!-- ============================================================ -->
+  <div id="landing-login-portal" class="landing-portal">
+    <div class="landing-bg-glow glow-1"></div>
+    <div class="landing-bg-glow glow-2"></div>
+    
+    <div class="landing-container">
+      <!-- Encabezado / Hero -->
+      <div class="landing-hero">
+        <div class="brand-badge-lg">
+          <span class="bolt-icon">⚡</span>
+          <span>CREDIYA</span>
+        </div>
+        <h1 class="landing-title">Sistema Inteligente de Microcréditos & Cobranza</h1>
+        <p class="landing-subtitle">
+          Control integral de rutas de cobro, recibos automáticos para WhatsApp, cálculo financiero de mora y auditoría satelital GPS en tiempo real.
+        </p>
+        
+        <!-- Badges de tecnología y seguridad -->
+        <div class="landing-features-pills">
+          <span class="feature-pill">🔒 Cifrado Bancario</span>
+          <span class="feature-pill">📍 Auditoría GPS</span>
+          <span class="feature-pill">📡 100% Offline-First</span>
+          <span class="feature-pill">🧾 Recibos WhatsApp</span>
+        </div>
+      </div>
+
+      <!-- Card de Autenticación / Registro -->
+      <div class="landing-auth-card">
+        <!-- Tabs de Selección: Iniciar Sesión / Nueva Empresa -->
+        <div class="auth-tabs">
+          <button class="auth-tab-btn active" id="tab-auth-login" onclick="cambiarModoAuth('login')">
+            🔑 Iniciar Sesión
+          </button>
+          <button class="auth-tab-btn" id="tab-auth-registro" onclick="cambiarModoAuth('registro')">
+            🏢 Registrar Nueva Empresa
+          </button>
+        </div>
+
+        <!-- FORMULARIO 1: LOGIN -->
+        <form id="form-portal-login" class="auth-form" onsubmit="manejarPortalLogin(event)">
+          <div class="form-group">
+            <label for="portal-email">Correo Electrónico</label>
+            <div class="input-with-icon">
+              <span class="input-icon">✉️</span>
+              <input type="email" id="portal-email" required placeholder="tu@crediya.com" autocomplete="email">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="portal-password">Contraseña o PIN de Acceso</label>
+            <div class="input-with-icon">
+              <span class="input-icon">🔒</span>
+              <input type="password" id="portal-password" required placeholder="admin123 o PIN: 1234" autocomplete="current-password">
+              <button type="button" class="btn-toggle-pass" onclick="togglePassVisibility('portal-password', this)" title="Ver/Ocultar contraseña">👁️</button>
+            </div>
+          </div>
+
+          <div class="auth-options">
+            <label class="remember-me">
+              <input type="checkbox" id="portal-recordar" checked>
+              <span>Recordar sesión</span>
+            </label>
+            <span class="auth-hint">Clave: <strong>admin123</strong> / PIN: <strong>1234</strong></span>
+          </div>
+
+          <button type="submit" class="btn-primary btn-block btn-lg" id="btn-submit-login">
+            🚀 Entrar a mi Plataforma
+          </button>
+
+          <!-- SECCIÓN DE ACCESO RÁPIDO PARA PRUEBAS -->
+          <div class="demo-access-box">
+            <div class="demo-divider">
+              <span>o acceso rápido de prueba (1 clic)</span>
+            </div>
+            <div class="demo-buttons-grid">
+              <button type="button" class="btn-demo-card btn-demo-vendedor" onclick="accesoRapidoDemo('vendedor')">
+                <span class="demo-icon">👤</span>
+                <div class="demo-text">
+                  <strong>Cobrador / Vendedor</strong>
+                  <small>Carlos • Ruta en calle</small>
+                </div>
+              </button>
+              <button type="button" class="btn-demo-card btn-demo-admin" onclick="accesoRapidoDemo('admin')">
+                <span class="demo-icon">👑</span>
+                <div class="demo-text">
+                  <strong>Administrador</strong>
+                  <small>Juan • Control total</small>
+                </div>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- FORMULARIO 2: REGISTRO DE NUEVA EMPRESA -->
+        <form id="form-portal-registro" class="auth-form hidden" onsubmit="manejarPortalRegistro(event)">
+          <div class="form-group">
+            <label for="reg-empresa">Nombre de tu Empresa / Negocio *</label>
+            <div class="input-with-icon">
+              <span class="input-icon">🏢</span>
+              <input type="text" id="reg-empresa" required placeholder="Ej. Inversiones & Créditos El Dorado">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="reg-moneda">País y Tipo de Moneda *</label>
+            <div class="input-with-icon">
+              <span class="input-icon">🌎</span>
+              <select id="reg-moneda" class="form-select" required>
+                <option value="PEN" selected>🇵🇪 Perú — Soles (S/.)</option>
+                <option value="COP">🇨🇴 Colombia — Pesos COP ($)</option>
+                <option value="MXN">🇲🇽 México — Pesos MXN ($)</option>
+                <option value="USD">🇺🇸 Internacional — Dólares USD ($)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="reg-nombre-admin">Nombre del Administrador *</label>
+            <div class="input-with-icon">
+              <span class="input-icon">👤</span>
+              <input type="text" id="reg-nombre-admin" required placeholder="Ej. Rodrigo Mendoza">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="reg-email">Correo Electrónico *</label>
+            <div class="input-with-icon">
+              <span class="input-icon">✉️</span>
+              <input type="email" id="reg-email" required placeholder="admin@eldorado.com">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="reg-password">Contraseña Maestra *</label>
+            <div class="input-with-icon">
+              <span class="input-icon">🔒</span>
+              <input type="password" id="reg-password" required minlength="6" placeholder="Mínimo 6 caracteres">
+              <button type="button" class="btn-toggle-pass" onclick="togglePassVisibility('reg-password', this)">👁️</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary btn-block btn-lg" id="btn-submit-registro">
+            🏢 Crear Empresa y Comenzar
+          </button>
+        </form>
+      </div>
+
+      <!-- Banner de Instalación PWA para Móvil -->
+      <div id="pwa-install-banner" class="pwa-banner hidden">
+        <div class="pwa-info">
+          <span class="pwa-icon">📲</span>
+          <div>
+            <strong>Instala CrediYa en tu Teléfono</strong>
+            <p>Accede más rápido desde la pantalla de inicio y realiza cobros en la calle sin señal de internet.</p>
+          </div>
+        </div>
+        <button class="btn-pwa-install" onclick="instalarAppPWA()">Instalar App</button>
+      </div>
+
+      <!-- Pie de página -->
+      <footer class="landing-footer">
+        <span>© 2026 CrediYa SaaS • Arquitectura Multi-Inquilino Segura</span>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- APLICACIÓN PRINCIPAL (AUTENTICADA)                           -->
+  <!-- ============================================================ -->
+  <div id="app-main-layout" class="hidden">
+
+    <!-- Header Superior -->
+    <header class="top-nav">
+      <div class="nav-brand">
+        <div class="brand-badge">⚡ CREDIYA</div>
+        <div class="brand-meta">
+          <span class="brand-title">Sistema de Créditos & Cobranza</span>
+          <span class="tenant-badge" id="tenant-name">CrediYa Microfinanzas</span>
+        </div>
+      </div>
+
+      <div class="nav-controls">
+        <div class="status-indicator" id="network-indicator" title="Estado de conexión del cobrador">
+          <span class="pulse-dot" id="pulse-dot"></span>
+          <span id="network-status-text">En Línea / Almacén Seguro</span>
+        </div>
+        <div class="currency-switcher-box" title="Cambiar tipo de moneda (Perú / Colombia / México / USD)">
+          <select id="selector-moneda-global" class="currency-select" onchange="cambiarMonedaGlobal(this.value)">
+            <option value="PEN">🇵🇪 Soles (S/.)</option>
+            <option value="COP" selected>🇨🇴 COP ($)</option>
+            <option value="MXN">🇲🇽 MXN ($)</option>
+            <option value="USD">🇺🇸 USD ($)</option>
+          </select>
+        </div>
+        <div class="user-switcher">
+          <button id="btn-pwa-header" class="btn-role btn-pwa-header hidden" onclick="instalarAppPWA()" title="Instalar en este dispositivo">
+            📲 Instalar App
+          </button>
+          <button id="btn-switch-vendedor" class="btn-role active" onclick="switchUser('vendedor')">
+            👤 Carlos
+          </button>
+          <button id="btn-switch-admin" class="btn-role" onclick="switchUser('admin')">
+            👑 Juan
+          </button>
+          <button id="btn-theme-toggle" class="btn-role btn-theme-toggle" title="Alternar Modo Crema / Oscuro" onclick="toggleTheme()">
+            <span id="theme-toggle-icon">🌙</span> <span id="theme-toggle-text">Oscuro</span>
+          </button>
+          <button class="btn-role btn-logout-top" title="Cerrar Sesión" onclick="cerrarSesion()">
+            🚪 Salir
+          </button>
+          <button class="btn-icon" title="Bloquear con PIN" onclick="lockApp()">
+            🔒
+          </button>
+        </div>
+      </div>
+    </header>
+
+  <!-- Barra de Navegación Compacta & Menú Desplegable Inteligente -->
+  <nav class="nav-toolbar" id="main-nav-toolbar">
+    <div class="nav-toolbar-left">
+      <!-- Botón Desplegable de Módulos (Rápido y Adaptable) -->
+      <div class="dropdown-menu-wrapper" id="dropdown-menu-container">
+        <button type="button" class="btn-dropdown-trigger" id="btn-dropdown-modulos" onclick="toggleMenuDesplegable()" aria-expanded="false" title="Desplegar todos los módulos del sistema">
+          <span class="dropdown-icon" id="active-tab-icon">🗺️</span>
+          <span class="dropdown-label" id="active-tab-label">Hoja de Ruta de Hoy</span>
+          <span class="dropdown-chevron" id="dropdown-chevron">▼</span>
+        </button>
+
+        <!-- Panel Desplegable con Módulos Categorizados -->
+        <div class="dropdown-menu-card hidden" id="menu-desplegable-card">
+          <div class="dropdown-category">
+            <span class="dropdown-cat-title">🛵 OPERACIÓN EN CALLE</span>
+            <button type="button" class="tab-btn menu-item active" id="tab-rutas" data-tab="rutas" onclick="setTab('rutas')">
+              <span class="item-icon">🗺️</span>
+              <div class="item-info">
+                <strong>Hoja de Ruta de Hoy</strong>
+                <small>Cobranza diaria, orden de visitas y GPS</small>
+              </div>
+            </button>
+            <button type="button" class="tab-btn menu-item" id="tab-caja" data-tab="caja" onclick="setTab('caja')">
+              <span class="item-icon">💵</span>
+              <div class="item-info">
+                <strong>Cuadre de Caja</strong>
+                <small>Arqueo, ingresos, egresos y retiros</small>
+              </div>
+            </button>
+          </div>
+
+          <div class="dropdown-category">
+            <span class="dropdown-cat-title">📋 CRÉDITOS & VENTAS</span>
+            <button type="button" class="tab-btn menu-item menu-item-highlight" id="tab-nuevo" data-tab="nuevo" onclick="setTab('nuevo')">
+              <span class="item-icon">⚡➕</span>
+              <div class="item-info">
+                <strong>Nueva Venta / Crédito</strong>
+                <small>Registro rápido de cliente y préstamo</small>
+              </div>
+              <span class="pill-badge-fast">Acceso Rápido</span>
+            </button>
+            <button type="button" class="tab-btn menu-item" id="tab-renovar" data-tab="renovar" onclick="setTab('renovar')">
+              <span class="item-icon">🔄</span>
+              <div class="item-info">
+                <strong>Renovación de Crédito</strong>
+                <small>Liquidación de saldo y nuevo crédito</small>
+              </div>
+            </button>
+          </div>
+
+          <div class="dropdown-category">
+            <span class="dropdown-cat-title">👑 GESTIÓN & AUDITORÍA</span>
+            <button type="button" class="tab-btn menu-item" id="tab-dashboard" data-tab="dashboard" onclick="setTab('dashboard')">
+              <span class="item-icon">📊</span>
+              <div class="item-info">
+                <strong>Dashboard Ejecutivo</strong>
+                <small>Métricas financieras globales y PAR 30/60</small>
+              </div>
+            </button>
+            <button type="button" class="tab-btn menu-item" id="tab-mora" data-tab="mora" onclick="setTab('mora')">
+              <span class="item-icon">⚡</span>
+              <div class="item-info">
+                <strong>Mora Automática</strong>
+                <small>Cálculo determinista de atraso en cuotas</small>
+              </div>
+            </button>
+            <button type="button" class="tab-btn menu-item" id="tab-usuarios" data-tab="usuarios" onclick="setTab('usuarios')">
+              <span class="item-icon">👥</span>
+              <div class="item-info">
+                <strong>Usuarios & Permisos</strong>
+                <small>Control de acceso RBAC y equipo</small>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Accesos Rápidos de Escritorio (Pills compactos) -->
+      <div class="quick-nav-pills desktop-only">
+        <button type="button" class="quick-pill active" id="pill-rutas" onclick="setTab('rutas')">🗺️ Ruta</button>
+        <button type="button" class="quick-pill" id="pill-caja" onclick="setTab('caja')">💵 Caja</button>
+        <button type="button" class="quick-pill" id="pill-dashboard" onclick="setTab('dashboard')">📊 Dashboard</button>
+      </div>
+    </div>
+
+    <div class="nav-toolbar-right">
+      <!-- Botón Destacado: Nueva Venta Rápida (1 Clic) -->
+      <button type="button" class="btn-fast-sale" onclick="setTab('nuevo')" title="Registrar nuevo cliente y préstamo en 1 solo clic">
+        <span class="fast-sale-icon">➕</span>
+        <span class="fast-sale-text">Registrar Venta</span>
+      </button>
+
+      <!-- Botón Menú Lateral Completo -->
+      <button type="button" class="btn-nav-drawer" onclick="abrirDrawerMenu()" title="Abrir menú lateral completo">
+        <span>☰ Módulos</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Contenedor Principal -->
+  <main class="content-area">
+
+    <!-- SECCIÓN 0: DASHBOARD EJECUTIVO (ADMIN) -->
+    <section id="sec-dashboard" class="tab-section">
+      <div class="section-header">
+        <div>
+          <h2>Dashboard Ejecutivo del Negocio</h2>
+          <p>Métricas financieras globales, análisis de riesgo PAR y rendimiento del equipo</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn-primary" onclick="cargarDashboardEjecutivo()">🔄 Actualizar Métricas</button>
+        </div>
+      </div>
+
+      <!-- KPIs Financieros Principales -->
+      <div class="metrics-grid">
+        <div class="metric-card metric-primary">
+          <span class="metric-label">Capital Total Prestado</span>
+          <span class="metric-val" id="dash-prestado">$0</span>
+          <span class="metric-sub" id="dash-prestado-sub">0 créditos históricos</span>
+        </div>
+        <div class="metric-card metric-success">
+          <span class="metric-label">Capital Recuperado</span>
+          <span class="metric-val" id="dash-recuperado">$0</span>
+          <span class="metric-sub">Total abonos cobrados</span>
+        </div>
+        <div class="metric-card metric-warning">
+          <span class="metric-label">Cartera Activa en Calle</span>
+          <span class="metric-val" id="dash-cartera-activa">$0</span>
+          <span class="metric-sub" id="dash-cartera-sub">Saldo total pendiente</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Cobranza de Hoy</span>
+          <span class="metric-val text-accent" id="dash-cobrado-hoy">$0</span>
+          <span class="metric-sub" id="dash-cumplimiento">Meta: $0 (0%)</span>
+        </div>
+      </div>
+
+      <!-- Indicadores de Calidad de Cartera y Riesgo (PAR) -->
+      <div class="dash-risk-grid mt-4">
+        <div class="dash-card">
+          <div class="dash-card-header">
+            <h3>🛡️ Calidad de Cartera & Riesgo Crediticio</h3>
+            <span class="badge-role badge-role-admin">Estándar Microfinanzas</span>
+          </div>
+          <div class="risk-stats-row">
+            <div class="risk-stat-box">
+              <span class="risk-stat-label">PAR 30 (Atraso > 30 días)</span>
+              <span class="risk-stat-val text-warning" id="dash-par30">0%</span>
+              <small id="dash-par30-monto">$0 en riesgo</small>
+            </div>
+            <div class="risk-stat-box">
+              <span class="risk-stat-label">PAR 60 (Mora Severa)</span>
+              <span class="risk-stat-val text-danger" id="dash-par60">0%</span>
+              <small id="dash-par60-monto">$0 en riesgo crítico</small>
+            </div>
+            <div class="risk-stat-box">
+              <span class="risk-stat-label">Distribución de Cartera</span>
+              <div class="portfolio-bars">
+                <div class="p-bar bar-aldia" id="p-bar-aldia" title="Al Día" style="width: 70%;"></div>
+                <div class="p-bar bar-atraso" id="p-bar-atraso" title="En Atraso" style="width: 20%;"></div>
+                <div class="p-bar bar-mora" id="p-bar-mora" title="En Mora" style="width: 10%;"></div>
+              </div>
+              <small id="dash-distribucion-text">Cargando distribución...</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráfica de Recaudación Semanal (Últimos 7 días) -->
+      <div class="dash-chart-card mt-4">
+        <div class="dash-card-header">
+          <h3>📈 Recaudación de los Últimos 7 Días</h3>
+          <span class="text-muted text-sm">Flujo de efectivo diario</span>
+        </div>
+        <div class="chart-bars-container" id="dash-chart-bars">
+          <!-- Barras generadas dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Tabla de Rendimiento por Cobrador -->
+      <div class="dash-card mt-4">
+        <div class="dash-card-header">
+          <h3>👥 Desempeño y Rendimiento por Cobrador (Hoy)</h3>
+          <span class="text-muted text-sm">Auditoría en tiempo real</span>
+        </div>
+        <div class="table-container" style="margin-top: 0; border: none;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Cobrador / Asesor</th>
+                <th>Zona / Ruta</th>
+                <th>Clientes</th>
+                <th>Cartera a Cargo</th>
+                <th>Cobrado Hoy</th>
+                <th>Efectividad</th>
+              </tr>
+            </thead>
+            <tbody id="dash-ranking-body">
+              <tr><td colspan="6" class="empty-cell">Cargando rendimiento de cobradores...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 1: HOJA DE RUTA DE HOY -->
+    <section id="sec-rutas" class="tab-section active">
+      <div class="section-header">
+        <div>
+          <h2>Hoja de Ruta de Cobranza</h2>
+          <p id="ruta-subtitulo">Clientes asignados y secuencia diaria de visita</p>
+        </div>
+        <div class="section-actions">
+          <select id="filtro-ruta-vendedor" class="select-vendedor-admin hidden" onchange="cambiarVendedorRuta(this.value)" title="Supervisar ruta de un vendedor">
+            <option value="">👤 Mi Ruta de Cobro</option>
+          </select>
+          <button class="btn-secondary" onclick="exportarCarteraCSV()">📊 Exportar Cartera</button>
+          <button class="btn-primary" onclick="cargarRutaHoy()">🔄 Actualizar Ruta</button>
+        </div>
+      </div>
+
+      <!-- Métricas de la Jornada -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <span class="metric-label">Total Clientes</span>
+          <span class="metric-val" id="met-total">0</span>
+          <span class="metric-sub">En esta ruta</span>
+        </div>
+        <div class="metric-card metric-success">
+          <span class="metric-label">Cobrados Hoy</span>
+          <span class="metric-val" id="met-cobrados">0</span>
+          <div class="progress-bar"><div id="met-progreso" class="progress-fill" style="width: 0%"></div></div>
+        </div>
+        <div class="metric-card metric-warning">
+          <span class="metric-label">Pendientes</span>
+          <span class="metric-val" id="met-pendientes">0</span>
+          <span class="metric-sub">Por visitar</span>
+        </div>
+        <div class="metric-card metric-danger">
+          <span class="metric-label">Ausentes Hoy</span>
+          <span class="metric-val" id="met-ausentes">0</span>
+          <span class="metric-sub">No estaban en casa</span>
+        </div>
+        <div class="metric-card metric-info">
+          <span class="metric-label">Recaudado Hoy</span>
+          <span class="metric-val" id="met-recaudado">$0</span>
+          <span class="metric-sub" id="met-esperado">Esperado: $0</span>
+        </div>
+      </div>
+
+      <!-- Barra de Búsqueda en Vivo & Filtros de Estado para la Ruta -->
+      <div class="ruta-toolbar">
+        <div class="ruta-search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="buscar-cliente-ruta" placeholder="Buscar cliente por nombre, alias, teléfono, documento o dirección..." oninput="filtrarClientesRuta(this.value)" autocomplete="off">
+          <button type="button" class="btn-clear-search hidden" id="btn-clear-ruta-search" onclick="limpiarBusquedaRuta()" title="Limpiar búsqueda">✕</button>
+        </div>
+        <div class="ruta-filter-chips">
+          <button type="button" class="filter-chip active" id="chip-ruta-todos" onclick="filtrarEstadoRuta('TODOS', this)">Todos (<span id="count-ruta-todos">0</span>)</button>
+          <button type="button" class="filter-chip" id="chip-ruta-pendientes" onclick="filtrarEstadoRuta('PENDIENTES', this)">⏳ Por Cobrar (<span id="count-ruta-pendientes">0</span>)</button>
+          <button type="button" class="filter-chip" id="chip-ruta-cobrados" onclick="filtrarEstadoRuta('COBRADOS', this)">✅ Cobrados (<span id="count-ruta-cobrados">0</span>)</button>
+          <button type="button" class="filter-chip" id="chip-ruta-ausentes" onclick="filtrarEstadoRuta('AUSENTES', this)">🚪 Ausentes (<span id="count-ruta-ausentes">0</span>)</button>
+        </div>
+      </div>
+
+      <!-- Lista de Clientes de la Ruta (Compacta y Desplegable al Clic) -->
+      <div class="cards-list" id="lista-clientes-ruta">
+        <div class="loading-state">Cargando hoja de ruta...</div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 2: SIMULADOR DE MORA AUTOMÁTICA -->
+    <section id="sec-mora" class="tab-section">
+      <div class="section-header">
+        <div>
+          <h2>Mora Automática Determinista</h2>
+          <p>Evalúa el atraso en cuotas según la frecuencia (diario, semanal, quincenal) y vencimiento</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn-accent" id="btn-ejecutar-mora" onclick="ejecutarMoraEnVivo()">
+            🚀 Ejecutar Job de Mora Ahora
+          </button>
+        </div>
+      </div>
+
+      <div class="info-banner">
+        <div class="banner-icon">💡</div>
+        <div>
+          <strong>¿Cómo funciona la Mora Automática?</strong><br>
+          Compara los días transcurridos desde <code>fechaInicio</code> contra las <code>cuotasPagadas</code>.
+          Si hay cuotas vencidas o superó la <code>fechaVencimiento</code>, el crédito pasa automáticamente a <strong>EN_MORA</strong> y el cliente a <strong>ATRASADO</strong>.
+          Cuando el cliente abona y se pone al día, regresa automáticamente a <strong>ACTIVO / AL_DÍA</strong> sin intervención manual.
+        </div>
+      </div>
+
+      <div id="resumen-mora-box" class="mora-results-card hidden">
+        <div class="mora-stat-row">
+          <div class="mora-stat">
+            <span class="lbl">Total Evaluados</span>
+            <span class="val" id="mora-evaluados">0</span>
+          </div>
+          <div class="mora-stat stat-red">
+            <span class="lbl">Pasaron a EN MORA</span>
+            <span class="val" id="mora-en-mora">0</span>
+          </div>
+          <div class="mora-stat stat-green">
+            <span class="lbl">Recuperados a ACTIVO</span>
+            <span class="val" id="mora-recuperados">0</span>
+          </div>
+          <div class="mora-stat stat-blue">
+            <span class="lbl">Al Día</span>
+            <span class="val" id="mora-al-dia">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Cliente</th>
+              <th>Forma Pago</th>
+              <th>Cuotas Esp.</th>
+              <th>Cuotas Pag.</th>
+              <th>Atrasadas</th>
+              <th>Saldo Actual</th>
+              <th>Estado Resultante</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-mora-body">
+            <tr><td colspan="8" class="empty-cell">Presiona "Ejecutar Job de Mora Ahora" para correr la auditoría.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 3: RENOVACIÓN DE CRÉDITOS -->
+    <section id="sec-renovar" class="tab-section">
+      <div class="section-header">
+        <div>
+          <h2>Renovación de Crédito (Refinanciamiento)</h2>
+          <p>Liquida el saldo pendiente anterior, cruza desembolsos y emite un nuevo crédito</p>
+        </div>
+      </div>
+
+      <div class="split-layout">
+        <div class="form-card">
+          <h3>Datos de la Renovación</h3>
+          <div class="form-group">
+            <label>Seleccionar Cliente con Crédito a Renovar</label>
+            <select id="renovar-credito-select" onchange="actualizarPrecalculoRenovacion()">
+              <option value="">-- Selecciona un cliente --</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nuevo Préstamo ($)</label>
+              <input type="number" id="ren-monto" value="250000" min="10000" step="5000" oninput="actualizarPrecalculoRenovacion()">
+            </div>
+            <div class="form-group">
+              <label>Número de Cuotas</label>
+              <input type="number" id="ren-cuotas" value="24" min="1" oninput="actualizarPrecalculoRenovacion()">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Interés (%)</label>
+              <input type="number" id="ren-interes" value="20" min="0" oninput="actualizarPrecalculoRenovacion()">
+            </div>
+            <div class="form-group">
+              <label>Forma de Pago</label>
+              <select id="ren-forma">
+                <option value="diario">Diario</option>
+                <option value="semanal">Semanal</option>
+                <option value="quincenal">Quincenal</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="btn-primary btn-block" onclick="procesarRenovacion()">
+            ✅ Confirmar y Desembolsar Renovación
+          </button>
+        </div>
+
+        <div class="preview-card">
+          <h3>Liquidación Contable</h3>
+          <div class="preview-item">
+            <span>Saldo Anterior a Cancelar:</span>
+            <strong id="prev-saldo-ant" class="text-danger">$0</strong>
+          </div>
+          <div class="preview-item">
+            <span>Nuevo Valor Préstamo:</span>
+            <strong id="prev-nuevo-monto">$0</strong>
+          </div>
+          <div class="preview-item">
+            <span>Total con Intereses:</span>
+            <strong id="prev-total-interes">$0</strong>
+          </div>
+          <div class="preview-item">
+            <span>Valor de Cada Cuota:</span>
+            <strong id="prev-cuota" class="text-accent">$0</strong>
+          </div>
+          <hr class="divider">
+          <div class="preview-item highlight">
+            <span>Neto a Entregar en Mano:</span>
+            <strong id="prev-neto" class="text-success">$0</strong>
+          </div>
+          <div class="preview-note">
+            El saldo anterior se cancela automáticamente con un abono contable y el crédito viejo pasa a estado <strong>RENOVADO</strong>.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 4: CUADRE DE CAJA -->
+    <section id="sec-caja" class="tab-section">
+      <div class="section-header">
+        <div>
+          <h2>Cuadre de Caja Diario</h2>
+          <p>Control en vivo de recaudos, cobros, desembolsos y dinero en mano</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn-secondary" onclick="exportarCuadreCSV()">📥 Exportar Cuadre CSV</button>
+          <button class="btn-secondary" onclick="abrirModalMovimiento()">➕ Ingreso / Egreso</button>
+          <button class="btn-secondary" onclick="abrirModalRetiro()">🏧 Retiro de Caja</button>
+          <button class="btn-primary" onclick="cerrarCaja()">🔒 Cerrar Caja del Día</button>
+        </div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card metric-success">
+          <span class="metric-label">Total Cobrado Hoy</span>
+          <span class="metric-val" id="caja-cobrado">$0</span>
+        </div>
+        <div class="metric-card metric-warning">
+          <span class="metric-label">Préstamos / Renovaciones</span>
+          <span class="metric-val" id="caja-prestado">$0</span>
+        </div>
+        <div class="metric-card metric-info">
+          <span class="metric-label">Ingresos Manuales</span>
+          <span class="metric-val" id="caja-ingresos">$0</span>
+        </div>
+        <div class="metric-card metric-danger">
+          <span class="metric-label">Egresos / Retiros</span>
+          <span class="metric-val" id="caja-egresos">$0</span>
+        </div>
+        <div class="metric-card metric-accent">
+          <span class="metric-label">Efectivo Esperado en Caja</span>
+          <span class="metric-val" id="caja-saldo-esperado">$0</span>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <h3>Movimientos del Día</h3>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Tipo</th>
+              <th>Concepto</th>
+              <th>Valor</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-movimientos-body">
+            <tr><td colspan="4" class="empty-cell">Cargando movimientos de caja...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 5: NUEVA VENTA / CRÉDITO -->
+    <section id="sec-nuevo" class="tab-section">
+      <div class="section-header">
+        <div>
+          <h2>Registro de Nuevo Cliente y Crédito</h2>
+          <p>Equivalente a la pantalla "Ventas Nuevas" del cobrador</p>
+        </div>
+      </div>
+
+      <div class="form-card max-width-card">
+        <form id="form-nuevo-cliente" onsubmit="crearNuevoCliente(event)">
+          <h4>1. Datos del Cliente</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nombre / Alias *</label>
+              <input type="text" id="cli-nombre" required placeholder="Ej. Doña Carmen">
+            </div>
+            <div class="form-group">
+              <label>Apellidos</label>
+              <input type="text" id="cli-apellidos" placeholder="Ej. Rodríguez">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label id="lbl-cli-documento">Cédula / Documento</label>
+              <input type="text" id="cli-documento" placeholder="Ej. 10203040">
+            </div>
+            <div class="form-group">
+              <label>Móvil / WhatsApp *</label>
+              <input type="text" id="cli-movil" required placeholder="Ej. 3123456789">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Dirección / Negocio</label>
+            <input type="text" id="cli-direccion" placeholder="Ej. Calle 12 # 5-43 (Panadería)">
+          </div>
+
+          <h4>2. Condiciones del Crédito</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label id="lbl-cre-monto">Valor Préstamo ($) *</label>
+              <input type="number" id="cre-monto" required value="200000" min="10000" step="5000">
+            </div>
+            <div class="form-group">
+              <label>Número de Cuotas *</label>
+              <input type="number" id="cre-cuotas" required value="24" min="1">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Interés (%) *</label>
+              <input type="number" id="cre-interes" required value="20">
+            </div>
+            <div class="form-group">
+              <label>Forma de Pago *</label>
+              <select id="cre-forma">
+                <option value="diario">Diario</option>
+                <option value="semanal">Semanal</option>
+                <option value="quincenal">Quincenal</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary btn-block">🚀 Crear Cliente y Crédito</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 6: GESTIÓN DE USUARIOS Y PERMISOS -->
+    <section id="sec-usuarios" class="tab-section">
+      <div class="section-header">
+        <div>
+          <h2>Gestión de Usuarios y Permisos</h2>
+          <p>Administración del equipo de cobranza, roles RBAC y control de acceso seguro</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn-primary" id="btn-abrir-nuevo-usuario" onclick="abrirModalNuevoUsuario()">➕ Nuevo Usuario / Vendedor</button>
+        </div>
+      </div>
+
+      <!-- Aviso para Vendedores si entran a la sección -->
+      <div id="banner-permiso-vendedor" class="banner-aviso-permiso hidden">
+        <div class="aviso-icon">🛡️</div>
+        <div>
+          <h4>Perfil de Vendedor / Cobrador</h4>
+          <p>Tu cuenta tiene permisos de operación de campo (cobranza, ausentes, nuevas ventas y arqueo diario de tu propia ruta). La creación y configuración de usuarios es exclusiva del Administrador.</p>
+        </div>
+      </div>
+
+      <!-- Matriz Visual de Permisos (RBAC) -->
+      <div class="rbac-card">
+        <div class="rbac-header">
+          <h3>🛡️ Matriz de Roles y Privilegios del Sistema (RBAC)</h3>
+          <span class="rbac-badge">Control de Acceso Multi-Inquilino</span>
+        </div>
+        <div class="rbac-table-container">
+          <table class="rbac-table">
+            <thead>
+              <tr>
+                <th>Módulo / Capacidad</th>
+                <th class="text-center col-admin">👑 ADMIN (Administrador)</th>
+                <th class="text-center col-vendedor">👤 VENDEDOR (Cobrador)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Gestión de Equipo</strong> (Crear, suspender usuarios, resetear claves)</td>
+                <td class="text-center text-success font-bold">✅ Total</td>
+                <td class="text-center text-muted">❌ Sin acceso</td>
+              </tr>
+              <tr>
+                <td><strong>Supervisión de Rutas</strong> (Ver y auditar rutas de otros cobradores)</td>
+                <td class="text-center text-success font-bold">✅ Todas las rutas</td>
+                <td class="text-center text-muted">❌ Solo su ruta asignada</td>
+              </tr>
+              <tr>
+                <td><strong>Cobranza en Calle</strong> (Abonos en efectivo + Recibo WhatsApp + GPS)</td>
+                <td class="text-center text-success font-bold">✅ Permitido</td>
+                <td class="text-center text-success font-bold">✅ Permitido</td>
+              </tr>
+              <tr>
+                <td><strong>Mora Automática Masiva</strong> (Cálculo financiero y recargos del tenant)</td>
+                <td class="text-center text-success font-bold">✅ Ejecución y configuración</td>
+                <td class="text-center text-muted">❌ Bloqueado</td>
+              </tr>
+              <tr>
+                <td><strong>Arqueo y Cuadre de Caja</strong></td>
+                <td class="text-center text-success font-bold">✅ Global y por vendedor</td>
+                <td class="text-center text-accent font-bold">⚠️ Solo su propia caja del día</td>
+              </tr>
+              <tr>
+                <td><strong>Nuevos Créditos y Renovaciones</strong></td>
+                <td class="text-center text-success font-bold">✅ Cualquier cliente</td>
+                <td class="text-center text-accent font-bold">⚠️ Solo clientes de su zona</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Métricas de Equipo -->
+      <div class="metrics-grid mt-4">
+        <div class="metric-card">
+          <span class="metric-label">Total Usuarios</span>
+          <span class="metric-val" id="met-usr-total">0</span>
+          <span class="metric-sub">En esta empresa</span>
+        </div>
+        <div class="metric-card metric-primary">
+          <span class="metric-label">Administradores</span>
+          <span class="metric-val" id="met-usr-admins">0</span>
+          <span class="metric-sub">Control total</span>
+        </div>
+        <div class="metric-card metric-success">
+          <span class="metric-label">Cobradores Activos</span>
+          <span class="metric-val" id="met-usr-vendedores">0</span>
+          <span class="metric-sub">Operación de ruta</span>
+        </div>
+        <div class="metric-card metric-warning">
+          <span class="metric-label">Cartera en Calle</span>
+          <span class="metric-val" id="met-usr-cartera">$0</span>
+          <span class="metric-sub">Distribuida en cobradores</span>
+        </div>
+      </div>
+
+      <!-- Filtros y Directorio de Usuarios -->
+      <div class="users-directory-card mt-4">
+        <div class="directory-toolbar">
+          <div class="filter-group">
+            <button class="filter-chip active" id="chip-usr-todos" onclick="filtrarUsuarios('TODOS', this)">Todos</button>
+            <button class="filter-chip" id="chip-usr-admins" onclick="filtrarUsuarios('ADMIN', this)">👑 Administradores</button>
+            <button class="filter-chip" id="chip-usr-vendedores" onclick="filtrarUsuarios('VENDEDOR', this)">👤 Vendedores / Cobradores</button>
+          </div>
+          <div class="search-box">
+            <input type="text" id="buscar-usuario-input" onkeyup="buscarUsuario(this.value)" placeholder="🔍 Buscar por nombre o email...">
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Contacto</th>
+                <th>Zona / Posición</th>
+                <th>Clientes</th>
+                <th>Cartera Activa</th>
+                <th>Estado</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-usuarios-body">
+              <tr><td colspan="8" class="empty-cell">Cargando directorio de usuarios...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================================================ -->
+  <!-- MENÚ LATERAL DESPLEGABLE (OFF-CANVAS DRAWER)                 -->
+  <!-- ============================================================ -->
+  <div id="drawer-backdrop" class="drawer-backdrop hidden" onclick="cerrarDrawerMenu()">
+    <aside class="drawer-panel" onclick="event.stopPropagation()">
+      <div class="drawer-header">
+        <div class="drawer-brand">
+          <div class="brand-badge">⚡ CREDIYA</div>
+          <span class="drawer-tenant-badge" id="drawer-tenant-name">CrediYa Microfinanzas</span>
+        </div>
+        <button type="button" class="drawer-close-btn" onclick="cerrarDrawerMenu()">✕</button>
+      </div>
+
+      <!-- Tarjeta de Usuario en Drawer -->
+      <div class="drawer-user-card">
+        <div class="user-avatar" id="drawer-user-avatar">👤</div>
+        <div class="drawer-user-info">
+          <strong id="drawer-user-name">Usuario Activo</strong>
+          <small id="drawer-user-role" class="badge-role badge-role-vendedor">Cobrador</small>
+        </div>
+      </div>
+
+      <!-- Acceso Rápido Destacado en Drawer: Registrar Venta -->
+      <div class="drawer-quick-action">
+        <button type="button" class="btn-drawer-new-sale" onclick="setTab('nuevo'); cerrarDrawerMenu();">
+          <span class="sale-icon">⚡➕</span>
+          <div class="sale-text">
+            <strong>Nueva Venta / Crédito</strong>
+            <small>Registrar cliente en 1 clic</small>
+          </div>
+        </button>
+      </div>
+
+      <!-- Lista de Módulos del Drawer -->
+      <div class="drawer-nav-list">
+        <span class="drawer-section-title">🛵 Operación en Calle</span>
+        <button type="button" class="drawer-nav-item active" id="drawer-tab-rutas" onclick="setTab('rutas'); cerrarDrawerMenu();">
+          <span class="nav-item-icon">🗺️</span>
+          <span>Hoja de Ruta de Hoy</span>
+        </button>
+        <button type="button" class="drawer-nav-item" id="drawer-tab-caja" onclick="setTab('caja'); cerrarDrawerMenu();">
+          <span class="nav-item-icon">💵</span>
+          <span>Cuadre de Caja Diario</span>
+        </button>
+
+        <span class="drawer-section-title">📋 Préstamos & Clientes</span>
+        <button type="button" class="drawer-nav-item" id="drawer-tab-nuevo" onclick="setTab('nuevo'); cerrarDrawerMenu();">
+          <span class="nav-item-icon">➕</span>
+          <span>Nueva Venta / Crédito</span>
+        </button>
+        <button type="button" class="drawer-nav-item" id="drawer-tab-renovar" onclick="setTab('renovar'); cerrarDrawerMenu();">
+          <span class="nav-item-icon">🔄</span>
+          <span>Renovación de Crédito</span>
+        </button>
+
+        <span class="drawer-section-title">👑 Administración & Control</span>
+        <button type="button" class="drawer-nav-item drawer-item-admin" id="drawer-tab-dashboard" onclick="setTab('dashboard'); cerrarDrawerMenu();">
+          <span class="nav-item-icon">📊</span>
+          <span>Dashboard Ejecutivo</span>
+        </button>
+        <button type="button" class="drawer-nav-item drawer-item-admin" id="drawer-tab-mora" onclick="setTab('mora'); cerrarDrawerMenu();">
+          <span class="nav-item-icon">⚡</span>
+          <span>Mora Automática</span>
+        </button>
+        <button type="button" class="drawer-nav-item drawer-item-admin" id="drawer-tab-usuarios" onclick="setTab('usuarios'); cerrarDrawerMenu();">
+          <span class="nav-item-icon">👥</span>
+          <span>Usuarios & Permisos</span>
+        </button>
+      </div>
+
+      <!-- Footer del Drawer -->
+      <div class="drawer-footer">
+        <button type="button" class="btn-drawer-action" onclick="lockApp(); cerrarDrawerMenu();">
+          <span>🔒 Bloquear con PIN</span>
+        </button>
+        <button type="button" class="btn-drawer-action text-danger" onclick="cerrarSesion(); cerrarDrawerMenu();">
+          <span>🚪 Cerrar Sesión</span>
+        </button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- BARRA DE NAVEGACIÓN INFERIOR MÓVIL (MOBILE BOTTOM BAR)       -->
+  <!-- ============================================================ -->
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+    <button type="button" class="mob-nav-btn active" id="mob-nav-rutas" onclick="setTab('rutas')">
+      <span class="mob-nav-icon">🗺️</span>
+      <span class="mob-nav-label">Ruta</span>
+    </button>
+    <button type="button" class="mob-nav-btn" id="mob-nav-caja" onclick="setTab('caja')">
+      <span class="mob-nav-icon">💵</span>
+      <span class="mob-nav-label">Caja</span>
+    </button>
+    <button type="button" class="mob-nav-btn mob-nav-center" id="mob-nav-nuevo" onclick="setTab('nuevo')" title="Registrar Venta / Crédito">
+      <div class="mob-center-circle">
+        <span class="mob-center-icon">➕</span>
+      </div>
+      <span class="mob-nav-label">Venta</span>
+    </button>
+    <button type="button" class="mob-nav-btn" id="mob-nav-dashboard" onclick="setTab('dashboard')">
+      <span class="mob-nav-icon">📊</span>
+      <span class="mob-nav-label">Dashboard</span>
+    </button>
+    <button type="button" class="mob-nav-btn" id="mob-nav-menu" onclick="abrirDrawerMenu()" title="Más módulos">
+      <span class="mob-nav-icon">☰</span>
+      <span class="mob-nav-label">Más</span>
+    </button>
+  </nav>
+  </div> <!-- Fin #app-main-layout -->
+
+  <!-- MODAL: CREAR / EDITAR USUARIO -->
+  <div id="modal-usuario" class="modal-backdrop hidden">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <h3 id="modal-usuario-titulo">👤 Nuevo Miembro del Equipo</h3>
+        <button class="modal-close" onclick="cerrarModalUsuario()">✕</button>
+      </div>
+      <form id="form-usuario" onsubmit="guardarUsuario(event)">
+        <input type="hidden" id="usr-id">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nombre Completo *</label>
+              <input type="text" id="usr-nombre" required placeholder="Ej. Ana Lucía Morales">
+            </div>
+            <div class="form-group">
+              <label>Rol en el Sistema *</label>
+              <select id="usr-rol" required>
+                <option value="VENDEDOR">👤 VENDEDOR (Cobrador en Calle)</option>
+                <option value="ADMIN">👑 ADMIN (Administrador / Dueño)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Correo Electrónico (Login) *</label>
+              <input type="email" id="usr-email" required placeholder="ana@crediya.com">
+            </div>
+            <div class="form-group">
+              <label>Móvil / WhatsApp</label>
+              <input type="text" id="usr-telefono" placeholder="3101234567">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Zona de Cobro / Posición</label>
+            <input type="text" id="usr-posicion" placeholder="Ej. Ruta 2 - Barrio Norte">
+          </div>
+
+          <div class="form-group" id="group-usr-moneda">
+            <label>Zona / Moneda Oficial de Trabajo *</label>
+            <select id="usr-moneda">
+              <option value="PEN">🇵🇪 Perú — Soles (S/.)</option>
+              <option value="COP">🇨🇴 Colombia — Pesos COP ($)</option>
+              <option value="MXN">🇲🇽 México — Pesos MXN ($)</option>
+              <option value="USD">🇺🇸 Internacional — Dólares USD ($)</option>
+            </select>
+            <small class="text-muted">Fija la moneda oficial para los préstamos, cuotas y cobradores de esta zona.</small>
+          </div>
+
+          <div id="usr-pass-fields" class="form-row">
+            <div class="form-group">
+              <label id="usr-pass-label">Contraseña de Acceso *</label>
+              <input type="password" id="usr-password" minlength="6" placeholder="Mínimo 6 caracteres">
+            </div>
+            <div class="form-group">
+              <label>PIN de Pantalla (4 dígitos)</label>
+              <input type="text" id="usr-pin" maxlength="6" placeholder="Ej. 1234">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="cerrarModalUsuario()">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btn-guardar-usr">💾 Guardar Usuario</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CAMBIAR CONTRASEÑA -->
+  <div id="modal-password" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🔑 Restablecer Contraseña</h3>
+        <button class="modal-close" onclick="cerrarModalPassword()">✕</button>
+      </div>
+      <form id="form-password" onsubmit="guardarPassword(event)">
+        <input type="hidden" id="pwd-usuario-id">
+        <div class="modal-body">
+          <p>Usuario: <strong id="pwd-usuario-nombre">-</strong></p>
+          <div class="form-group mt-3">
+            <label>Nueva Contraseña *</label>
+            <input type="password" id="pwd-nueva-clave" required minlength="6" placeholder="Mínimo 6 caracteres">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="cerrarModalPassword()">Cancelar</button>
+          <button type="submit" class="btn-primary">Actualizar Clave</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR ABONO -->
+  <div id="modal-abono" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>💵 Registrar Abono de Cuota</h3>
+        <button class="modal-close" onclick="cerrarModalAbono()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Cliente: <strong id="modal-abono-cliente">-</strong></p>
+        <p>Código Crédito: <span id="modal-abono-codigo">-</span></p>
+        <p>Saldo Actual: <strong id="modal-abono-saldo" class="text-danger">$0</strong></p>
+        <p>Valor de la Cuota sugerida: <span id="modal-abono-cuota-sug" class="text-accent">$0</span></p>
+
+        <div class="form-group" style="margin-top: 15px;">
+          <label>Valor a Abonar ($)</label>
+          <input type="number" id="modal-abono-monto" min="100" step="100">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="cerrarModalAbono()">Cancelar</button>
+        <button class="btn-primary" onclick="confirmarAbono()">✅ Guardar Abono</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: MARCAR AUSENTE -->
+  <div id="modal-ausente" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🚪 Marcar Cliente Ausente</h3>
+        <button class="modal-close" onclick="cerrarModalAusente()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Cliente: <strong id="modal-ausente-cliente">-</strong></p>
+        <p class="text-muted">El cliente quedará marcado como AUSENTE para volver a pasar al final del día. Mañana se reevaluará automáticamente según su mora.</p>
+        <div class="form-group" style="margin-top: 15px;">
+          <label>Observaciones (Opcional)</label>
+          <input type="text" id="modal-ausente-obs" placeholder="Ej. Negocio cerrado, volver a las 5pm">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="cerrarModalAusente()">Cancelar</button>
+        <button class="btn-danger" onclick="confirmarAusente()">Marcar Ausente</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: MOVIMIENTO DE CAJA -->
+  <div id="modal-movimiento" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>➕ Registrar Movimiento de Caja</h3>
+        <button class="modal-close" onclick="cerrarModalMovimiento()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="mov-tipo">
+            <option value="INGRESO">INGRESO</option>
+            <option value="EGRESO">EGRESO</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Concepto</label>
+          <input type="text" id="mov-concepto" placeholder="Ej. Pago de combustible, almuerzo, etc.">
+        </div>
+        <div class="form-group">
+          <label>Valor ($)</label>
+          <input type="number" id="mov-valor" min="100">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="cerrarModalMovimiento()">Cancelar</button>
+        <button class="btn-primary" onclick="guardarMovimiento()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: RETIRO DE CAJA -->
+  <div id="modal-retiro" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🏧 Registrar Retiro de Caja</h3>
+        <button class="modal-close" onclick="cerrarModalRetiro()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted">Registra una entrega o retiro de dinero en efectivo de la caja actual.</p>
+        <div class="form-group" style="margin-top: 15px;">
+          <label>Concepto (Opcional)</label>
+          <input type="text" id="ret-concepto" placeholder="Ej. Entrega a administración, consignación">
+        </div>
+        <div class="form-group" style="margin-top: 15px;">
+          <label>Valor a Retirar ($) *</label>
+          <input type="number" id="ret-valor" min="100" step="100" placeholder="0">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="cerrarModalRetiro()">Cancelar</button>
+        <button class="btn-primary" onclick="confirmarRetiro()">Confirmar Retiro</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: RECIBO / COMPROBANTE DE PAGO -->
+  <div id="modal-recibo" class="modal-backdrop hidden">
+    <div class="modal-card modal-recibo-wrapper">
+      <div class="modal-header">
+        <h3>🧾 Comprobante de Abono</h3>
+        <button class="modal-close" onclick="cerrarModalRecibo()">✕</button>
+      </div>
+
+      <!-- Contenedor del Ticket idéntico al diseño -->
+      <div class="ticket-container">
+        <div class="recibo-ticket" id="recibo-ticket-node">
+          <div class="ticket-row">
+            <span class="ticket-label">Fecha</span>
+            <span class="ticket-value" id="rec-fecha">2026-09-08</span>
+          </div>
+          <div class="ticket-row">
+            <span class="ticket-label">Hora</span>
+            <span class="ticket-value" id="rec-hora">18:17:04</span>
+          </div>
+          <div class="ticket-row">
+            <span class="ticket-label">Usuario</span>
+            <span class="ticket-value uppercase font-bold" id="rec-usuario">ANDRES SAIN PEREZ GIL</span>
+          </div>
+
+          <div class="ticket-section-title">Cliente</div>
+
+          <div class="ticket-row">
+            <span class="ticket-label">Documento</span>
+            <span class="ticket-value" id="rec-documento">467034460</span>
+          </div>
+          <div class="ticket-row">
+            <span class="ticket-label">Cliente</span>
+            <span class="ticket-value" id="rec-cliente">javier pilco</span>
+          </div>
+
+          <div class="ticket-section-title" id="rec-tipo-abono">Abono normal</div>
+
+          <div class="ticket-row">
+            <span class="ticket-label">Código crédito</span>
+            <span class="ticket-value" id="rec-codigo">3332397</span>
+          </div>
+          <div class="ticket-row">
+            <span class="ticket-label">Saldo anterior</span>
+            <span class="ticket-value" id="rec-saldo-anterior">$240</span>
+          </div>
+          <div class="ticket-row">
+            <span class="ticket-label">Valor abonado</span>
+            <span class="ticket-value font-bold" id="rec-valor-abonado">$10</span>
+          </div>
+          <div class="ticket-row">
+            <span class="ticket-label">Saldo nuevo</span>
+            <span class="ticket-value font-bold" id="rec-saldo-nuevo">$230</span>
+          </div>
+          <div class="ticket-row">
+            <span class="ticket-label">Forma de pago</span>
+            <span class="ticket-value" id="rec-forma-pago">Diario</span>
+          </div>
+          <div class="ticket-row">
+            <span class="ticket-label">Número de cuotas</span>
+            <span class="ticket-value" id="rec-cuotas">1 / 24</span>
+          </div>
+          <div class="ticket-row">
+            <span class="ticket-label">Cuotas atrasadas</span>
+            <span class="ticket-value" id="rec-cuotas-atrasadas">0</span>
+          </div>
+          <div class="ticket-row">
+            <span class="ticket-label">Fecha de vencimiento</span>
+            <span class="ticket-value" id="rec-fecha-vencimiento">2026-10-01</span>
+          </div>
+          <div class="ticket-row gps-row" id="rec-gps-row" style="display: none;">
+            <span class="ticket-label">Auditoría GPS</span>
+            <span class="ticket-value">
+              <a id="rec-gps-link" href="#" target="_blank" class="gps-ticket-link">📍 Ver en Google Maps ↗</a>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Acciones de Compartir -->
+      <div class="recibo-actions">
+        <button class="btn-whatsapp" onclick="compartirWhatsAppRecibo()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.158.57 4.184 1.564 5.938l-1.657 6.053 6.222-1.632c1.701.929 3.654 1.464 5.871 1.464 6.627 0 12-5.373 12-12 0-6.627-5.373-12-12-12z"/></svg>
+          Compartir al WhatsApp
+        </button>
+        <div class="recibo-secondary-actions">
+          <button class="btn-secondary flex-1" onclick="copiarTextoRecibo()">
+            📋 Copiar Texto
+          </button>
+          <button class="btn-secondary flex-1" onclick="imprimirTicketPOS()">
+            🧾 Tirilla POS
+          </button>
+          <button class="btn-primary flex-1" onclick="cerrarModalRecibo()">
+            Listo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ESTADO DE CUENTA / HISTORIAL DEL CLIENTE -->
+  <div id="modal-estado-cuenta" class="modal-backdrop hidden">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3>📜 Estado de Cuenta / Historial de Pagos</h3>
+          <p id="ec-subtitulo" class="text-muted text-sm">-</p>
+        </div>
+        <button class="modal-close" onclick="cerrarModalEstadoCuenta()">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Resumen del Crédito & Progreso de Amortización -->
+        <div class="ec-summary-card">
+          <div class="ec-summary-grid">
+            <div>
+              <span class="ec-label">Préstamo Inicial</span>
+              <strong id="ec-prestamo-inicial">$0</strong>
+            </div>
+            <div>
+              <span class="ec-label">Total a Pagar</span>
+              <strong id="ec-total-pagar">$0</strong>
+            </div>
+            <div>
+              <span class="ec-label">Total Abonado</span>
+              <strong class="text-success" id="ec-total-abonado">$0</strong>
+            </div>
+            <div>
+              <span class="ec-label">Saldo Pendiente</span>
+              <strong class="text-danger" id="ec-saldo-pendiente">$0</strong>
+            </div>
+          </div>
+          
+          <div class="ec-progress-box mt-3">
+            <div class="ec-progress-labels">
+              <span>Amortización del Crédito</span>
+              <strong id="ec-progreso-porcentaje">0% Pagado</strong>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="ec-progreso-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla Cronológica de Abonos -->
+        <h4 class="mt-4 mb-2" style="font-size: 0.95rem; font-weight: 600;">Detalle Cronológico de Abonos Realizados</h4>
+        <div class="table-container" style="max-height: 250px; overflow-y: auto; margin-top: 5px; padding: 10px;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Fecha & Hora</th>
+                <th>Cobrador</th>
+                <th>Valor Abonado</th>
+                <th>Saldo Restante</th>
+                <th>GPS</th>
+              </tr>
+            </thead>
+            <tbody id="ec-tabla-abonos-body">
+              <tr><td colspan="6" class="empty-cell">Cargando abonos...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-whatsapp" onclick="compartirExtractoWhatsApp()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.158.57 4.184 1.564 5.938l-1.657 6.053 6.222-1.632c1.701.929 3.654 1.464 5.871 1.464 6.627 0 12-5.373 12-12 0-6.627-5.373-12-12-12z"/></svg>
+          Enviar Extracto por WhatsApp
+        </button>
+        <button type="button" class="btn-secondary" onclick="imprimirExtractoPOS()">🖨️ Imprimir</button>
+        <button type="button" class="btn-secondary" onclick="cerrarModalEstadoCuenta()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICACIONES -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
