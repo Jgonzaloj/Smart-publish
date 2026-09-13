@@ -18,9 +18,33 @@ const MONEDAS = {
   USD: { codigo: 'USD', simbolo: '$ ', nombre: 'Dólares (USD)', pais: 'Internacional', prefijoDoc: 'ID', locale: 'en-US' },
 };
 
+// Si antes se guardó 'COP' por defecto de la versión previa, asegurar 'PEN' (Soles) por defecto
+if (!localStorage.getItem('crediya_moneda_usuario_fijada')) {
+  localStorage.setItem('crediya_moneda', 'PEN');
+}
+
 function obtenerMonedaActual() {
   const cod = localStorage.getItem('crediya_moneda') || (state.tenant && state.tenant.moneda) || 'PEN';
   return MONEDAS[cod] || MONEDAS.PEN;
+}
+
+function actualizarLabelsMoneda() {
+  const m = obtenerMonedaActual();
+  const sim = m.simbolo.trim();
+
+  const lblMonto = document.getElementById('lbl-cre-monto');
+  if (lblMonto) lblMonto.innerText = `Valor Préstamo (${sim}) *`;
+
+  const lblRen = document.getElementById('lbl-ren-monto');
+  if (lblRen) lblRen.innerText = `Nuevo Préstamo (${sim})`;
+
+  const lblAbono = document.getElementById('lbl-modal-abono-monto');
+  if (lblAbono) lblAbono.innerText = `Valor a Abonar (${sim}) *`;
+
+  const lblRetiro = document.getElementById('lbl-ret-valor');
+  if (lblRetiro) lblRetiro.innerText = `Valor a Retirar (${sim}) *`;
+
+  document.querySelectorAll('.lbl-doc-tipo').forEach(el => el.innerText = m.prefijoDoc);
 }
 
 function fmtMoneda(monto, conDecimales = null) {
@@ -28,7 +52,7 @@ function fmtMoneda(monto, conDecimales = null) {
   const m = obtenerMonedaActual();
   const mostrarDec = conDecimales !== null ? conDecimales : (m.codigo === 'PEN' || m.codigo === 'USD');
   const fmt = num.toLocaleString(m.locale, {
-    minimumFractionDigits: mostrarDec ? 2 : 0,
+    minimumFractionDigits: mostrarDec ? (num % 1 === 0 ? 0 : 2) : 0,
     maximumFractionDigits: mostrarDec ? 2 : 0,
   });
   return `${m.simbolo}${fmt}`;
@@ -47,12 +71,15 @@ function escapeHtml(str) {
 
 async function cambiarMonedaGlobal(codigoMoneda) {
   if (!MONEDAS[codigoMoneda]) return;
+  localStorage.setItem('crediya_moneda_usuario_fijada', 'true');
   localStorage.setItem('crediya_moneda', codigoMoneda);
   if (state.tenant) {
     state.tenant.moneda = codigoMoneda;
   }
   const select = document.getElementById('selector-moneda-global');
   if (select) select.value = codigoMoneda;
+
+  actualizarLabelsMoneda();
 
   if (state.token) {
     try {
@@ -65,7 +92,7 @@ async function cambiarMonedaGlobal(codigoMoneda) {
     }
   }
 
-  showToast(`Moneda cambiada a: ${MONEDAS[codigoMoneda].nombre}`, 'info');
+  showToast(`Moneda cambiada a: ${MONEDAS[codigoMoneda].nombre} (${MONEDAS[codigoMoneda].simbolo.trim()})`, 'info');
 
   if (state.token) {
     cargarRutaHoy();
@@ -434,6 +461,7 @@ function mostrarInterfazPrincipal() {
   if (selMoneda) {
     selMoneda.value = obtenerMonedaActual().codigo;
   }
+  actualizarLabelsMoneda();
 
   // Actualizar indicadores del usuario autenticado
   const esVendedor = state.role === 'vendedor';

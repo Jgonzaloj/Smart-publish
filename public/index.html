@@ -249,8 +249,8 @@
         </div>
         <div class="currency-switcher-box" title="Cambiar tipo de moneda (Perú / Colombia / México / USD)">
           <select id="selector-moneda-global" class="currency-select" onchange="cambiarMonedaGlobal(this.value)">
-            <option value="PEN">🇵🇪 Soles (S/.)</option>
-            <option value="COP" selected>🇨🇴 COP ($)</option>
+            <option value="PEN" selected>🇵🇪 Soles (S/.)</option>
+            <option value="COP">🇨🇴 COP ($)</option>
             <option value="MXN">🇲🇽 MXN ($)</option>
             <option value="USD">🇺🇸 USD ($)</option>
           </select>
@@ -637,7 +637,7 @@
 
           <div class="form-row">
             <div class="form-group">
-              <label>Nuevo Préstamo ($)</label>
+              <label id="lbl-ren-monto">Nuevo Préstamo ($)</label>
               <input type="number" id="ren-monto" placeholder="Ej. 200" min="0.01" step="any" oninput="actualizarPrecalculoRenovacion()">
             </div>
             <div class="form-group">
@@ -1176,7 +1176,7 @@
         <p>Valor de la Cuota sugerida: <span id="modal-abono-cuota-sug" class="text-accent">$0</span></p>
 
         <div class="form-group" style="margin-top: 15px;">
-          <label>Valor a Abonar ($)</label>
+          <label id="lbl-modal-abono-monto">Valor a Abonar ($)</label>
           <input type="number" id="modal-abono-monto" min="0.01" step="any" placeholder="0.00">
         </div>
       </div>
@@ -1254,7 +1254,7 @@
           <input type="text" id="ret-concepto" placeholder="Ej. Entrega a administración, consignación">
         </div>
         <div class="form-group" style="margin-top: 15px;">
-          <label>Valor a Retirar ($) *</label>
+          <label id="lbl-ret-valor">Valor a Retirar ($) *</label>
           <input type="number" id="ret-valor" min="0.01" step="any" placeholder="0.00">
         </div>
       </div>
