@@ -46,8 +46,8 @@ jobs:
       - name: Create Release with APK
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.4-apk
-          name: "CrediYa Mobile APK v1.0.4"
+          tag_name: v1.0.5-apk
+          name: "CrediYa Mobile APK v1.0.5"
           body: |
             ## CrediYa - Aplicación Android Oficial (APK)
             

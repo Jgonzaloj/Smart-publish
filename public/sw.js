@@ -1,5 +1,5 @@
-// Service Worker para CrediYa - Cache estático y soporte offline-first
-const CACHE_NAME = 'crediya-cache-v6';
+// Service Worker para CrediYa - Cache dinámico y soporte offline-first
+const CACHE_NAME = 'crediya-cache-v7';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -29,7 +29,8 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Las peticiones GET a recursos estáticos se sirven de caché con fallback de red
+  // Estrategia Network-First: siempre obtener la versión más reciente del servidor.
+  // Si no hay conexión (offline), recurrir a la caché guardada.
   if (event.request.method === 'GET') {
     const url = new URL(event.request.url);
     if (
@@ -42,16 +43,15 @@ self.addEventListener('fetch', (event) => {
       url.hostname.includes('gstatic')
     ) {
       event.respondWith(
-        caches.match(event.request).then((cached) => {
-          const fetchPromise = fetch(event.request).then((networkResponse) => {
+        fetch(event.request)
+          .then((networkResponse) => {
             if (networkResponse && networkResponse.status === 200) {
               const responseToCache = networkResponse.clone();
               caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
             }
             return networkResponse;
-          }).catch(() => cached);
-          return cached || fetchPromise;
-        })
+          })
+          .catch(() => caches.match(event.request))
       );
     }
   }

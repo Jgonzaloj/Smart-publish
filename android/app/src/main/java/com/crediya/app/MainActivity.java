@@ -44,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(true);
+        settings.setAllowContentAccess(true);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(true);
@@ -53,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
             android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
         }
         android.webkit.CookieManager.getInstance().setAcceptCookie(true);
+        webView.clearCache(true);
         webView.addJavascriptInterface(new WebAppInterface(this), "AndroidApp");
 
         webView.setWebViewClient(new WebViewClient() {
@@ -78,6 +80,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
                 progressBar.setProgress(newProgress);
+            }
+
+            @Override
+            public boolean onConsoleMessage(android.webkit.ConsoleMessage consoleMessage) {
+                android.util.Log.d("CrediYaJS", consoleMessage.message() + " -- Line " + consoleMessage.lineNumber());
+                return true;
             }
 
             @Override
