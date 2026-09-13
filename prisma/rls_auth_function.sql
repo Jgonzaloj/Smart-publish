@@ -36,7 +36,7 @@ SET search_path = public
 AS $$
   SELECT id, tenant_id, password_hash, rol::text, nombre, activo
   FROM usuarios
-  WHERE email = p_email
+  WHERE LOWER(TRIM(email)) = LOWER(TRIM(p_email))
   LIMIT 1;
 $$;
 

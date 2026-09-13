@@ -126,8 +126,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     nombre: string;
     activo: boolean;
   } | null> {
+    const cleanEmail = (email || '').trim().toLowerCase();
     if (this.isMemoryMode && this.memoryClient) {
-      const usuario = await this.memoryClient.usuario.findFirst({ where: { email, activo: true } });
+      const usuario = await this.memoryClient.usuario.findFirst({ where: { email: cleanEmail, activo: true } });
       return usuario
         ? {
             id: usuario.id,
@@ -140,12 +141,27 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         : null;
     }
 
-    const filas = (await this.$queryRawUnsafe(
-      `SELECT id, tenant_id AS "tenantId", password_hash AS "passwordHash", rol, nombre, activo
-       FROM buscar_credenciales_login($1)`,
-      email,
-    )) as any[];
-    return filas[0] || null;
+    try {
+      const filas = (await this.$queryRawUnsafe(
+        `SELECT id, tenant_id AS "tenantId", password_hash AS "passwordHash", rol, nombre, activo
+         FROM usuarios
+         WHERE LOWER(TRIM(email)) = $1 AND activo = true
+         LIMIT 1`,
+        cleanEmail,
+      )) as any[];
+      if (filas && filas[0]) return filas[0];
+    } catch {}
+
+    try {
+      const filasFunc = (await this.$queryRawUnsafe(
+        `SELECT id, tenant_id AS "tenantId", password_hash AS "passwordHash", rol, nombre, activo
+         FROM buscar_credenciales_login($1)`,
+        cleanEmail,
+      )) as any[];
+      return filasFunc[0] || null;
+    } catch {
+      return null;
+    }
   }
 }
 

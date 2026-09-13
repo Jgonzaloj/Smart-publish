@@ -516,9 +516,9 @@ async function manejarPortalLogin(e) {
     e.preventDefault();
   }
 
-  const email = document.getElementById('portal-email').value.trim();
-  const password = document.getElementById('portal-password').value;
-  const recordar = document.getElementById('portal-recordar').checked;
+  const email = (document.getElementById('portal-email')?.value || '').trim().toLowerCase();
+  const password = (document.getElementById('portal-password')?.value || '').trim();
+  const recordar = document.getElementById('portal-recordar')?.checked ?? true;
   const btnSubmit = document.getElementById('btn-submit-login');
 
   if (!email || !password) {

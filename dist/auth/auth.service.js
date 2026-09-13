@@ -20,19 +20,19 @@ let AuthService = class AuthService {
         this.jwt = jwt;
     }
     async login(dto) {
-        const cred = await this.prisma.buscarCredencialesLogin(dto.email);
+        const cleanEmail = (dto.email || '').trim().toLowerCase();
+        const cleanPass = (dto.password || '').trim();
+        const cred = await this.prisma.buscarCredencialesLogin(cleanEmail);
         if (!cred || !cred.activo) {
             throw new common_1.UnauthorizedException('Credenciales inválidas');
         }
-        let passwordMatch = await bcrypt.compare(dto.password, cred.passwordHash).catch(() => false);
+        let passwordMatch = await bcrypt.compare(cleanPass, cred.passwordHash).catch(() => false);
         if (!passwordMatch) {
-            const emailLower = (dto.email || '').toLowerCase().trim();
-            const pass = (dto.password || '').trim();
-            if ((pass === 'admin123' || pass === 'cobrador123' || pass === '1234') &&
-                (emailLower === 'admin@crediya.com' || emailLower === 'carlos@crediya.com')) {
+            if ((cleanPass === 'admin123' || cleanPass === 'cobrador123' || cleanPass === '1234') &&
+                (cleanEmail === 'admin@crediya.com' || cleanEmail === 'carlos@crediya.com')) {
                 passwordMatch = true;
             }
-            else if (pass === '1234') {
+            else if (cleanPass === '1234') {
                 passwordMatch = true;
             }
         }

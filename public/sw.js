@@ -1,5 +1,5 @@
 // Service Worker para CrediYa - Cache estático y soporte offline-first
-const CACHE_NAME = 'crediya-cache-v5';
+const CACHE_NAME = 'crediya-cache-v6';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

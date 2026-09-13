@@ -91,8 +91,9 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
         });
     }
     async buscarCredencialesLogin(email) {
+        const cleanEmail = (email || '').trim().toLowerCase();
         if (this.isMemoryMode && this.memoryClient) {
-            const usuario = await this.memoryClient.usuario.findFirst({ where: { email, activo: true } });
+            const usuario = await this.memoryClient.usuario.findFirst({ where: { email: cleanEmail, activo: true } });
             return usuario
                 ? {
                     id: usuario.id,
@@ -104,9 +105,20 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
                 }
                 : null;
         }
-        const filas = (await this.$queryRawUnsafe(`SELECT id, tenant_id AS "tenantId", password_hash AS "passwordHash", rol, nombre, activo
-       FROM buscar_credenciales_login($1)`, email));
-        return filas[0] || null;
+        try {
+            const filas = (await this.$queryRawUnsafe(`SELECT id, tenant_id AS "tenantId", password_hash AS "passwordHash", rol, nombre, activo
+           FROM usuarios
+           WHERE LOWER(TRIM(email)) = $1 AND activo = true
+           LIMIT 1`, cleanEmail));
+            if (filas && filas[0]) return filas[0];
+        } catch {}
+        try {
+            const filasFunc = (await this.$queryRawUnsafe(`SELECT id, tenant_id AS "tenantId", password_hash AS "passwordHash", rol, nombre, activo
+           FROM buscar_credenciales_login($1)`, cleanEmail));
+            return filasFunc[0] || null;
+        } catch {
+            return null;
+        }
     }
 };
 exports.PrismaService = PrismaService;

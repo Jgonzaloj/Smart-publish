@@ -105,7 +105,7 @@
             <label for="portal-email">Correo Electrónico</label>
             <div class="input-with-icon">
               <span class="input-icon">✉️</span>
-              <input type="email" id="portal-email" required placeholder="tu@crediya.com" autocomplete="email">
+              <input type="email" id="portal-email" required placeholder="tu@crediya.com" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email">
             </div>
           </div>
 
@@ -113,7 +113,7 @@
             <label for="portal-password">Contraseña o PIN de Acceso</label>
             <div class="input-with-icon">
               <span class="input-icon">🔒</span>
-              <input type="password" id="portal-password" required placeholder="admin123 o PIN: 1234" autocomplete="current-password">
+              <input type="password" id="portal-password" required placeholder="admin123 o PIN: 1234" autocomplete="current-password" autocapitalize="none" autocorrect="off">
               <button type="button" class="btn-toggle-pass" onclick="togglePassVisibility('portal-password', this)" title="Ver/Ocultar contraseña">👁️</button>
             </div>
           </div>
@@ -126,7 +126,7 @@
             <span class="auth-hint">Clave: <strong>admin123</strong> (o cobrador123) / PIN: <strong>1234</strong></span>
           </div>
 
-          <button type="submit" onclick="manejarPortalLogin(event)" class="btn-primary btn-block btn-lg" id="btn-submit-login">
+          <button type="submit" class="btn-primary btn-block btn-lg" id="btn-submit-login">
             🚀 Entrar a mi Plataforma
           </button>
 
