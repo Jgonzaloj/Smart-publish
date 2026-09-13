@@ -76,9 +76,11 @@ let AbonosService = class AbonosService {
                     }
                 }
             }
+            const ahora = new Date();
+            const horaStr = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}:${String(ahora.getSeconds()).padStart(2, '0')}`;
             const recibo = {
-                fecha: new Date().toISOString().slice(0, 10),
-                hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+                fecha: ahora.toISOString().slice(0, 10),
+                hora: horaStr,
                 usuario: user.nombre || 'Cobrador',
                 documento: credito.cliente?.documento || '',
                 cliente: `${credito.cliente?.nombresAlias || ''} ${credito.cliente?.apellidos || ''}`.trim(),

@@ -12,6 +12,14 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 import androidx.activity.OnBackPressedCallback;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.util.Base64;
+import android.webkit.JavascriptInterface;
+import androidx.core.content.FileProvider;
+import java.io.File;
+import java.io.FileOutputStream;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
@@ -45,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
             android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
         }
         android.webkit.CookieManager.getInstance().setAcceptCookie(true);
+        webView.addJavascriptInterface(new WebAppInterface(this), "AndroidApp");
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -105,5 +114,51 @@ public class MainActivity extends AppCompatActivity {
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         webView.saveState(outState);
+    }
+
+    public class WebAppInterface {
+        private final Context mContext;
+
+        WebAppInterface(Context context) {
+            this.mContext = context;
+        }
+
+        @JavascriptInterface
+        public void compartirImagen(String base64Data, String fileName, String title) {
+            try {
+                String cleanBase64 = base64Data;
+                if (cleanBase64.contains(",")) {
+                    cleanBase64 = cleanBase64.substring(cleanBase64.indexOf(",") + 1);
+                }
+                byte[] decodedBytes = Base64.decode(cleanBase64, Base64.DEFAULT);
+
+                File cachePath = new File(mContext.getCacheDir(), "images");
+                if (!cachePath.exists()) {
+                    cachePath.mkdirs();
+                }
+                File imageFile = new File(cachePath, fileName);
+                FileOutputStream fos = new FileOutputStream(imageFile);
+                fos.write(decodedBytes);
+                fos.flush();
+                fos.close();
+
+                Uri contentUri = FileProvider.getUriForFile(
+                    mContext,
+                    mContext.getPackageName() + ".fileprovider",
+                    imageFile
+                );
+
+                Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                shareIntent.setType("image/png");
+                shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+                Intent chooser = Intent.createChooser(shareIntent, title != null ? title : "Compartir Comprobante");
+                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                mContext.startActivity(chooser);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

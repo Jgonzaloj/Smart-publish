@@ -1117,9 +1117,17 @@ async function confirmarAbono() {
     ...(gps || {}),
   };
 
+function formatearHoraSegura(fechaInput) {
+  const d = fechaInput ? new Date(fechaInput) : new Date();
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}
+
   const reciboLocal = {
     fecha: new Date().toISOString().slice(0, 10),
-    hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+    hora: formatearHoraSegura(),
     usuario: state.user?.nombre || 'Carlos Cobrador',
     documento: client.documento || '',
     cliente: `${client.nombresAlias} ${client.apellidos || ''}`.trim(),
@@ -1238,25 +1246,348 @@ function generarTextoRecibo(recibo) {
   return texto;
 }
 
-function compartirWhatsAppRecibo() {
+// COMPARTIR COMPROBANTE COMO IMAGEN A WHATSAPP
+async function compartirWhatsAppRecibo() {
   const r = state.reciboActual;
   if (!r) return;
 
-  const texto = generarTextoRecibo(r);
-  let movil = (r.movil || '').replace(/\D/g, '');
-  const m = obtenerMonedaActual();
-  
-  if (m.codigo === 'PEN' && movil.length === 9 && !movil.startsWith('51')) {
-    movil = '51' + movil;
-  } else if (m.codigo === 'COP' && movil.length === 10 && !movil.startsWith('57')) {
-    movil = '57' + movil;
+  const btn = document.getElementById('btn-compartir-whatsapp');
+  const oldHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Generando imagen...';
   }
 
-  const url = movil 
-    ? `https://api.whatsapp.com/send?phone=${movil}&text=${encodeURIComponent(texto)}`
-    : `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+  try {
+    const { blob, dataUrl } = await generarImagenReciboCanvas(r);
+    const fileName = `comprobante-${r.codigoCredito || 'abono'}.png`;
 
-  window.open(url, '_blank');
+    // 1. Si está ejecutándose dentro del aplicativo Android (APK nativo con WebView)
+    if (window.AndroidApp && typeof window.AndroidApp.compartirImagen === 'function') {
+      window.AndroidApp.compartirImagen(dataUrl, fileName, `Comprobante de Abono - ${r.cliente}`);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
+      }
+      return;
+    }
+
+    // 2. Si el navegador soporta Web Share API con archivos (Chrome Android, iOS Safari, PWA instalada)
+    const file = new File([blob], fileName, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: 'Comprobante de Abono - CrediYa',
+        text: `Comprobante de abono de ${r.cliente}`,
+      });
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
+      }
+      return;
+    }
+
+    // 3. Fallback (Navegadores de escritorio o sin soporte de envío de archivos):
+    // Descargar imagen automáticamente
+    descargarBlob(blob, fileName);
+
+    // Intentar copiar la imagen al portapapeles
+    let copiado = false;
+    if (navigator.clipboard && window.ClipboardItem) {
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+        copiado = true;
+      } catch (clipErr) {
+        console.warn('Clipboard image write no soportado:', clipErr);
+      }
+    }
+
+    let movil = (r.movil || '').replace(/\D/g, '');
+    const m = obtenerMonedaActual();
+    if (m.codigo === 'PEN' && movil.length === 9 && !movil.startsWith('51')) {
+      movil = '51' + movil;
+    } else if (m.codigo === 'COP' && movil.length === 10 && !movil.startsWith('57')) {
+      movil = '57' + movil;
+    }
+
+    const waUrl = movil 
+      ? `https://api.whatsapp.com/send?phone=${movil}`
+      : `https://api.whatsapp.com/send`;
+
+    if (copiado) {
+      showToast('📸 ¡Imagen copiada y descargada! Pégala con Ctrl+V en WhatsApp', 'success');
+    } else {
+      showToast('📸 ¡Imagen de comprobante descargada! Adjúntala en WhatsApp', 'info');
+    }
+
+    window.open(waUrl, '_blank');
+  } catch (err) {
+    console.error('Error al compartir imagen del comprobante:', err);
+    showToast('Error al generar la imagen del comprobante', 'danger');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = oldHtml;
+    }
+  }
+}
+
+// DESCARGAR IMAGEN DEL COMPROBANTE DIRECTAMENTE
+async function descargarImagenComprobante() {
+  const r = state.reciboActual;
+  if (!r) return;
+
+  try {
+    showToast('Generando imagen de alta resolución...', 'info');
+    const { blob } = await generarImagenReciboCanvas(r);
+    const fileName = `comprobante-${r.codigoCredito || 'abono'}.png`;
+    descargarBlob(blob, fileName);
+    showToast('📸 Comprobante descargado en tu galería/descargas', 'success');
+  } catch (err) {
+    console.error('Error al descargar imagen del comprobante:', err);
+    showToast('Error al descargar la imagen', 'danger');
+  }
+}
+
+function descargarBlob(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+// GENERADOR DE IMAGEN TICKET MEDIANTE CANVAS HTML5 (ALTA RESOLUCIÓN RETINA 2X)
+function generarImagenReciboCanvas(recibo) {
+  return new Promise((resolve) => {
+    const scale = 2; // Retina 2x para nitidez impecable
+    const w = 540;
+    const h = 880;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w * scale;
+    canvas.height = h * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+
+    // Fondo suave crema
+    ctx.fillStyle = '#FAF7EE';
+    ctx.fillRect(0, 0, w, h);
+
+    // Tarjeta del recibo con bordes redondeados y sombra
+    const cardX = 18;
+    const cardY = 18;
+    const cardW = w - 36;
+    const cardH = h - 36;
+    const radius = 18;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.08)';
+    ctx.shadowBlur = 14;
+    ctx.shadowOffsetY = 5;
+    ctx.fillStyle = '#FFFFFF';
+    roundRect(ctx, cardX, cardY, cardW, cardH, radius);
+    ctx.fill();
+    ctx.restore();
+
+    // Borde de la tarjeta
+    ctx.strokeStyle = '#E2D9C8';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, cardX, cardY, cardW, cardH, radius);
+    ctx.stroke();
+
+    // Barra superior verde oscuro CrediYa
+    ctx.save();
+    ctx.fillStyle = '#0D5C3A';
+    roundRectTop(ctx, cardX, cardY, cardW, 8, radius);
+    ctx.fill();
+    ctx.restore();
+
+    let y = 58;
+
+    // Encabezado
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#0D5C3A';
+    ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+    ctx.fillText('🧾 CREDIYA', w / 2, y);
+
+    y += 24;
+    ctx.fillStyle = '#64748B';
+    ctx.font = '700 12px system-ui, -apple-system, sans-serif';
+    ctx.fillText('COMPROBANTE OFICIAL DE ABONO', w / 2, y);
+
+    y += 18;
+    dibujarLineaDiscontinua(ctx, cardX + 18, y, cardX + cardW - 18);
+
+    // Datos generales (Fecha, Hora, Usuario)
+    y += 26;
+    dibujarFilaCanvas(ctx, 'Fecha', recibo.fecha || new Date().toISOString().slice(0, 10), cardX + 22, cardX + cardW - 22, y);
+    y += 25;
+    dibujarFilaCanvas(ctx, 'Hora', recibo.hora || '12:00:00', cardX + 22, cardX + cardW - 22, y);
+    y += 25;
+    dibujarFilaCanvas(ctx, 'Usuario', (recibo.usuario || 'COBRADOR').toUpperCase(), cardX + 22, cardX + cardW - 22, y, true);
+
+    y += 18;
+    dibujarLineaDiscontinua(ctx, cardX + 18, y, cardX + cardW - 18);
+
+    // Sección Cliente
+    y += 26;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#0D5C3A';
+    ctx.font = 'bold 15px system-ui, -apple-system, sans-serif';
+    ctx.fillText('CLIENTE', w / 2, y);
+
+    y += 24;
+    dibujarFilaCanvas(ctx, 'Documento', recibo.documento || 'No registrado', cardX + 22, cardX + cardW - 22, y);
+    y += 25;
+    dibujarFilaCanvas(ctx, 'Cliente', (recibo.cliente || 'Cliente').toLowerCase(), cardX + 22, cardX + cardW - 22, y, true);
+
+    y += 18;
+    dibujarLineaDiscontinua(ctx, cardX + 18, y, cardX + cardW - 18);
+
+    // Tipo de Abono (Abono normal o Liquidación total)
+    y += 24;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#0D5C3A';
+    ctx.font = 'bold 15px system-ui, -apple-system, sans-serif';
+    ctx.fillText((recibo.tipoAbono || 'Abono normal').toUpperCase(), w / 2, y);
+
+    y += 24;
+    dibujarFilaCanvas(ctx, 'Código crédito', String(recibo.codigoCredito || '-'), cardX + 22, cardX + cardW - 22, y);
+    y += 25;
+    dibujarFilaCanvas(ctx, 'Saldo anterior', fmtMoneda(recibo.saldoAnterior), cardX + 22, cardX + cardW - 22, y);
+
+    // Caja destacada de Valor Abonado
+    y += 16;
+    const boxH = 50;
+    ctx.fillStyle = '#ECFDF5';
+    roundRect(ctx, cardX + 18, y, cardW - 36, boxH, 10);
+    ctx.fill();
+    ctx.strokeStyle = '#10B981';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, cardX + 18, y, cardW - 36, boxH, 10);
+    ctx.stroke();
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#065F46';
+    ctx.font = 'bold 15px system-ui, -apple-system, sans-serif';
+    ctx.fillText('Valor abonado', cardX + 32, y + 31);
+
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#047857';
+    ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
+    ctx.fillText(fmtMoneda(recibo.valorAbonado), cardX + cardW - 32, y + 32);
+
+    // Caja de Saldo Nuevo
+    y += boxH + 10;
+    const box2H = 44;
+    ctx.fillStyle = '#F8FAFC';
+    roundRect(ctx, cardX + 18, y, cardW - 36, box2H, 10);
+    ctx.fill();
+    ctx.strokeStyle = '#CBD5E1';
+    ctx.lineWidth = 1;
+    roundRect(ctx, cardX + 18, y, cardW - 36, box2H, 10);
+    ctx.stroke();
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#334155';
+    ctx.font = 'bold 15px system-ui, -apple-system, sans-serif';
+    ctx.fillText('Saldo nuevo', cardX + 32, y + 27);
+
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#0F172A';
+    ctx.font = 'bold 19px system-ui, -apple-system, sans-serif';
+    ctx.fillText(fmtMoneda(recibo.saldoNuevo), cardX + cardW - 32, y + 28);
+
+    // Detalles del crédito
+    y += box2H + 18;
+    dibujarFilaCanvas(ctx, 'Forma de pago', recibo.formaPago || 'Diario', cardX + 22, cardX + cardW - 22, y);
+    y += 24;
+    dibujarFilaCanvas(ctx, 'Número de cuotas', `${recibo.cuotasPagadas} / ${recibo.numeroCuotasTotal}`, cardX + 22, cardX + cardW - 22, y);
+    y += 24;
+    dibujarFilaCanvas(ctx, 'Cuotas atrasadas', String(recibo.cuotasAtrasadas ?? 0), cardX + 22, cardX + cardW - 22, y);
+    y += 24;
+    dibujarFilaCanvas(ctx, 'Fecha de vencimiento', recibo.fechaVencimiento || '-', cardX + 22, cardX + cardW - 22, y);
+
+    y += 18;
+    dibujarLineaDiscontinua(ctx, cardX + 18, y, cardX + cardW - 18);
+
+    // Mensaje de pie
+    y += 26;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#475569';
+    ctx.font = '500 13px system-ui, -apple-system, sans-serif';
+    ctx.fillText('¡Gracias por su puntualidad y confianza! ✨', w / 2, y);
+
+    y += 20;
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = '400 11px system-ui, -apple-system, sans-serif';
+    ctx.fillText(`CrediYa • Sistema de Cobro y Créditos`, w / 2, y);
+
+    canvas.toBlob((blob) => {
+      resolve({ blob, dataUrl: canvas.toDataURL('image/png') });
+    }, 'image/png');
+  });
+}
+
+function roundRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+function roundRectTop(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height);
+  ctx.lineTo(x, y + height);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+function dibujarLineaDiscontinua(ctx, x1, y, x2) {
+  ctx.save();
+  ctx.setLineDash([6, 5]);
+  ctx.strokeStyle = '#CBD5E1';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x1, y);
+  ctx.lineTo(x2, y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function dibujarFilaCanvas(ctx, label, value, xLeft, xRight, y, isBold = false) {
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#64748B';
+  ctx.font = '500 14px system-ui, -apple-system, sans-serif';
+  ctx.fillText(label, xLeft, y);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#0F172A';
+  ctx.font = (isBold ? 'bold 15px ' : '600 14px ') + 'system-ui, -apple-system, sans-serif';
+  const maxW = xRight - xLeft - 130;
+  let valStr = String(value || '-');
+  while (ctx.measureText(valStr).width > maxW && valStr.length > 5) {
+    valStr = valStr.slice(0, -4) + '...';
+  }
+  ctx.fillText(valStr, xRight, y);
 }
 
 function copiarTextoRecibo() {
@@ -1301,7 +1632,7 @@ async function verReciboCliente(clienteId) {
 
     mostrarRecibo({
       fecha: ultimoAbono?.fecha ? new Date(ultimoAbono.fecha).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
-      hora: ultimoAbono?.fecha ? new Date(ultimoAbono.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : new Date().toLocaleTimeString(),
+      hora: formatearHoraSegura(ultimoAbono?.fecha),
       usuario: state.user?.nombre || 'Carlos Cobrador',
       documento: client.documento || '',
       cliente: `${client.nombresAlias} ${client.apellidos || ''}`.trim(),
