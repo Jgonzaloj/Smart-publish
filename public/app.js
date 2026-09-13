@@ -521,8 +521,19 @@ async function manejarPortalLogin(e) {
   const recordar = document.getElementById('portal-recordar')?.checked ?? true;
   const btnSubmit = document.getElementById('btn-submit-login');
 
+  const errBox = document.getElementById('login-error-box');
+  if (errBox) {
+    errBox.classList.add('hidden');
+    errBox.innerText = '';
+  }
+
   if (!email || !password) {
-    showToast('Ingresa tu correo y contraseña', 'warning');
+    const msg = 'Ingresa tu correo y contraseña';
+    showToast(msg, 'warning');
+    if (errBox) {
+      errBox.innerText = `⚠️ ${msg}`;
+      errBox.classList.remove('hidden');
+    }
     return;
   }
 
@@ -565,7 +576,15 @@ async function manejarPortalLogin(e) {
     showToast(`¡Bienvenido, ${res.usuario.nombre}!`, 'success');
     mostrarInterfazPrincipal();
   } catch (err) {
-    showToast(`Error de acceso: ${err.message}`, 'danger');
+    let errorDetalle = err.message || 'Error desconocido';
+    if (errorDetalle.includes('Failed to fetch') || errorDetalle.includes('NetworkError')) {
+      errorDetalle = 'No se pudo conectar al servidor. Revisa tu conexión a internet o datos móviles.';
+    }
+    showToast(`Error de acceso: ${errorDetalle}`, 'danger');
+    if (errBox) {
+      errBox.innerText = `❌ ${errorDetalle}`;
+      errBox.classList.remove('hidden');
+    }
   } finally {
     btnSubmit.disabled = false;
     btnSubmit.innerText = '🚀 Entrar a mi Plataforma';

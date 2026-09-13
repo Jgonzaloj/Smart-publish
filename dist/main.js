@@ -19,16 +19,18 @@ async function bootstrap() {
                 styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
                 fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
                 imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-                connectSrc: ["'self'", 'http://localhost:*', 'http://*:*', 'https:'],
+                connectSrc: ["'self'", 'http:', 'https:', 'data:', 'blob:'],
                 upgradeInsecureRequests: null,
             },
         },
         hsts: false,
         crossOriginEmbedderPolicy: false,
+        crossOriginOpenerPolicy: false,
+        crossOriginResourcePolicy: false,
     }));
     const limiterGeneral = (0, express_rate_limit_1.default)({
         windowMs: 15 * 60 * 1000,
-        max: 600,
+        max: 1200,
         standardHeaders: true,
         legacyHeaders: false,
         message: { statusCode: 429, message: 'Demasiadas solicitudes. Por favor, intenta de nuevo en unos minutos.' },
@@ -36,10 +38,10 @@ async function bootstrap() {
     app.use(limiterGeneral);
     const limiterAuth = (0, express_rate_limit_1.default)({
         windowMs: 15 * 60 * 1000,
-        max: 30,
+        max: 150,
         standardHeaders: true,
         legacyHeaders: false,
-        message: { statusCode: 429, message: 'Demasiados intentos de inicio de sesión. Por favor espera 15 minutos.' },
+        message: { statusCode: 429, message: 'Demasiados intentos de inicio de sesión. Por favor espera unos minutos.' },
     });
     app.use('/auth/login', limiterAuth);
     const limiterPin = (0, express_rate_limit_1.default)({

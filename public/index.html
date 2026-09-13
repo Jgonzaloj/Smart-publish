@@ -9,10 +9,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     .hidden { display: none !important; }
-    .modal-backdrop.hidden, .pin-overlay.hidden { display: none !important; }
+    #pin-overlay.hidden, .pin-overlay.hidden { display: none !important; }
+    .modal-backdrop.hidden, .modal.hidden { display: none !important; }
+    #app-main-layout.hidden { display: none !important; }
+    #landing-login-portal.hidden { display: none !important; }
+    #pin-overlay { position: fixed; inset: 0; z-index: 9999; }
   </style>
   <link rel="stylesheet" href="/style.css">
-  <link rel="stylesheet" href="style.css">
   <meta name="theme-color" content="#6366f1">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -24,6 +27,21 @@
       var saved = localStorage.getItem('crediya_theme') || 'cream';
       if (saved === 'dark') {
         document.documentElement.classList.add('theme-dark');
+      }
+      // Limpiar caché vieja y service workers en navegadores móviles
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (var i = 0; i < registrations.length; i++) {
+            registrations[i].unregister();
+          }
+        });
+      }
+      if ('caches' in window) {
+        caches.keys().then(function(names) {
+          for (var j = 0; j < names.length; j++) {
+            caches.delete(names[j]);
+          }
+        });
       }
     })();
   </script>
@@ -129,6 +147,8 @@
           <button type="submit" class="btn-primary btn-block btn-lg" id="btn-submit-login">
             🚀 Entrar a mi Plataforma
           </button>
+
+          <div id="login-error-box" class="hidden" style="margin-top: 14px; padding: 12px 14px; background: #fee2e2; border: 1px solid #ef4444; border-radius: 8px; color: #b91c1c; font-size: 0.88rem; font-weight: 600; text-align: center; line-height: 1.4;"></div>
 
           <!-- SECCIÓN DE ACCESO RÁPIDO PARA PRUEBAS -->
           <div class="demo-access-box">
