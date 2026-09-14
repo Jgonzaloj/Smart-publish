@@ -423,6 +423,32 @@ document.addEventListener('DOMContentLoaded', async () => {
   actualizarBadgeConexion();
   sincronizarAbonosOffline();
 
+  // Vinculación táctil inmediata para móviles (evita que Android descarte el clic al redimensionar por el teclado)
+  const vincularBotonTactil = (id, callback) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    let touchTimestamp = 0;
+    el.addEventListener('pointerdown', (e) => {
+      if (e.button && e.button !== 0) return;
+      touchTimestamp = Date.now();
+      callback(e);
+    }, { passive: false });
+
+    el.addEventListener('click', (e) => {
+      // Si ya se disparó por pointerdown hace menos de 700ms, evitar ejecución duplicada
+      if (Date.now() - touchTimestamp < 700) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      callback(e);
+    });
+  };
+
+  vincularBotonTactil('btn-submit-login', (e) => manejarPortalLogin(e));
+  vincularBotonTactil('btn-demo-vendedor', (e) => accesoRapidoDemo('vendedor', e));
+  vincularBotonTactil('btn-demo-admin', (e) => accesoRapidoDemo('admin', e));
+
   // Revisar si existe sesión previa recordada
   const tokenGuardado = localStorage.getItem('crediya_token');
   const usuarioGuardado = localStorage.getItem('crediya_user');
@@ -510,14 +536,30 @@ function togglePassVisibility(inputId, btn) {
   }
 }
 
+// Helper para forzar cierre de teclado virtual móvil y evitar que el evento se descarte
+function cerrarTecladoVirtual() {
+  if (document.activeElement && typeof document.activeElement.blur === 'function') {
+    document.activeElement.blur();
+  }
+}
+
+let isSubmittingLogin = false;
+
 // PORTADA: MANEJAR LOGIN REAL
 async function manejarPortalLogin(e) {
-  if (e && typeof e.preventDefault === 'function') {
-    e.preventDefault();
+  if (e) {
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
   }
 
-  const email = (document.getElementById('portal-email')?.value || '').trim().toLowerCase();
-  const password = (document.getElementById('portal-password')?.value || '').trim();
+  if (isSubmittingLogin) return;
+
+  cerrarTecladoVirtual();
+
+  const emailInput = document.getElementById('portal-email');
+  const passInput = document.getElementById('portal-password');
+  const email = (emailInput?.value || '').trim().toLowerCase();
+  const password = (passInput?.value || '').trim();
   const recordar = document.getElementById('portal-recordar')?.checked ?? true;
   const btnSubmit = document.getElementById('btn-submit-login');
 
@@ -528,17 +570,25 @@ async function manejarPortalLogin(e) {
   }
 
   if (!email || !password) {
-    const msg = 'Ingresa tu correo y contraseña';
+    const msg = !email ? 'Ingresa tu correo electrónico' : 'Ingresa tu contraseña o PIN de acceso';
     showToast(msg, 'warning');
     if (errBox) {
       errBox.innerText = `⚠️ ${msg}`;
       errBox.classList.remove('hidden');
     }
+    if (!email && emailInput) {
+      setTimeout(() => emailInput.focus(), 150);
+    } else if (!password && passInput) {
+      setTimeout(() => passInput.focus(), 150);
+    }
     return;
   }
 
-  btnSubmit.disabled = true;
-  btnSubmit.innerText = '⏳ Verificando credenciales...';
+  isSubmittingLogin = true;
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.innerText = '⏳ Verificando credenciales...';
+  }
 
   try {
     const res = await api('/auth/login', {
@@ -586,13 +636,21 @@ async function manejarPortalLogin(e) {
       errBox.classList.remove('hidden');
     }
   } finally {
-    btnSubmit.disabled = false;
-    btnSubmit.innerText = '🚀 Entrar a mi Plataforma';
+    isSubmittingLogin = false;
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerText = '🚀 Entrar a mi Plataforma';
+    }
   }
 }
 
 // PORTADA: ACCESO RÁPIDO DEMO EN 1 CLIC
-async function accesoRapidoDemo(rol) {
+async function accesoRapidoDemo(rol, e) {
+  if (e) {
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+  }
+  cerrarTecladoVirtual();
   const creds = DEMO_USERS[rol];
   const emailInput = document.getElementById('portal-email');
   const passInput = document.getElementById('portal-password');

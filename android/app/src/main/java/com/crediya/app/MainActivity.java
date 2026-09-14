@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
     private WebView webView;
     private SwipeRefreshLayout swipeRefresh;
     private ProgressBar progressBar;
-    private static final String APP_URL = "http://165.22.12.64:3010";
+    private static final String APP_URL = "https://credi.inversionesvawi.com";
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override

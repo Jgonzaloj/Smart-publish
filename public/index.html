@@ -118,12 +118,12 @@
         </div>
 
         <!-- FORMULARIO 1: LOGIN -->
-        <form id="form-portal-login" class="auth-form" onsubmit="manejarPortalLogin(event)">
+        <form id="form-portal-login" class="auth-form" action="javascript:void(0);" novalidate onsubmit="manejarPortalLogin(event); return false;">
           <div class="form-group">
             <label for="portal-email">Correo Electrónico</label>
             <div class="input-with-icon">
               <span class="input-icon">✉️</span>
-              <input type="email" id="portal-email" required placeholder="tu@crediya.com" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email">
+              <input type="email" id="portal-email" required placeholder="tu@crediya.com" autocomplete="username email" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email" enterkeyhint="next">
             </div>
           </div>
 
@@ -131,7 +131,7 @@
             <label for="portal-password">Contraseña o PIN de Acceso</label>
             <div class="input-with-icon">
               <span class="input-icon">🔒</span>
-              <input type="password" id="portal-password" required placeholder="admin123 o PIN: 1234" autocomplete="current-password" autocapitalize="none" autocorrect="off">
+              <input type="password" id="portal-password" required placeholder="admin123 o PIN: 1234" autocomplete="current-password" autocapitalize="none" autocorrect="off" enterkeyhint="go" onkeydown="if(event.key==='Enter'){event.preventDefault();manejarPortalLogin(event);}">
               <button type="button" class="btn-toggle-pass" onclick="togglePassVisibility('portal-password', this)" title="Ver/Ocultar contraseña">👁️</button>
             </div>
           </div>
@@ -144,7 +144,7 @@
             <span class="auth-hint">Clave: <strong>admin123</strong> (o cobrador123) / PIN: <strong>1234</strong></span>
           </div>
 
-          <button type="submit" class="btn-primary btn-block btn-lg" id="btn-submit-login">
+          <button type="submit" class="btn-primary btn-block btn-lg" id="btn-submit-login" style="touch-action: manipulation;">
             🚀 Entrar a mi Plataforma
           </button>
 
@@ -156,14 +156,14 @@
               <span>o acceso rápido de prueba (1 clic)</span>
             </div>
             <div class="demo-buttons-grid">
-              <button type="button" class="btn-demo-card btn-demo-vendedor" onclick="accesoRapidoDemo('vendedor')">
+              <button type="button" class="btn-demo-card btn-demo-vendedor" id="btn-demo-vendedor" onclick="accesoRapidoDemo('vendedor', event)" style="touch-action: manipulation;">
                 <span class="demo-icon">👤</span>
                 <div class="demo-text">
                   <strong>Cobrador / Vendedor</strong>
                   <small>Carlos • Ruta en calle</small>
                 </div>
               </button>
-              <button type="button" class="btn-demo-card btn-demo-admin" onclick="accesoRapidoDemo('admin')">
+              <button type="button" class="btn-demo-card btn-demo-admin" id="btn-demo-admin" onclick="accesoRapidoDemo('admin', event)" style="touch-action: manipulation;">
                 <span class="demo-icon">👑</span>
                 <div class="demo-text">
                   <strong>Administrador</strong>
