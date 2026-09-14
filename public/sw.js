@@ -1,5 +1,5 @@
-// Service Worker para CrediYa - Cache dinámico y soporte offline-first
-const CACHE_NAME = 'crediya-cache-v7';
+// Service Worker para CrediYa - Cache estático y soporte offline-first (Network-First)
+const CACHE_NAME = 'crediya-cache-v8'; // Subir versión para forzar invalidación de caché viejo
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -23,36 +23,51 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
-  // Estrategia Network-First: siempre obtener la versión más reciente del servidor.
-  // Si no hay conexión (offline), recurrir a la caché guardada.
-  if (event.request.method === 'GET') {
-    const url = new URL(event.request.url);
-    if (
-      url.pathname === '/' ||
-      url.pathname.endsWith('.html') ||
-      url.pathname.endsWith('.css') ||
-      url.pathname.endsWith('.js') ||
-      url.pathname.endsWith('.json') ||
-      url.hostname.includes('googleapis') ||
-      url.hostname.includes('gstatic')
-    ) {
-      event.respondWith(
-        fetch(event.request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              const responseToCache = networkResponse.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
-            }
-            return networkResponse;
-          })
-          .catch(() => caches.match(event.request))
-      );
-    }
+  if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+  const esAppShell =
+    url.pathname === '/' ||
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.json');
+
+  const esRecursoExterno = url.hostname.includes('googleapis') || url.hostname.includes('gstatic');
+
+  if (esAppShell) {
+    // Red primero: si hay internet, siempre trae la versión más reciente del servidor.
+    // Si no hay señal (offline), usa la copia guardada.
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const copia = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copia));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  if (esRecursoExterno) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        return cached || fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const copia = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copia));
+          }
+          return networkResponse;
+        });
+      })
+    );
   }
 });
