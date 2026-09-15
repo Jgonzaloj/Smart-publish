@@ -22,7 +22,7 @@
     }
     #app-main-layout.hidden { display: none !important; }
   </style>
-  <link rel="stylesheet" href="/style.css?v=20260915-07">
+  <link rel="stylesheet" href="/style.css?v=20260915-08">
   <meta name="theme-color" content="#6366f1">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1027,6 +1027,16 @@
         </button>
       </div>
 
+      <!-- Selector de Moneda en Drawer -->
+      <div class="drawer-currency-box" style="margin: 0 0 12px 0;">
+        <select id="drawer-selector-moneda" class="select-vendedor-admin" onchange="cambiarMonedaGlobal(this.value)" style="width: 100%; padding: 8px 10px; font-size: 0.82rem; border-radius: 10px;">
+          <option value="PEN" selected>🇵🇪 Perú — Soles (S/.)</option>
+          <option value="COP">🇨🇴 Colombia — COP ($)</option>
+          <option value="MXN">🇲🇽 México — MXN ($)</option>
+          <option value="USD">🇺🇸 Internacional — USD ($)</option>
+        </select>
+      </div>
+
       <!-- Acceso Rápido Destacado en Drawer: Registrar Venta -->
       <div class="drawer-quick-action">
         <button type="button" class="btn-drawer-new-sale" onclick="setTab('nuevo'); cerrarDrawerMenu();">
@@ -1490,6 +1500,6 @@
   <!-- TOAST NOTIFICACIONES -->
   <div id="toast" class="toast hidden"></div>
 
-  <script src="/app.js?v=20260915-07"></script>
+  <script src="/app.js?v=20260915-08"></script>
 </body>
 </html>

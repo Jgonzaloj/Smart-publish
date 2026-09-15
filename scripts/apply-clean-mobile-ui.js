@@ -1,4 +1,6 @@
-/* ============================================================
+const fs = require('fs');
+
+const css = `/* ============================================================
    SISTEMA DE DISEÑO: GLASSMORPHISM & CYBER DYNAMIC (APPLE VISIONOS)
    RESPONSIVO NATIVO MÓVIL (320px+), TABLET Y DESKTOP
    ============================================================ */
@@ -2685,3 +2687,7 @@ body.theme-dark .ticket-row {
     font-size: 1.05rem;
   }
 }
+`;
+
+fs.writeFileSync('public/style.css', css, 'utf8');
+console.log('Successfully written clean native mobile CSS to public/style.css');
