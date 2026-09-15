@@ -586,11 +586,15 @@ body.theme-dark .brand-badge {
   backdrop-filter: blur(10px);
   z-index: 2000;
   opacity: 0;
-  transition: opacity 0.22s ease;
+  pointer-events: none !important;
+  visibility: hidden;
+  transition: opacity 0.22s ease, visibility 0.22s ease;
 }
 
 .drawer-backdrop.open {
   opacity: 1;
+  pointer-events: auto !important;
+  visibility: visible;
 }
 
 .drawer-panel {
@@ -1636,8 +1640,16 @@ body.theme-dark .modal-card {
   to { transform: translateX(0); opacity: 1; }
 }
 
-.hidden {
+.hidden, [hidden],
+.modal-backdrop.hidden,
+.pin-overlay.hidden,
+.landing-portal.hidden,
+.drawer-backdrop.hidden {
   display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  z-index: -9999 !important;
+  opacity: 0 !important;
 }
 
 .split-layout {

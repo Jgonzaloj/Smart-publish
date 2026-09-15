@@ -8,14 +8,21 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    .hidden { display: none !important; }
-    #pin-overlay.hidden, .pin-overlay.hidden { display: none !important; }
-    .modal-backdrop.hidden, .modal.hidden { display: none !important; }
+    .hidden, [hidden],
+    #pin-overlay.hidden, .pin-overlay.hidden,
+    .modal-backdrop.hidden, .modal.hidden,
+    #drawer-backdrop.hidden, .drawer-backdrop.hidden,
+    .drawer-backdrop:not(.open),
+    #landing-login-portal.hidden {
+      display: none !important;
+      pointer-events: none !important;
+      visibility: hidden !important;
+      z-index: -9999 !important;
+      opacity: 0 !important;
+    }
     #app-main-layout.hidden { display: none !important; }
-    #landing-login-portal.hidden { display: none !important; }
-    #pin-overlay { position: fixed; inset: 0; z-index: 9999; }
   </style>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/style.css?v=20260915-02">
   <meta name="theme-color" content="#6366f1">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,6 +30,17 @@
   <link rel="icon" type="image/png" href="/icon.png">
   <link rel="shortcut icon" href="/favicon.ico">
   <script>
+    window.addEventListener('error', function(e) {
+      console.error('MOBILE JS ERROR:', e);
+      var box = document.getElementById('debug-mobile-error');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'debug-mobile-error';
+        box.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:#ef4444;color:#fff;font-size:12px;padding:8px 12px;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+        document.body ? document.body.appendChild(box) : document.documentElement.appendChild(box);
+      }
+      box.innerText = '⚠️ Error JS: ' + (e.message || e.error || 'Error inesperado');
+    });
     (function() {
       var saved = localStorage.getItem('crediya_theme') || 'cream';
       if (saved === 'dark') {
@@ -999,6 +1017,16 @@
         </div>
       </div>
 
+      <!-- Selector Rápido de Rol en Móvil (Cobrador vs Admin) -->
+      <div class="drawer-role-switch-box" style="margin: 8px 0 12px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <button type="button" class="btn-role active" id="drawer-switch-vendedor" onclick="switchUser('vendedor'); cerrarDrawerMenu();" style="justify-content: center; padding: 10px 6px; font-weight: 700; border-radius: 8px; font-size: 0.8rem;">
+          👤 Carlos (Cobrador)
+        </button>
+        <button type="button" class="btn-role" id="drawer-switch-admin" onclick="switchUser('admin'); cerrarDrawerMenu();" style="justify-content: center; padding: 10px 6px; font-weight: 700; border-radius: 8px; font-size: 0.8rem;">
+          👑 Juan (Admin)
+        </button>
+      </div>
+
       <!-- Acceso Rápido Destacado en Drawer: Registrar Venta -->
       <div class="drawer-quick-action">
         <button type="button" class="btn-drawer-new-sale" onclick="setTab('nuevo'); cerrarDrawerMenu();">
@@ -1048,12 +1076,12 @@
       </div>
 
       <!-- Footer del Drawer -->
-      <div class="drawer-footer">
+      <div class="drawer-footer" style="display: flex; flex-direction: column; gap: 8px; padding-top: 12px;">
         <button type="button" class="btn-drawer-action" onclick="lockApp(); cerrarDrawerMenu();">
           <span>🔒 Bloquear con PIN</span>
         </button>
-        <button type="button" class="btn-drawer-action text-danger" onclick="cerrarSesion(); cerrarDrawerMenu();">
-          <span>🚪 Cerrar Sesión</span>
+        <button type="button" class="btn-drawer-action" onclick="cerrarSesion(); cerrarDrawerMenu();" style="background: rgba(239, 68, 68, 0.15); border: 1.5px solid #ef4444; color: #ef4444; font-weight: 800; padding: 12px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
+          <span>🚪 Cerrar Sesión / Salir</span>
         </button>
       </div>
     </aside>
@@ -1464,6 +1492,6 @@
   <!-- TOAST NOTIFICACIONES -->
   <div id="toast" class="toast hidden"></div>
 
-  <script src="app.js"></script>
+  <script src="/app.js?v=20260915-02"></script>
 </body>
 </html>

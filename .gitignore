@@ -14,3 +14,4 @@ android/build/
 android/app/build/
 *.apk
 !public/CrediYa.apk
+video_login.mp4

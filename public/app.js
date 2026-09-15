@@ -448,6 +448,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   vincularBotonTactil('btn-submit-login', (e) => manejarPortalLogin(e));
   vincularBotonTactil('btn-demo-vendedor', (e) => accesoRapidoDemo('vendedor', e));
   vincularBotonTactil('btn-demo-admin', (e) => accesoRapidoDemo('admin', e));
+  vincularBotonTactil('mob-nav-rutas', () => setTab('rutas'));
+  vincularBotonTactil('mob-nav-caja', () => setTab('caja'));
+  vincularBotonTactil('mob-nav-nuevo', () => setTab('nuevo'));
+  vincularBotonTactil('mob-nav-dashboard', () => setTab('dashboard'));
+  vincularBotonTactil('mob-nav-menu', () => abrirDrawerMenu());
+  vincularBotonTactil('btn-switch-vendedor', () => switchUser('vendedor'));
+  vincularBotonTactil('btn-switch-admin', () => switchUser('admin'));
+  vincularBotonTactil('drawer-switch-vendedor', () => { switchUser('vendedor'); cerrarDrawerMenu(); });
+  vincularBotonTactil('drawer-switch-admin', () => { switchUser('admin'); cerrarDrawerMenu(); });
 
   // Revisar si existe sesión previa recordada
   const tokenGuardado = localStorage.getItem('crediya_token');
@@ -2914,4 +2923,27 @@ function imprimirExtractoPOS() {
   window.print();
 }
 
-
+// Exposición explícita en window para compatibilidad móvil total
+window.setTab = setTab;
+window.switchUser = switchUser;
+window.cerrarSesion = cerrarSesion;
+window.abrirDrawerMenu = abrirDrawerMenu;
+window.cerrarDrawerMenu = cerrarDrawerMenu;
+window.toggleMenuDesplegable = toggleMenuDesplegable;
+window.cerrarMenuDesplegable = cerrarMenuDesplegable;
+window.lockApp = lockApp;
+window.cambiarMonedaGlobal = cambiarMonedaGlobal;
+window.accesoRapidoDemo = accesoRapidoDemo;
+window.manejarPortalLogin = manejarPortalLogin;
+window.manejarPortalRegistro = manejarPortalRegistro;
+window.toggleExpandirCliente = toggleExpandirCliente;
+window.abrirModalAbono = abrirModalAbono;
+window.abrirModalAusente = abrirModalAusente;
+window.cerrarModalAbono = cerrarModalAbono;
+window.cerrarModalAusente = cerrarModalAusente;
+window.confirmarAbono = confirmarAbono;
+window.confirmarAusente = confirmarAusente;
+window.verReciboCliente = verReciboCliente;
+window.verEstadoCuentaCliente = verEstadoCuentaCliente;
+window.cerrarModalRecibo = cerrarModalRecibo;
+window.cerrarModalEstadoCuenta = cerrarModalEstadoCuenta;
