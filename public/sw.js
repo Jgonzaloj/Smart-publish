@@ -1,5 +1,5 @@
 // Service Worker para CrediYa - Cache estático y soporte offline-first (Network-First)
-const CACHE_NAME = 'crediya-cache-v18'; // Subir versión para forzar invalidación de caché viejo
+const CACHE_NAME = 'crediya-cache-v19'; // Subir versión para forzar invalidación de caché viejo
 const STATIC_ASSETS = [
   '/',
   '/index.html',

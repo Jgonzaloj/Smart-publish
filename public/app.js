@@ -3224,6 +3224,17 @@ function cerrarModalNoPagados() {
   if (modal) modal.classList.add('hidden');
 }
 
+function enviarRecordatorioWhatsApp(movil, nombre, valorCuota) {
+  if (!movil) {
+    showToast('El cliente no tiene número de teléfono registrado', 'warning');
+    return;
+  }
+  const cleanPhone = String(movil).replace(/\D/g, '');
+  const cuotaFmt = fmtMoneda(valorCuota || 0);
+  const texto = encodeURIComponent(`Hola ${nombre}, le recordamos cordialmente de su compromiso de cuota por ${cuotaFmt} en CrediYa. Agradecemos su puntual pago.`);
+  window.open(`https://wa.me/${cleanPhone}?text=${texto}`, '_blank');
+}
+
 // Modal Aplazar Visita (Siguiente Día)
 let selectedClientForAplazar = null;
 
@@ -3451,8 +3462,10 @@ window.exportarCuadreCSV = exportarCuadreCSV;
 
 // Ruta & Abonos
 window.cargarRutaHoy = cargarRutaHoy;
-window.toggleExpandClient = toggleExpandClient;
-window.moverClienteRuta = moverClienteRuta;
+window.toggleExpandirCliente = toggleExpandirCliente;
+window.toggleExpandClient = toggleExpandirCliente;
+window.moverRuta = moverRuta;
+window.moverClienteRuta = moverRuta;
 window.abrirModalAbono = abrirModalAbono;
 window.cerrarModalAbono = cerrarModalAbono;
 window.confirmarAbono = confirmarAbono;
@@ -3490,7 +3503,8 @@ window.cerrarModalUsuario = cerrarModalUsuario;
 window.guardarUsuario = guardarUsuario;
 window.abrirModalPassword = abrirModalPassword;
 window.cerrarModalPassword = cerrarModalPassword;
-window.guardarNuevaPassword = guardarNuevaPassword;
+window.guardarPassword = guardarPassword;
+window.guardarNuevaPassword = guardarPassword;
 window.alternarEstadoUsuario = alternarEstadoUsuario;
 window.eliminarUsuarioFrontend = eliminarUsuarioFrontend;
 
