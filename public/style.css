@@ -2848,6 +2848,9 @@ html, body {
     padding: 10px 14px;
     flex-wrap: wrap;
     gap: 10px;
+    position: relative; /* Evita colisión sticky con nav-toolbar en móvil */
+    top: auto;
+    z-index: 100;
   }
 
   .nav-brand {
@@ -2874,26 +2877,37 @@ html, body {
     gap: 6px;
     padding-top: 6px;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
+    flex-wrap: wrap;
   }
 
   .status-indicator {
-    padding: 4px 8px;
-    font-size: 0.68rem;
+    padding: 6px 8px;
+    font-size: 0.7rem;
     gap: 5px;
   }
 
   .currency-select {
-    padding: 4px 6px;
-    font-size: 0.75rem;
+    padding: 6px 8px;
+    font-size: 0.78rem;
+    min-height: 38px;
   }
 
   .user-switcher {
-    gap: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
   }
 
   .btn-role {
-    padding: 5px 8px;
-    font-size: 0.73rem;
+    min-height: 40px;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: manipulation;
   }
 
   .btn-pwa-header {
@@ -2901,33 +2915,61 @@ html, body {
   }
 
   .btn-icon {
-    padding: 5px 8px;
+    min-height: 40px;
+    min-width: 40px;
+    padding: 8px 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: manipulation;
   }
 
   /* Barra de Navegación Compacta en Móvil */
   .nav-toolbar {
     padding: 8px 12px;
-    top: 56px;
+    position: relative; /* Flujo natural sin encimarse */
+    top: auto;
+    z-index: 90;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
   }
 
   .btn-dropdown-trigger {
-    padding: 6px 12px;
-    font-size: 0.8rem;
+    min-height: 42px;
+    padding: 8px 14px;
+    font-size: 0.82rem;
     gap: 6px;
+    cursor: pointer;
+    touch-action: manipulation;
   }
 
   .dropdown-icon {
-    font-size: 1rem;
+    font-size: 1.1rem;
   }
 
   .btn-fast-sale {
-    padding: 6px 12px;
-    font-size: 0.78rem;
+    min-height: 42px;
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    touch-action: manipulation;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .btn-nav-drawer {
-    padding: 6px 10px;
-    font-size: 0.75rem;
+    min-height: 42px;
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    touch-action: manipulation;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .desktop-only {

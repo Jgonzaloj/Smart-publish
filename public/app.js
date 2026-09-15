@@ -423,40 +423,75 @@ document.addEventListener('DOMContentLoaded', async () => {
   actualizarBadgeConexion();
   sincronizarAbonosOffline();
 
-  // Vinculación táctil inmediata para móviles (evita que Android descarte el clic al redimensionar por el teclado)
-  const vincularBotonTactil = (id, callback) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    let touchTimestamp = 0;
-    el.addEventListener('pointerdown', (e) => {
-      if (e.button && e.button !== 0) return;
-      touchTimestamp = Date.now();
-      callback(e);
-    }, { passive: false });
+  // Vinculación táctil inmediata para móviles (evita que Android descarte el clic al redimensionar o colisionar eventos)
+  const vincularBotonTactil = (target, callback) => {
+    const elements = typeof target === 'string'
+      ? (target.startsWith('.') || target.includes('[') ? document.querySelectorAll(target) : [document.getElementById(target)])
+      : [target];
 
-    el.addEventListener('click', (e) => {
-      // Si ya se disparó por pointerdown hace menos de 700ms, evitar ejecución duplicada
-      if (Date.now() - touchTimestamp < 700) {
-        e.preventDefault();
-        e.stopPropagation();
-        return;
-      }
-      callback(e);
+    elements.forEach((el) => {
+      if (!el) return;
+      let touchTimestamp = 0;
+      el.addEventListener('pointerdown', (e) => {
+        if (e.button && e.button !== 0) return;
+        touchTimestamp = Date.now();
+        callback(e);
+      }, { passive: false });
+
+      el.addEventListener('click', (e) => {
+        if (Date.now() - touchTimestamp < 700) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        callback(e);
+      });
     });
   };
 
+  // Botones de autenticación y roles
   vincularBotonTactil('btn-submit-login', (e) => manejarPortalLogin(e));
   vincularBotonTactil('btn-demo-vendedor', (e) => accesoRapidoDemo('vendedor', e));
   vincularBotonTactil('btn-demo-admin', (e) => accesoRapidoDemo('admin', e));
+  vincularBotonTactil('btn-switch-vendedor', () => switchUser('vendedor'));
+  vincularBotonTactil('btn-switch-admin', () => switchUser('admin'));
+  vincularBotonTactil('drawer-switch-vendedor', () => { switchUser('vendedor'); cerrarDrawerMenu(); });
+  vincularBotonTactil('drawer-switch-admin', () => { switchUser('admin'); cerrarDrawerMenu(); });
+
+  // Botones de cabecera superior
+  vincularBotonTactil('btn-theme-toggle', () => toggleTheme());
+  vincularBotonTactil('btn-logout-top', () => cerrarSesion());
+
+  // Botones de la barra toolbar
+  vincularBotonTactil('btn-dropdown-modulos', (e) => toggleMenuDesplegable(e));
+  vincularBotonTactil('.btn-fast-sale', () => setTab('nuevo'));
+  vincularBotonTactil('.btn-nav-drawer', () => abrirDrawerMenu());
+
+  // Botones de navegación inferior móvil
   vincularBotonTactil('mob-nav-rutas', () => setTab('rutas'));
   vincularBotonTactil('mob-nav-caja', () => setTab('caja'));
   vincularBotonTactil('mob-nav-nuevo', () => setTab('nuevo'));
   vincularBotonTactil('mob-nav-dashboard', () => setTab('dashboard'));
   vincularBotonTactil('mob-nav-menu', () => abrirDrawerMenu());
-  vincularBotonTactil('btn-switch-vendedor', () => switchUser('vendedor'));
-  vincularBotonTactil('btn-switch-admin', () => switchUser('admin'));
-  vincularBotonTactil('drawer-switch-vendedor', () => { switchUser('vendedor'); cerrarDrawerMenu(); });
-  vincularBotonTactil('drawer-switch-admin', () => { switchUser('admin'); cerrarDrawerMenu(); });
+
+  // Botones del menú lateral Drawer
+  vincularBotonTactil('.btn-drawer-new-sale', () => { setTab('nuevo'); cerrarDrawerMenu(); });
+  vincularBotonTactil('drawer-tab-rutas', () => { setTab('rutas'); cerrarDrawerMenu(); });
+  vincularBotonTactil('drawer-tab-caja', () => { setTab('caja'); cerrarDrawerMenu(); });
+  vincularBotonTactil('drawer-tab-nuevo', () => { setTab('nuevo'); cerrarDrawerMenu(); });
+  vincularBotonTactil('drawer-tab-renovar', () => { setTab('renovar'); cerrarDrawerMenu(); });
+  vincularBotonTactil('drawer-tab-dashboard', () => { setTab('dashboard'); cerrarDrawerMenu(); });
+  vincularBotonTactil('drawer-tab-mora', () => { setTab('mora'); cerrarDrawerMenu(); });
+  vincularBotonTactil('drawer-tab-usuarios', () => { setTab('usuarios'); cerrarDrawerMenu(); });
+
+  // Items del menú desplegable
+  vincularBotonTactil('tab-rutas', () => setTab('rutas'));
+  vincularBotonTactil('tab-caja', () => setTab('caja'));
+  vincularBotonTactil('tab-nuevo', () => setTab('nuevo'));
+  vincularBotonTactil('tab-renovar', () => setTab('renovar'));
+  vincularBotonTactil('tab-dashboard', () => setTab('dashboard'));
+  vincularBotonTactil('tab-mora', () => setTab('mora'));
+  vincularBotonTactil('tab-usuarios', () => setTab('usuarios'));
 
   // Revisar si existe sesión previa recordada
   const tokenGuardado = localStorage.getItem('crediya_token');
@@ -779,7 +814,11 @@ const MODULE_METADATA = {
 };
 
 // CONTROL DEL MENÚ DESPLEGABLE DE MÓDULOS
-function toggleMenuDesplegable() {
+function toggleMenuDesplegable(e) {
+  if (e) {
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+  }
   const card = document.getElementById('menu-desplegable-card');
   const btn = document.getElementById('btn-dropdown-modulos');
   if (!card) return;
