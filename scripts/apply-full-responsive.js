@@ -1,4 +1,6 @@
-/* ============================================================
+const fs = require('fs');
+
+const completeResponsiveGlassCSS = `/* ============================================================
    SISTEMA DE DISEÑO: GLASSMORPHISM & CYBER DYNAMIC (APPLE VISIONOS)
    COMPLETAMENTE RESPONSIVO: MOBILE (320px+), TABLET, DESKTOP (4K)
    ============================================================ */
@@ -2631,3 +2633,7 @@ body.theme-dark .ticket-row {
     font-size: 1.1rem;
   }
 }
+`;
+
+fs.writeFileSync('public/style.css', completeResponsiveGlassCSS, 'utf8');
+console.log('Successfully written full responsive Glassmorphism design system to public/style.css');
