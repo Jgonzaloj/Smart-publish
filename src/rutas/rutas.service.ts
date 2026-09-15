@@ -336,4 +336,8 @@ export class RutasService {
       }
     });
   }
+
+  async actualizarOrdenRuta(dto: ActualizarOrdenRutaDto, user: JwtPayload) {
+    return this.guardarOrdenRuta(dto, user);
+  }
 }
