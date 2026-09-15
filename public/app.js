@@ -1007,10 +1007,38 @@ state.filtroEstadoRuta = 'TODOS';
 state.busquedaClienteRuta = '';
 state.clienteExpandidoId = null;
 
-// EXPANDIR / COLAPSAR DETALLE DEL CLIENTE AL DARLE CLIC
+// TOGGLE DE MATRIZ RBAC (COLAPSAR / EXPANDIR EN MÓVIL Y DESKTOP)
+function toggleRbacCard() {
+  const container = document.getElementById('rbac-table-container');
+  const arrow = document.getElementById('rbac-toggle-arrow');
+  const text = document.getElementById('rbac-toggle-text');
+  if (!container) return;
+
+  const isCollapsed = container.classList.contains('collapsed') || container.style.display === 'none';
+  if (isCollapsed) {
+    container.classList.remove('collapsed');
+    container.style.display = 'block';
+    if (arrow) arrow.innerText = '▾';
+    if (text) text.innerText = 'Ocultar';
+  } else {
+    container.classList.add('collapsed');
+    container.style.display = 'none';
+    if (arrow) arrow.innerText = '▸';
+    if (text) text.innerText = 'Mostrar';
+  }
+}
+
+// ESTADO DE BÚSQUEDA Y FILTRADO DE LA HOJA DE RUTA
+state.filtroEstadoRuta = 'TODOS';
+state.busquedaClienteRuta = '';
+state.clienteExpandidoId = null;
+
+// EXPANDIR / COLAPSAR DETALLE DEL CLIENTE AL DARLE CLIC O TOQUE
 function toggleExpandirCliente(clienteId, ev) {
-  // Si se hizo clic en un botón interno (abono, ausente, flechas), no cerrar la tarjeta
-  if (ev && ev.target.closest('button, input, select, a')) return;
+  // Si el clic/toque fue dentro de un botón interactivo, dejamos que su propio onclick actúe
+  if (ev && ev.target && typeof ev.target.closest === 'function') {
+    if (ev.target.closest('button, input, select, a, .order-box, .client-actions')) return;
+  }
 
   const card = document.getElementById(`card-${clienteId}`);
   if (!card) return;
@@ -1021,12 +1049,17 @@ function toggleExpandirCliente(clienteId, ev) {
     card.classList.remove('expanded');
     if (state.clienteExpandidoId === clienteId) state.clienteExpandidoId = null;
   } else {
-    // Si queremos tipo acordeón (uno a la vez), cerramos el previo
+    // Modo acordeón: cerramos cualquier otra tarjeta abierta para mantener la interfaz despejada
     if (state.clienteExpandidoId && state.clienteExpandidoId !== clienteId) {
       document.getElementById(`card-${state.clienteExpandidoId}`)?.classList.remove('expanded');
     }
     card.classList.add('expanded');
     state.clienteExpandidoId = clienteId;
+
+    // Asegurar que quede visible suavemente en dispositivos móviles
+    setTimeout(() => {
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 60);
   }
 }
 
@@ -1117,7 +1150,7 @@ function aplicarFiltrosYRenderizarRuta() {
   container.innerHTML = filtrados.map((c) => renderClienteCard(c)).join('');
 }
 
-// RENDERIZADO DE TARJETA DE CLIENTE (COMPACTA + DESPLEGABLE AL CLIC)
+// RENDERIZADO DE TARJETA DE CLIENTE (COMPACTA + DESPLEGABLE TÁCTIL)
 function renderClienteCard(c) {
   let statusBadge = '';
   if (c.haPagadoHoy) {
@@ -1125,7 +1158,7 @@ function renderClienteCard(c) {
   } else if (c.estadoVisita === 'AUSENTE') {
     statusBadge = '<span class="status-badge status-ausente">🚪 AUSENTE HOY</span>';
   } else if (c.estadoVisita === 'APLAZADO') {
-    statusBadge = '<span class="status-badge status-atrasado">⏳ APLAZADO MAÑANA</span>';
+    statusBadge = '<span class="status-badge status-atrasado">⏳ APLAZADO</span>';
   } else if (c.estadoVisita === 'ATRASADO' || (c.creditoActivo && c.creditoActivo.cuotasAtrasadas > 0)) {
     const atrasadas = c.creditoActivo?.cuotasAtrasadas || 1;
     statusBadge = `<span class="status-badge status-atrasado">⚠️ ${atrasadas} ATRASADA${atrasadas > 1 ? 'S' : ''}</span>`;
@@ -1142,14 +1175,14 @@ function renderClienteCard(c) {
   const isExpanded = state.clienteExpandidoId === c.clienteId;
 
   return `
-    <div class="client-card ${isExpanded ? 'expanded' : ''}" id="card-${c.clienteId}" onclick="toggleExpandirCliente('${c.clienteId}', event)">
-      <!-- 1. VISTA RESUMIDA DE LA LISTA (SIEMPRE VISIBLE, ULTRA LIMPIA) -->
-      <div class="client-summary-row">
+    <div class="client-card ${isExpanded ? 'expanded' : ''}" id="card-${c.clienteId}" data-client-id="${c.clienteId}" onclick="toggleExpandirCliente('${c.clienteId}', event)">
+      <!-- 1. VISTA RESUMIDA DE LA LISTA (SIEMPRE VISIBLE, ULTRA RESPONSIVA) -->
+      <div class="client-summary-row" data-client-id="${c.clienteId}">
         <div class="order-box" onclick="event.stopPropagation()">
           <div class="order-badge">#${c.orden}</div>
           <div class="order-arrows">
-            <button type="button" class="order-btn" title="Mover arriba" onclick="moverRuta('${c.clienteId}', -1)">▲</button>
-            <button type="button" class="order-btn" title="Mover abajo" onclick="moverRuta('${c.clienteId}', 1)">▼</button>
+            <button type="button" class="order-btn" title="Mover arriba" onclick="moverRuta('${c.clienteId}', -1); event.stopPropagation();">▲</button>
+            <button type="button" class="order-btn" title="Mover abajo" onclick="moverRuta('${c.clienteId}', 1); event.stopPropagation();">▼</button>
           </div>
         </div>
 
@@ -1169,12 +1202,12 @@ function renderClienteCard(c) {
           <span class="client-cuota">Cuota: ${cuotaFmt}</span>
         </div>
 
-        <div class="client-chevron-box" title="Clic para ver detalle y acciones">
+        <div class="client-chevron-box" title="Toca para ver acciones y abonar">
           <span class="chevron-arrow">▾</span>
         </div>
       </div>
 
-      <!-- 2. PANEL DESPLEGABLE (SE MUESTRA ÚNICAMENTE AL DARLE CLIC AL CLIENTE) -->
+      <!-- 2. PANEL DESPLEGABLE CON ACCIONES CLARAS DE COBRANZA -->
       <div class="client-expanded-panel">
         <div class="client-expanded-details">
           <div class="detail-item">
@@ -1187,25 +1220,25 @@ function renderClienteCard(c) {
           </div>
         </div>
 
-        <!-- Botonera de Acciones (Abonar, Ausente, Aplazar, Extracto, WhatsApp) -->
+        <!-- Botonera de Acciones Rápidas -->
         <div class="client-actions" onclick="event.stopPropagation()">
           ${c.haPagadoHoy ? `
-            <button type="button" class="btn-whatsapp" onclick="verReciboCliente('${c.clienteId}')">
-              🧾 Ver / WhatsApp
+            <button type="button" class="btn-action-cobro btn-whatsapp" onclick="verReciboCliente('${c.clienteId}'); event.stopPropagation();">
+              🧾 Ver Recibo
             </button>
           ` : ''}
           ${c.creditoActivo ? `
-            <button type="button" class="btn-extracto" onclick="verEstadoCuentaCliente('${c.clienteId}', '${c.creditoActivo.id}')">
+            <button type="button" class="btn-action-cobro btn-extracto" onclick="verEstadoCuentaCliente('${c.clienteId}', '${c.creditoActivo.id}'); event.stopPropagation();">
               📜 Extracto
             </button>
           ` : ''}
-          <button type="button" class="btn-primary" onclick="abrirModalAbono('${c.clienteId}')">
+          <button type="button" class="btn-action-cobro btn-abonar-main" onclick="abrirModalAbono('${c.clienteId}'); event.stopPropagation();">
             💵 Abonar
           </button>
-          <button type="button" class="btn-secondary" onclick="abrirModalAusente('${c.clienteId}')">
+          <button type="button" class="btn-action-cobro btn-ausente-act" onclick="abrirModalAusente('${c.clienteId}'); event.stopPropagation();">
             🚪 Ausente
           </button>
-          <button type="button" class="btn-secondary" style="border-color: #F59E0B; color: #F59E0B;" onclick="abrirModalAplazar('${c.clienteId}', '${escapeHtml(c.nombresAlias)}')">
+          <button type="button" class="btn-action-cobro btn-aplazar-act" onclick="abrirModalAplazar('${c.clienteId}', '${escapeHtml(c.nombresAlias)}'); event.stopPropagation();">
             ⏳ Aplazar
           </button>
         </div>
@@ -3514,6 +3547,7 @@ window.guardarPassword = guardarPassword;
 window.guardarNuevaPassword = guardarPassword;
 window.alternarEstadoUsuario = alternarEstadoUsuario;
 window.eliminarUsuarioFrontend = eliminarUsuarioFrontend;
+window.toggleRbacCard = toggleRbacCard;
 
 // PIN Seguridad
 window.lockApp = lockApp;

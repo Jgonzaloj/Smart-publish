@@ -22,7 +22,7 @@
     }
     #app-main-layout.hidden { display: none !important; }
   </style>
-  <link rel="stylesheet" href="/style.css?v=20260915-13">
+  <link rel="stylesheet" href="/style.css?v=20260915-15">
   <meta name="theme-color" content="#6366f1">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1013,12 +1013,20 @@
       </div>
 
       <!-- Matriz Visual de Permisos (RBAC) -->
-      <div class="rbac-card">
-        <div class="rbac-header">
-          <h3>🛡️ Matriz de Roles y Privilegios del Sistema (RBAC)</h3>
-          <span class="rbac-badge">Control de Acceso Multi-Inquilino</span>
+      <div class="rbac-card" id="rbac-card">
+        <div class="rbac-header" onclick="toggleRbacCard()" role="button" tabindex="0">
+          <div class="rbac-title-wrap">
+            <span class="rbac-main-icon">🛡️</span>
+            <div>
+              <h3>Matriz de Roles y Privilegios (RBAC)</h3>
+              <span class="rbac-badge">Control de Acceso Multi-Inquilino</span>
+            </div>
+          </div>
+          <button type="button" class="btn-toggle-rbac" id="btn-toggle-rbac" aria-label="Colapsar matriz">
+            <span id="rbac-toggle-text">Ocultar</span> <span id="rbac-toggle-arrow">▾</span>
+          </button>
         </div>
-        <div class="rbac-table-container">
+        <div class="rbac-table-container" id="rbac-table-container">
           <table class="rbac-table">
             <thead>
               <tr>
@@ -1029,34 +1037,34 @@
             </thead>
             <tbody>
               <tr>
-                <td><strong>Gestión de Equipo</strong> (Crear, suspender usuarios, resetear claves)</td>
-                <td class="text-center text-success font-bold">✅ Total</td>
-                <td class="text-center text-muted">❌ Sin acceso</td>
+                <td><strong>Gestión de Equipo</strong><br><small class="text-muted">Crear, suspender usuarios, resetear claves</small></td>
+                <td class="text-center"><span class="badge-rbac badge-rbac-allow">✅ Total</span></td>
+                <td class="text-center"><span class="badge-rbac badge-rbac-deny">❌ Sin acceso</span></td>
               </tr>
               <tr>
-                <td><strong>Supervisión de Rutas</strong> (Ver y auditar rutas de otros cobradores)</td>
-                <td class="text-center text-success font-bold">✅ Todas las rutas</td>
-                <td class="text-center text-muted">❌ Solo su ruta asignada</td>
+                <td><strong>Supervisión de Rutas</strong><br><small class="text-muted">Ver y auditar rutas de otros cobradores</small></td>
+                <td class="text-center"><span class="badge-rbac badge-rbac-allow">✅ Todas las rutas</span></td>
+                <td class="text-center"><span class="badge-rbac badge-rbac-deny">❌ Solo asignada</span></td>
               </tr>
               <tr>
-                <td><strong>Cobranza en Calle</strong> (Abonos en efectivo + Recibo WhatsApp + GPS)</td>
-                <td class="text-center text-success font-bold">✅ Permitido</td>
-                <td class="text-center text-success font-bold">✅ Permitido</td>
+                <td><strong>Cobranza en Calle</strong><br><small class="text-muted">Abonos en efectivo + Recibo WhatsApp + GPS</small></td>
+                <td class="text-center"><span class="badge-rbac badge-rbac-allow">✅ Permitido</span></td>
+                <td class="text-center"><span class="badge-rbac badge-rbac-allow">✅ Permitido</span></td>
               </tr>
               <tr>
-                <td><strong>Mora Automática Masiva</strong> (Cálculo financiero y recargos del tenant)</td>
-                <td class="text-center text-success font-bold">✅ Ejecución y configuración</td>
-                <td class="text-center text-muted">❌ Bloqueado</td>
+                <td><strong>Mora Automática Masiva</strong><br><small class="text-muted">Cálculo diario y recargos</small></td>
+                <td class="text-center"><span class="badge-rbac badge-rbac-allow">✅ Ejecución</span></td>
+                <td class="text-center"><span class="badge-rbac badge-rbac-deny">❌ Bloqueado</span></td>
               </tr>
               <tr>
                 <td><strong>Arqueo y Cuadre de Caja</strong></td>
-                <td class="text-center text-success font-bold">✅ Global y por vendedor</td>
-                <td class="text-center text-accent font-bold">⚠️ Solo su propia caja del día</td>
+                <td class="text-center"><span class="badge-rbac badge-rbac-allow">✅ Global y por cobrador</span></td>
+                <td class="text-center"><span class="badge-rbac badge-rbac-warn">⚠️ Solo propia caja</span></td>
               </tr>
               <tr>
                 <td><strong>Nuevos Créditos y Renovaciones</strong></td>
-                <td class="text-center text-success font-bold">✅ Cualquier cliente</td>
-                <td class="text-center text-accent font-bold">⚠️ Solo clientes de su zona</td>
+                <td class="text-center"><span class="badge-rbac badge-rbac-allow">✅ Cualquier cliente</span></td>
+                <td class="text-center"><span class="badge-rbac badge-rbac-warn">⚠️ Solo en su zona</span></td>
               </tr>
             </tbody>
           </table>
@@ -1096,7 +1104,8 @@
             <button class="filter-chip" id="chip-usr-vendedores" onclick="filtrarUsuarios('VENDEDOR', this)">👤 Vendedores / Cobradores</button>
           </div>
           <div class="search-box">
-            <input type="text" id="buscar-usuario-input" onkeyup="buscarUsuario(this.value)" placeholder="🔍 Buscar por nombre o email...">
+            <span class="search-icon-inside">🔍</span>
+            <input type="text" id="buscar-usuario-input" onkeyup="buscarUsuario(this.value)" placeholder="Buscar por nombre o email...">
           </div>
         </div>
 
@@ -1764,6 +1773,6 @@
   <!-- TOAST NOTIFICACIONES -->
   <div id="toast" class="toast hidden"></div>
 
-  <script src="/app.js?v=20260915-13"></script>
+  <script src="/app.js?v=20260915-15"></script>
 </body>
 </html>
