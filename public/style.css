@@ -2980,23 +2980,40 @@ html, body {
     display: none !important;
   }
 
-  /* Barra de Navegación Inferior Móvil (Bottom Navigation Bar) */
+  /* Barra de Navegación Inferior Móvil (Floating Pill Dock — Estilo Moderno TikTok / iOS) */
   .mobile-bottom-nav {
     display: flex;
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 62px;
-    background: var(--nav-bg);
-    backdrop-filter: blur(20px);
-    border-top: 1px solid var(--border-color);
+    bottom: 12px;
+    left: 10px;
+    right: 10px;
+    margin: 0 auto;
+    max-width: 440px;
+    height: 58px;
+    background: rgba(36, 41, 46, 0.94);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 32px;
     z-index: 1000;
-    justify-content: space-around;
+    justify-content: space-between;
     align-items: center;
-    padding: 0 4px;
-    padding-bottom: env(safe-area-inset-bottom, 0);
-    box-shadow: 0 -4px 16px rgba(36, 41, 46, 0.08);
+    padding: 4px 6px;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.12);
+    user-select: none;
+    touch-action: manipulation;
+  }
+
+  body.theme-cream .mobile-bottom-nav {
+    background: rgba(255, 253, 245, 0.95);
+    border: 1px solid rgba(36, 41, 46, 0.12);
+    box-shadow: 0 12px 36px rgba(36, 41, 46, 0.14), 0 2px 8px rgba(36, 41, 46, 0.06);
+  }
+
+  body.theme-dark .mobile-bottom-nav {
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.6);
   }
 
   .mob-nav-btn {
@@ -3005,56 +3022,75 @@ html, body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 2px;
     color: var(--text-secondary);
     cursor: pointer;
-    padding: 6px 4px;
+    padding: 6px 8px;
+    border-radius: 20px;
     flex: 1;
-    transition: all 0.2s;
+    min-height: 48px;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    touch-action: manipulation;
   }
 
-  .mob-nav-btn:hover,
-  .mob-nav-btn.active {
-    color: var(--badge-green);
+  body.theme-cream .mob-nav-btn {
+    color: #57606a;
+  }
+
+  body.theme-dark .mob-nav-btn {
+    color: #94a3b8;
   }
 
   .mob-nav-icon {
     font-size: 1.25rem;
+    line-height: 1;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .mob-nav-label {
     font-size: 0.68rem;
     font-weight: 700;
+    letter-spacing: -0.1px;
+    transition: color 0.2s;
+  }
+
+  /* Estado Activo: Cápsula Iluminada Destacada (Pill Highlight) */
+  .mob-nav-btn.active {
+    background: var(--badge-green);
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 14px rgba(46, 164, 79, 0.45);
+    transform: translateY(-2px);
+  }
+
+  body.theme-cream .mob-nav-btn.active {
+    background: #2ea44f;
+    color: #FFFFFF !important;
+  }
+
+  body.theme-dark .mob-nav-btn.active {
+    background: #10b981;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.45);
+  }
+
+  .mob-nav-btn.active .mob-nav-icon {
+    transform: scale(1.18);
+  }
+
+  .mob-nav-btn.active .mob-nav-label {
+    color: #FFFFFF !important;
+    font-weight: 800;
   }
 
   .mob-nav-center {
-    position: relative;
-    top: -12px;
+    position: static;
   }
 
-  .mob-center-circle {
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
-    background: var(--badge-green);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 16px rgba(46, 164, 79, 0.5);
-    color: #ffffff;
-    font-size: 1.3rem;
-    font-weight: 800;
-    margin-bottom: 2px;
-    transition: transform 0.2s;
-  }
-
-  .mob-nav-center:hover .mob-center-circle {
-    transform: scale(1.08);
-  }
-
-  /* Área de Contenido con Espacio Inferior para la Barra Móvil */
+  /* Área de Contenido con Espacio Inferior para la Barra Flotante */
   .content-area {
-    padding: 14px 10px 85px 10px !important;
+    padding: 14px 10px 92px 10px !important;
   }
 
   .section-header {
