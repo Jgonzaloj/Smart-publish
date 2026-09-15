@@ -804,13 +804,13 @@ async function switchUser(role) {
 // DICCIONARIO & METADATOS DE MÓDULOS DEL SISTEMA
 // ============================================================
 const MODULE_METADATA = {
-  rutas: { icon: '🗺️', label: 'Hoja de Ruta de Hoy', desc: 'Cobranza diaria, orden de visitas y GPS' },
-  caja: { icon: '💵', label: 'Cuadre de Caja Diario', desc: 'Arqueo, ingresos, egresos y retiros' },
-  nuevo: { icon: '➕', label: 'Nueva Venta / Crédito', desc: 'Registro rápido de cliente y préstamo' },
-  renovar: { icon: '🔄', label: 'Renovación de Crédito', desc: 'Liquidación de saldo y nuevo crédito' },
-  dashboard: { icon: '📊', label: 'Dashboard Ejecutivo', desc: 'Métricas financieras globales y PAR 30/60' },
+  rutas: { icon: '🗺️', label: 'Ruta de Hoy', desc: 'Cobranza diaria, orden de visitas y GPS' },
+  caja: { icon: '💵', label: 'Cuadre de Caja', desc: 'Arqueo, ingresos, egresos y retiros' },
+  nuevo: { icon: '➕', label: 'Nueva Venta', desc: 'Registro rápido de cliente y préstamo' },
+  renovar: { icon: '🔄', label: 'Renovación', desc: 'Liquidación de saldo y nuevo crédito' },
+  dashboard: { icon: '📊', label: 'Dashboard', desc: 'Métricas financieras globales y PAR 30/60' },
   mora: { icon: '⚡', label: 'Mora Automática', desc: 'Cálculo determinista de atraso en cuotas' },
-  usuarios: { icon: '👥', label: 'Usuarios & Permisos', desc: 'Control de acceso RBAC y equipo' },
+  usuarios: { icon: '👥', label: 'Usuarios', desc: 'Control de acceso RBAC y equipo' },
 };
 
 // CONTROL DEL MENÚ DESPLEGABLE DE MÓDULOS

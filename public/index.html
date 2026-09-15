@@ -22,7 +22,7 @@
     }
     #app-main-layout.hidden { display: none !important; }
   </style>
-  <link rel="stylesheet" href="/style.css?v=20260915-03">
+  <link rel="stylesheet" href="/style.css?v=20260915-04">
   <meta name="theme-color" content="#6366f1">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -321,9 +321,9 @@
     <div class="nav-toolbar-left">
       <!-- Botón Desplegable de Módulos (Rápido y Adaptable) -->
       <div class="dropdown-menu-wrapper" id="dropdown-menu-container">
-        <button type="button" class="btn-dropdown-trigger" id="btn-dropdown-modulos" onclick="toggleMenuDesplegable()" aria-expanded="false" title="Desplegar todos los módulos del sistema">
+        <button type="button" class="btn-dropdown-trigger" id="btn-dropdown-modulos" onclick="toggleMenuDesplegable(event)" aria-expanded="false" title="Desplegar todos los módulos del sistema">
           <span class="dropdown-icon" id="active-tab-icon">🗺️</span>
-          <span class="dropdown-label" id="active-tab-label">Hoja de Ruta de Hoy</span>
+          <span class="dropdown-label" id="active-tab-label">Ruta de Hoy</span>
           <span class="dropdown-chevron" id="dropdown-chevron">▼</span>
         </button>
 
@@ -1492,6 +1492,6 @@
   <!-- TOAST NOTIFICACIONES -->
   <div id="toast" class="toast hidden"></div>
 
-  <script src="/app.js?v=20260915-03"></script>
+  <script src="/app.js?v=20260915-04"></script>
 </body>
 </html>

@@ -350,13 +350,17 @@ body.theme-dark .brand-badge {
   background: var(--badge-dark);
   border: 1px solid var(--badge-dark-border);
   color: #FFFFFF;
-  padding: 7px 16px;
-  border-radius: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
   font-size: 0.86rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: var(--badge-shadow);
+  white-space: nowrap !important;
+  flex-shrink: 0;
+  touch-action: manipulation;
+  user-select: none;
 }
 
 .btn-dropdown-trigger:hover,
