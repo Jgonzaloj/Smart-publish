@@ -22,7 +22,7 @@
     }
     #app-main-layout.hidden { display: none !important; }
   </style>
-  <link rel="stylesheet" href="/style.css?v=20260915-15">
+  <link rel="stylesheet" href="/style.css?v=20260915-16">
   <meta name="theme-color" content="#6366f1">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -954,6 +954,31 @@
             <label>Dirección / Negocio</label>
             <input type="text" id="cli-direccion" placeholder="Ej. Calle 12 # 5-43 (Panadería)">
           </div>
+
+          <div class="form-group">
+            <label>📍 Ubicación GPS del Negocio / Domicilio</label>
+            <div class="gps-capture-card">
+              <div class="gps-status-row">
+                <span class="gps-icon-live" id="gps-icon-nuevo-cliente">📍</span>
+                <div class="gps-text-wrap">
+                  <strong id="gps-title-nuevo-cliente">Ubicación GPS no registrada</strong>
+                  <small id="gps-desc-nuevo-cliente" class="text-muted">Captura las coordenadas para que cualquier cobrador que tome la ruta pueda llegar navegando con Google Maps o Waze.</small>
+                </div>
+              </div>
+              <div class="gps-actions-row">
+                <button type="button" class="btn-gps-action" id="btn-capturar-gps-nuevo" onclick="capturarGpsNuevoCliente()">
+                  🎯 Capturar Ubicación Actual (GPS)
+                </button>
+                <a id="btn-ver-mapa-nuevo" href="#" target="_blank" class="btn-gps-preview hidden" rel="noopener noreferrer">
+                  🗺️ Ver en Maps ↗
+                </a>
+              </div>
+            </div>
+            <input type="hidden" id="cli-latitud">
+            <input type="hidden" id="cli-longitud">
+            <input type="hidden" id="cli-precision-gps">
+          </div>
+
           <div class="form-group" id="group-cli-vendedor" style="display: none;">
             <label>Asignar Cobrador / Ruta *</label>
             <select id="cli-vendedor">
@@ -1773,6 +1798,6 @@
   <!-- TOAST NOTIFICACIONES -->
   <div id="toast" class="toast hidden"></div>
 
-  <script src="/app.js?v=20260915-15"></script>
+  <script src="/app.js?v=20260915-16"></script>
 </body>
 </html>

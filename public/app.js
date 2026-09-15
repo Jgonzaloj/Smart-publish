@@ -1213,6 +1213,19 @@ function renderClienteCard(c) {
           <div class="detail-item">
             <span class="detail-label">📍 Dirección / Negocio</span>
             <strong class="detail-val">${escapeHtml(c.direccion || 'Sin dirección registrada')}</strong>
+            ${(c.latitud && c.longitud) ? `
+              <div class="gps-route-box">
+                <a href="https://www.google.com/maps/dir/?api=1&destination=${c.latitud},${c.longitud}" target="_blank" rel="noopener noreferrer" class="btn-gps-navigate" onclick="event.stopPropagation()">
+                  🗺️ Cómo llegar (Google Maps / Waze) ↗
+                </a>
+              </div>
+            ` : `
+              <div class="gps-route-box">
+                <button type="button" class="btn-gps-save-here" onclick="guardarGpsClienteEnRuta('${c.clienteId}', event)">
+                  📍 Guardar ubicación GPS del negocio aquí
+                </button>
+              </div>
+            `}
           </div>
           <div class="detail-item">
             <span class="detail-label">📊 Plan de Cuotas</span>
@@ -2228,7 +2241,75 @@ async function confirmarRetiro() {
   }
 }
 
-// 7. NUEVO CLIENTE
+// 7. NUEVO CLIENTE & GPS
+async function capturarGpsNuevoCliente() {
+  const btn = document.getElementById('btn-capturar-gps-nuevo');
+  const title = document.getElementById('gps-title-nuevo-cliente');
+  const desc = document.getElementById('gps-desc-nuevo-cliente');
+  const icon = document.getElementById('gps-icon-nuevo-cliente');
+  const btnMapa = document.getElementById('btn-ver-mapa-nuevo');
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = '📡 Obteniendo GPS...';
+  }
+
+  try {
+    const gps = await obtenerUbicacionGPS();
+    if (!gps || gps.latitud == null || gps.longitud == null) {
+      showToast('No se pudo obtener señal GPS. Activa la ubicación de tu celular y permite el acceso.', 'warning');
+      if (title) title.innerText = 'No se pudo capturar GPS';
+      return;
+    }
+
+    document.getElementById('cli-latitud').value = gps.latitud;
+    document.getElementById('cli-longitud').value = gps.longitud;
+    document.getElementById('cli-precision-gps').value = gps.precisionGps || '';
+
+    if (title) title.innerText = `GPS Fijado: ${gps.latitud.toFixed(5)}, ${gps.longitud.toFixed(5)}`;
+    if (desc) desc.innerText = `Precisión: ±${Math.round(gps.precisionGps || 0)}m • Quedará registrado para el cobrador`;
+    if (icon) icon.innerText = '🎯';
+    if (btnMapa) {
+      btnMapa.href = `https://www.google.com/maps?q=${gps.latitud},${gps.longitud}`;
+      btnMapa.classList.remove('hidden');
+    }
+
+    showToast(`📍 Ubicación GPS capturada exitosamente (±${Math.round(gps.precisionGps || 0)}m)`, 'success');
+  } catch (err) {
+    console.error('Error GPS:', err);
+    showToast('Error al capturar GPS: ' + err.message, 'danger');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = '🔄 Actualizar Ubicación GPS';
+    }
+  }
+}
+
+async function guardarGpsClienteEnRuta(clienteId, ev) {
+  if (ev) ev.stopPropagation();
+  showToast('📡 Capturando coordenadas GPS actuales...', 'info');
+
+  try {
+    const gps = await obtenerUbicacionGPS();
+    if (!gps || gps.latitud == null || gps.longitud == null) {
+      showToast('No se pudo obtener señal GPS. Activa la ubicación en tu celular.', 'warning');
+      return;
+    }
+
+    await api(`/clientes/${clienteId}/gps`, {
+      method: 'PATCH',
+      body: JSON.stringify(gps),
+    });
+
+    showToast('📍 ¡Ubicación GPS del cliente registrada con éxito!', 'success');
+    cargarRutaHoy();
+  } catch (err) {
+    console.error('Error al guardar GPS:', err);
+    showToast('Error al guardar GPS: ' + err.message, 'danger');
+  }
+}
+
 async function crearNuevoCliente(e) {
   e.preventDefault();
   const dto = {
@@ -2244,6 +2325,16 @@ async function crearNuevoCliente(e) {
     formaPago: document.getElementById('cre-forma').value,
   };
 
+  const lat = document.getElementById('cli-latitud')?.value;
+  const lng = document.getElementById('cli-longitud')?.value;
+  const prec = document.getElementById('cli-precision-gps')?.value;
+
+  if (lat && lng) {
+    dto.latitud = Number(lat);
+    dto.longitud = Number(lng);
+    if (prec) dto.precisionGps = Number(prec);
+  }
+
   const selVend = document.getElementById('cli-vendedor');
   if (selVend && selVend.value) {
     dto.vendedorId = selVend.value;
@@ -2257,6 +2348,21 @@ async function crearNuevoCliente(e) {
 
     showToast(`✅ Cliente ${dto.nombresAlias} creado con éxito!`, 'success');
     document.getElementById('form-nuevo-cliente').reset();
+
+    // Reset campos de GPS
+    const latInp = document.getElementById('cli-latitud');
+    const lngInp = document.getElementById('cli-longitud');
+    const precInp = document.getElementById('cli-precision-gps');
+    if (latInp) latInp.value = '';
+    if (lngInp) lngInp.value = '';
+    if (precInp) precInp.value = '';
+    const title = document.getElementById('gps-title-nuevo-cliente');
+    if (title) title.innerText = 'Ubicación GPS no registrada';
+    const btnMapa = document.getElementById('btn-ver-mapa-nuevo');
+    if (btnMapa) btnMapa.classList.add('hidden');
+    const btnGps = document.getElementById('btn-capturar-gps-nuevo');
+    if (btnGps) btnGps.innerText = '🎯 Capturar Ubicación Actual (GPS)';
+
     setTab('rutas');
   } catch (err) {
     console.error(err);
@@ -3530,6 +3636,8 @@ window.cargarClientesParaRenovacion = cargarClientesParaRenovacion;
 window.actualizarPrecalculoRenovacion = actualizarPrecalculoRenovacion;
 window.procesarRenovacion = procesarRenovacion;
 window.crearNuevoCliente = crearNuevoCliente;
+window.capturarGpsNuevoCliente = capturarGpsNuevoCliente;
+window.guardarGpsClienteEnRuta = guardarGpsClienteEnRuta;
 
 // Dashboard & Mora
 window.cargarDashboardEjecutivo = cargarDashboardEjecutivo;

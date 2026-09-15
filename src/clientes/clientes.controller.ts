@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { ClientesService } from './clientes.service';
@@ -13,6 +13,15 @@ export class ClientesController {
   @Post()
   crear(@Body() dto: CrearClienteDto, @CurrentUser() user: JwtPayload) {
     return this.clientesService.crear(dto, user);
+  }
+
+  @Patch(':id/gps')
+  actualizarGps(
+    @Param('id') id: string,
+    @Body() body: { latitud: number; longitud: number; precisionGps?: number },
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.clientesService.actualizarGps(id, body, user);
   }
 
   @Post('creditos/renovar')

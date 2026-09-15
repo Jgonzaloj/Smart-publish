@@ -63,6 +63,9 @@ export class ClientesService {
           movil: dto.movil,
           telefono: dto.telefono,
           direccion: dto.direccion,
+          latitud: dto.latitud ?? null,
+          longitud: dto.longitud ?? null,
+          precisionGps: dto.precisionGps ?? null,
         },
       });
 
@@ -80,6 +83,9 @@ export class ClientesService {
           formaPago: dto.formaPago,
           saldoActual: valorConInteres,
           fechaVencimiento: this.calcularFechaVencimiento(dto.formaPago, dto.numeroCuotas),
+          latitud: dto.latitud ?? null,
+          longitud: dto.longitud ?? null,
+          precisionGps: dto.precisionGps ?? null,
         },
       });
 
@@ -248,6 +254,37 @@ export class ClientesService {
         saldoLiquidado: saldoPendienteAnterior,
         netoEntregadoCliente: netoEntregado,
       };
+    });
+  }
+
+  /**
+   * Actualiza las coordenadas GPS del cliente y de su crédito activo.
+   */
+  async actualizarGps(clienteId: string, body: { latitud: number; longitud: number; precisionGps?: number }, user: JwtPayload) {
+    return this.prisma.withTenant(user.tenantId, async (tx) => {
+      const cliente = await tx.cliente.update({
+        where: { id: clienteId },
+        data: {
+          latitud: body.latitud,
+          longitud: body.longitud,
+          precisionGps: body.precisionGps ?? null,
+        },
+      });
+
+      await tx.credito.updateMany({
+        where: {
+          clienteId,
+          tenantId: user.tenantId,
+          estado: { in: ['ACTIVO', 'EN_MORA'] },
+        },
+        data: {
+          latitud: body.latitud,
+          longitud: body.longitud,
+          precisionGps: body.precisionGps ?? null,
+        },
+      });
+
+      return { message: 'Ubicación GPS actualizada con éxito', cliente };
     });
   }
 }

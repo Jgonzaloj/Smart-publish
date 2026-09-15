@@ -3397,3 +3397,148 @@ body.theme-dark .directory-toolbar .search-box input {
     font-size: 0.78rem;
   }
 }
+
+/* ============================================================
+   GEOLOCALIZACIÓN GPS DEL PRÉSTAMO / CLIENTE
+   ============================================================ */
+.gps-capture-card {
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+body.theme-dark .gps-capture-card {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.gps-status-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.gps-icon-live {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.gps-text-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gps-text-wrap strong {
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
+
+.gps-text-wrap small {
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.gps-actions-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-gps-action {
+  background: var(--badge-dark);
+  border: 1px solid var(--badge-dark-border);
+  color: #FFFFFF !important;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.84rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--badge-shadow);
+  touch-action: manipulation;
+}
+
+.btn-gps-action:hover {
+  background: var(--badge-green);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn-gps-preview {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38BDF8 !important;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.84rem;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+}
+
+.btn-gps-preview:hover {
+  background: rgba(56, 189, 248, 0.22);
+}
+
+/* Enlaces GPS en Hoja de Ruta */
+.gps-route-box {
+  margin-top: 6px;
+}
+
+.btn-gps-navigate {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.18) 0%, rgba(2, 132, 199, 0.18) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  color: #38BDF8 !important;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.2);
+  touch-action: manipulation;
+}
+
+.btn-gps-navigate:hover {
+  background: #0284C7;
+  color: #FFFFFF !important;
+  transform: translateY(-1px);
+}
+
+.btn-gps-save-here {
+  background: transparent;
+  border: 1px dashed var(--border-color);
+  color: var(--text-muted);
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+  touch-action: manipulation;
+}
+
+.btn-gps-save-here:hover {
+  border-color: var(--badge-green);
+  color: var(--badge-green);
+  background: rgba(16, 185, 129, 0.08);
+}

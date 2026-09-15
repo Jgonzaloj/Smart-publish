@@ -56,6 +56,9 @@ export interface ClienteRutaItem {
   movil: string;
   telefono: string | null;
   direccion: string | null;
+  latitud: number | null;
+  longitud: number | null;
+  precisionGps: number | null;
   estadoVisita: 'AL_DIA' | 'ATRASADO' | 'AUSENTE' | 'APLAZADO';
   orden: number;
   haPagadoHoy: boolean;

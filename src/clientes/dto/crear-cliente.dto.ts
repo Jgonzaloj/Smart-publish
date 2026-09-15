@@ -13,6 +13,11 @@ export class CrearClienteDto {
   @IsOptional() @IsString() codeudorDocumento?: string;
   @IsOptional() @IsString() codeudorMovil?: string;
 
+  // Ubicación GPS del cliente / préstamo
+  @IsOptional() @IsNumber() latitud?: number;
+  @IsOptional() @IsNumber() longitud?: number;
+  @IsOptional() @IsNumber() precisionGps?: number;
+
   // Detalles de la venta / crédito
   @IsOptional() @IsString() vendedorId?: string;
   @IsOptional() @IsString() productoId?: string;

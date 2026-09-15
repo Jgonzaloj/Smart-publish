@@ -115,6 +115,9 @@ model Cliente {
   movil         String
   telefono      String?
   direccion     String?
+  latitud       Decimal?     @db.Decimal(10, 7)
+  longitud      Decimal?     @db.Decimal(10, 7)
+  precisionGps  Decimal?     @map("precision_gps") @db.Decimal(8, 2)
   estadoVisita  EstadoVisita @default(AL_DIA) @map("estado_visita")
   createdAt     DateTime     @default(now()) @map("created_at")
 
@@ -159,6 +162,9 @@ model Credito {
   saldoActual        Decimal       @map("saldo_actual") @db.Decimal(12, 2)
   fechaInicio        DateTime      @default(now()) @map("fecha_inicio")
   fechaVencimiento   DateTime      @map("fecha_vencimiento")
+  latitud            Decimal?      @db.Decimal(10, 7)
+  longitud           Decimal?      @db.Decimal(10, 7)
+  precisionGps       Decimal?      @map("precision_gps") @db.Decimal(8, 2)
   estado             EstadoCredito @default(ACTIVO)
   renovadoDeId       String?       @map("renovado_de_id")
   tieneSeguro        Boolean       @default(false) @map("tiene_seguro")
