@@ -485,6 +485,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   vincularBotonTactil('drawer-tab-dashboard', () => { setTab('dashboard'); cerrarDrawerMenu(); });
   vincularBotonTactil('drawer-tab-mora', () => { setTab('mora'); cerrarDrawerMenu(); });
   vincularBotonTactil('drawer-tab-usuarios', () => { setTab('usuarios'); cerrarDrawerMenu(); });
+  vincularBotonTactil('btn-drawer-pin', () => { lockApp(); cerrarDrawerMenu(); });
+  vincularBotonTactil('btn-drawer-logout', () => cerrarSesion());
 
   // Items del menú desplegable
   vincularBotonTactil('tab-rutas', () => setTab('rutas'));
@@ -752,8 +754,13 @@ async function manejarPortalRegistro(e) {
 
 // CERRAR SESIÓN / SALIR
 function cerrarSesion() {
+  cerrarDrawerMenu();
+  document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.add('hidden'));
+  document.getElementById('pin-overlay')?.classList.add('hidden');
+
   state.token = null;
   state.user = null;
+  state.rutaActual = null;
   localStorage.removeItem('crediya_token');
   localStorage.removeItem('crediya_user');
   localStorage.removeItem('crediya_role');

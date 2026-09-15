@@ -11,7 +11,6 @@
 -- =====================================================================
 
 -- 1. Activar RLS en cada tabla que tiene tenant_id
-ALTER TABLE tenants              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usuarios              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE productos_credito     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE clientes              ENABLE ROW LEVEL SECURITY;

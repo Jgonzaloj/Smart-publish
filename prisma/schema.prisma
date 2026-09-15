@@ -48,6 +48,8 @@ model Tenant {
   nombreNegocio String   @map("nombre_negocio")
   plan          String   @default("free")
   activo        Boolean  @default(true)
+  moneda        String   @default("PEN")
+  pais          String   @default("Perú")
   createdAt     DateTime @default(now()) @map("created_at")
 
   usuarios          Usuario[]

@@ -90,17 +90,31 @@ export class AuthService {
     moneda: string = 'PEN',
     pais: string = 'Perú',
   ) {
+    const emailNormalizado = (email || '').trim().toLowerCase();
+    const existing = await this.prisma.usuario.findFirst({
+      where: { email: emailNormalizado },
+    });
+
+    if (existing) {
+      throw new UnauthorizedException('El correo ya está registrado en otra empresa. Utiliza otro correo o inicia sesión.');
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
 
     const tenant = await this.prisma.tenant.create({
-      data: { nombreNegocio, activo: true, moneda, pais } as any,
+      data: {
+        nombreNegocio: (nombreNegocio || 'Mi Empresa').trim(),
+        activo: true,
+        moneda: moneda || 'PEN',
+        pais: pais || (moneda === 'PEN' ? 'Perú' : moneda === 'COP' ? 'Colombia' : moneda === 'MXN' ? 'México' : 'Internacional'),
+      },
     });
 
     const usuario = await this.prisma.usuario.create({
       data: {
         tenantId: tenant.id,
-        nombre: adminNombre,
-        email,
+        nombre: (adminNombre || 'Administrador').trim(),
+        email: emailNormalizado,
         rol: 'ADMIN',
         passwordHash,
         activo: true,
@@ -117,7 +131,7 @@ export class AuthService {
       },
     });
 
-    return this.login({ email, password });
+    return this.login({ email: emailNormalizado, password });
   }
 
   /**
