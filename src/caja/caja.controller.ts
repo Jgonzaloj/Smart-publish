@@ -3,7 +3,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { Roles, RolesGuard } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CajaService } from './caja.service';
-import { CrearMovimientoDto, RetiroCajaDto, CerrarCuadreDto } from './dto/caja.dto';
+import { CrearMovimientoDto, RetiroCajaDto, CerrarCuadreDto, SetCajaInicialDto, MovimientoSeguroDto } from './dto/caja.dto';
 import { JwtPayload } from '../auth/jwt.strategy';
 
 @Controller('caja')
@@ -30,6 +30,27 @@ export class CajaController {
     return this.cajaService.registrarRetiro(dto, user);
   }
 
+  // ---- Resumen del Día estilo V13 ----
+
+  @Get('resumen-dia')
+  obtenerResumenDia(
+    @Query('fecha') fecha: string | undefined,
+    @Query('vendedorId') vendedorId: string | undefined,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.cajaService.obtenerResumenDia(user, fecha, vendedorId);
+  }
+
+  @Post('caja-inicial')
+  setCajaInicial(@Body() dto: SetCajaInicialDto, @CurrentUser() user: JwtPayload) {
+    return this.cajaService.setCajaInicial(dto, user);
+  }
+
+  @Post('movimiento-seguro')
+  registrarMovimientoSeguro(@Body() dto: MovimientoSeguroDto, @CurrentUser() user: JwtPayload) {
+    return this.cajaService.registrarMovimientoSeguro(dto, user);
+  }
+
   // ---- Skill 6: cuadre de caja ----
 
   @Get('cuadre/hoy')
@@ -49,3 +70,4 @@ export class CajaController {
     return this.cajaService.resumenAdmin(user, fecha);
   }
 }
+

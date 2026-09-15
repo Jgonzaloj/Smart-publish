@@ -32,6 +32,15 @@ enum EstadoVisita {
   AL_DIA
   ATRASADO
   AUSENTE
+  APLAZADO
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TRANSFERENCIA
+  NEQUI
+  YAPE
+  OTRO
 }
 
 model Tenant {
@@ -180,19 +189,21 @@ model Seguro {
 }
 
 model Abono {
-  id               String   @id @default(uuid())
-  tenantId         String   @map("tenant_id")
-  creditoId        String   @map("credito_id")
-  usuarioId        String   @map("usuario_id")
-  fecha            DateTime @default(now())
-  saldoAnterior    Decimal  @map("saldo_anterior") @db.Decimal(12, 2)
-  valorAbonado     Decimal  @map("valor_abonado") @db.Decimal(12, 2)
-  saldoNuevo       Decimal  @map("saldo_nuevo") @db.Decimal(12, 2)
-  numeroCuota      Int      @map("numero_cuota")
-  cuotasAtrasadas  Int      @default(0) @map("cuotas_atrasadas")
-  latitud          Decimal? @db.Decimal(10, 7)
-  longitud         Decimal? @db.Decimal(10, 7)
-  precisionGps     Decimal? @map("precision_gps") @db.Decimal(8, 2)
+  id               String     @id @default(uuid())
+  tenantId         String     @map("tenant_id")
+  creditoId        String     @map("credito_id")
+  usuarioId        String     @map("usuario_id")
+  fecha            DateTime   @default(now())
+  saldoAnterior    Decimal    @map("saldo_anterior") @db.Decimal(12, 2)
+  valorAbonado     Decimal    @map("valor_abonado") @db.Decimal(12, 2)
+  saldoNuevo       Decimal    @map("saldo_nuevo") @db.Decimal(12, 2)
+  numeroCuota      Int        @map("numero_cuota")
+  cuotasAtrasadas  Int        @default(0) @map("cuotas_atrasadas")
+  metodoPago       MetodoPago @default(EFECTIVO) @map("metodo_pago")
+  esAdicional      Boolean    @default(false) @map("es_adicional")
+  latitud          Decimal?   @db.Decimal(10, 7)
+  longitud         Decimal?   @db.Decimal(10, 7)
+  precisionGps     Decimal?   @map("precision_gps") @db.Decimal(8, 2)
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id])
   credito Credito @relation(fields: [creditoId], references: [id])
@@ -210,6 +221,7 @@ model MovimientoCaja {
   tipo       TipoMovimiento
   concepto   String
   valor      Decimal        @db.Decimal(12, 2)
+  esSeguro   Boolean        @default(false) @map("es_seguro")
   fecha      DateTime       @default(now())
 
   tenant   Tenant  @relation(fields: [tenantId], references: [id])
@@ -224,9 +236,16 @@ model CuadreCaja {
   tenantId            String   @map("tenant_id")
   vendedorId          String   @map("vendedor_id")
   fecha               DateTime @default(now())
+  cajaInicial         Decimal  @default(0) @map("caja_inicial") @db.Decimal(12, 2)
   totalCobrado        Decimal  @default(0) @map("total_cobrado") @db.Decimal(12, 2)
+  recaudoEfectivo     Decimal  @default(0) @map("recaudo_efectivo") @db.Decimal(12, 2)
+  recaudoTransferencia Decimal @default(0) @map("recaudo_transferencia") @db.Decimal(12, 2)
   totalPrestadoNuevo  Decimal  @default(0) @map("total_prestado_nuevo") @db.Decimal(12, 2)
   totalRetiros        Decimal  @default(0) @map("total_retiros") @db.Decimal(12, 2)
+  cajaSeguros         Decimal  @default(0) @map("caja_seguros") @db.Decimal(12, 2)
+  ingresosSeguros     Decimal  @default(0) @map("ingresos_seguros") @db.Decimal(12, 2)
+  retirosSeguros      Decimal  @default(0) @map("retiros_seguros") @db.Decimal(12, 2)
+  sincronizacionAuto  Boolean  @default(true) @map("sincronizacion_auto")
   observaciones       String?
 
   tenant   Tenant  @relation(fields: [tenantId], references: [id])

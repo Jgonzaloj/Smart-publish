@@ -156,6 +156,8 @@ export class RutasService {
         const haPagadoHoy = totalAbonadoHoy > 0;
         if (haPagadoHoy) cobradosHoy++;
         if (c.estadoVisita === 'AUSENTE') ausentesHoy++;
+        let aplazadosHoy = 0;
+        if (c.estadoVisita === 'APLAZADO') aplazadosHoy++;
         if (c.estadoVisita === 'ATRASADO' || (creditoItem && creditoItem.cuotasAtrasadas > 0)) {
           atrasadosHoy++;
         }
@@ -170,13 +172,24 @@ export class RutasService {
           movil: c.movil,
           telefono: c.telefono,
           direccion: c.direccion,
-          estadoVisita: c.estadoVisita as 'AL_DIA' | 'ATRASADO' | 'AUSENTE',
+          estadoVisita: c.estadoVisita as 'AL_DIA' | 'ATRASADO' | 'AUSENTE' | 'APLAZADO',
           orden: ordenPos,
           haPagadoHoy,
           totalAbonadoHoy,
           creditoActivo: creditoItem,
         });
       }
+
+      // Clientes creados hoy
+      const clientesNuevosHoy = await tx.cliente.count({
+        where: {
+          tenantId: user.tenantId,
+          ...(vendedorIdFinal ? { vendedorId: vendedorIdFinal } : {}),
+          createdAt: { gte: inicioDia, lte: finDia },
+        },
+      });
+
+      const totalAplazados = items.filter(it => it.estadoVisita === 'APLAZADO').length;
 
       // Ordenar: primero los configurados en ordenVisitas, luego por id/orden
       items.sort((a, b) => a.orden - b.orden);
@@ -187,7 +200,7 @@ export class RutasService {
       });
 
       const totalClientes = items.length;
-      const pendientesHoy = Math.max(0, totalClientes - cobradosHoy - ausentesHoy);
+      const pendientesHoy = Math.max(0, totalClientes - cobradosHoy - ausentesHoy - totalAplazados);
 
       return {
         vendedorId: vendedorIdFinal || 'todos',
@@ -199,7 +212,9 @@ export class RutasService {
           clientesCobradosHoy: cobradosHoy,
           clientesPendientesHoy: pendientesHoy,
           clientesAusentesHoy: ausentesHoy,
+          clientesAplazadosHoy: totalAplazados,
           clientesAtrasadosHoy: atrasadosHoy,
+          clientesNuevosHoy,
           totalRecaudadoHoy: Number(totalRecaudadoHoy.toFixed(2)),
           totalEsperadoHoy: Number(totalEsperadoHoy.toFixed(2)),
         },

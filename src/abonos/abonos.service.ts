@@ -61,6 +61,8 @@ export class AbonosService {
           fecha: new Date(),
           numeroCuota: cuotasPagadas,
           cuotasAtrasadas: quedaPagado ? 0 : calculoMora.cuotasAtrasadas,
+          metodoPago: (dto.metodoPago as any) || 'EFECTIVO',
+          esAdicional: dto.esAdicional || false,
           latitud: dto.latitud,
           longitud: dto.longitud,
           precisionGps: dto.precisionGps,

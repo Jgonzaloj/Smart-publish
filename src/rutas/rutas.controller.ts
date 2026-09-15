@@ -58,10 +58,22 @@ export class RutasController {
   }
 
   /**
-   * Guarda o actualiza la secuencia u orden de visita de los clientes en la ruta.
+   * Marca a un cliente como APLAZADO (siguiente día).
+   */
+  @Patch('clientes/:clienteId/aplazar')
+  marcarAplazado(
+    @Param('clienteId') clienteId: string,
+    @Body() dto: MarcarAusenteDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.rutasService.cambiarEstadoVisita(clienteId, { estadoVisita: 'APLAZADO', observaciones: dto?.observaciones }, user);
+  }
+
+  /**
+   * Guarda o actualiza el orden manual de visitas de la ruta.
    */
   @Put('orden')
-  guardarOrdenRuta(@Body() dto: ActualizarOrdenRutaDto, @CurrentUser() user: JwtPayload) {
-    return this.rutasService.guardarOrdenRuta(dto, user);
+  actualizarOrden(@Body() dto: ActualizarOrdenRutaDto, @CurrentUser() user: JwtPayload) {
+    return this.rutasService.actualizarOrdenRuta(dto, user);
   }
 }

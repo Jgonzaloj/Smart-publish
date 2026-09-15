@@ -30,8 +30,8 @@ export class MarcarAusenteDto {
 }
 
 export class CambiarEstadoVisitaDto {
-  @IsIn(['AL_DIA', 'ATRASADO', 'AUSENTE'])
-  estadoVisita: 'AL_DIA' | 'ATRASADO' | 'AUSENTE';
+  @IsIn(['AL_DIA', 'ATRASADO', 'AUSENTE', 'APLAZADO'])
+  estadoVisita: 'AL_DIA' | 'ATRASADO' | 'AUSENTE' | 'APLAZADO';
 
   @IsOptional()
   @IsString()
@@ -56,7 +56,7 @@ export interface ClienteRutaItem {
   movil: string;
   telefono: string | null;
   direccion: string | null;
-  estadoVisita: 'AL_DIA' | 'ATRASADO' | 'AUSENTE';
+  estadoVisita: 'AL_DIA' | 'ATRASADO' | 'AUSENTE' | 'APLAZADO';
   orden: number;
   haPagadoHoy: boolean;
   totalAbonadoHoy: number;
@@ -85,7 +85,9 @@ export interface ResumenRutaHoy {
     clientesCobradosHoy: number;
     clientesPendientesHoy: number;
     clientesAusentesHoy: number;
+    clientesAplazadosHoy: number;
     clientesAtrasadosHoy: number;
+    clientesNuevosHoy: number;
     totalRecaudadoHoy: number;
     totalEsperadoHoy: number;
   };
