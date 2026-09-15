@@ -469,6 +469,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Botones de navegación inferior móvil
   vincularBotonTactil('mob-nav-rutas', () => setTab('rutas'));
+  vincularBotonTactil('mob-nav-resumen', () => setTab('resumen-dia'));
   vincularBotonTactil('mob-nav-caja', () => setTab('caja'));
   vincularBotonTactil('mob-nav-nuevo', () => setTab('nuevo'));
   vincularBotonTactil('mob-nav-dashboard', () => setTab('dashboard'));
@@ -477,6 +478,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Botones del menú lateral Drawer
   vincularBotonTactil('.btn-drawer-new-sale', () => { setTab('nuevo'); cerrarDrawerMenu(); });
   vincularBotonTactil('drawer-tab-rutas', () => { setTab('rutas'); cerrarDrawerMenu(); });
+  vincularBotonTactil('drawer-tab-resumen-dia', () => { setTab('resumen-dia'); cerrarDrawerMenu(); });
   vincularBotonTactil('drawer-tab-caja', () => { setTab('caja'); cerrarDrawerMenu(); });
   vincularBotonTactil('drawer-tab-nuevo', () => { setTab('nuevo'); cerrarDrawerMenu(); });
   vincularBotonTactil('drawer-tab-renovar', () => { setTab('renovar'); cerrarDrawerMenu(); });
@@ -486,6 +488,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Items del menú desplegable
   vincularBotonTactil('tab-rutas', () => setTab('rutas'));
+  vincularBotonTactil('tab-resumen-dia', () => setTab('resumen-dia'));
   vincularBotonTactil('tab-caja', () => setTab('caja'));
   vincularBotonTactil('tab-nuevo', () => setTab('nuevo'));
   vincularBotonTactil('tab-renovar', () => setTab('renovar'));
@@ -2776,11 +2779,11 @@ async function cargarDashboardEjecutivo() {
 }
 
 function renderizarGraficaSemanal(dias) {
-  const container = document.getElementById('dash-chart-semanal');
+  const container = document.getElementById('dash-chart-semanal') || document.getElementById('dash-chart-bars');
   if (!container) return;
 
   if (!dias || dias.length === 0) {
-    container.innerHTML = '<div class="empty-cell">No hay datos históricos esta semana.</div>';
+    container.innerHTML = '<div class="empty-cell" style="width: 100%; text-align: center; padding: 30px;">No hay datos históricos esta semana.</div>';
     return;
   }
 
@@ -3318,7 +3321,107 @@ function abrirModalAbonoPorId(clienteId) {
   }
 }
 
-// Exponer funciones en window
+// ============================================================
+// EXPORTACIÓN DE CARTERA & CUADRE EN FORMATO CSV
+// ============================================================
+function exportarCarteraCSV() {
+  if (!state.rutaActual || !state.rutaActual.clientes || state.rutaActual.clientes.length === 0) {
+    showToast('No hay clientes en la ruta actual para exportar', 'warning');
+    return;
+  }
+  const m = obtenerMonedaActual();
+  const headers = ['Orden', 'Cliente', 'Documento', 'Teléfono', 'Dirección', `Cuota (${m.simbolo.trim()})`, `Saldo Actual (${m.simbolo.trim()})`, 'Estado', 'Ha Pagado Hoy'];
+  const rows = state.rutaActual.clientes.map((c, i) => [
+    i + 1,
+    `"${(c.nombresAlias || c.nombre || '').replace(/"/g, '""')}"`,
+    `"${(c.documento || '').replace(/"/g, '""')}"`,
+    `"${(c.movil || '').replace(/"/g, '""')}"`,
+    `"${(c.direccion || '').replace(/"/g, '""')}"`,
+    c.creditoActivo ? c.creditoActivo.valorCuota : (c.valorCuota || 0),
+    c.creditoActivo ? c.creditoActivo.saldoActual : (c.saldoActual || 0),
+    `"${c.estadoVisita || (c.haPagadoHoy ? 'PAGADO' : 'PENDIENTE')}"`,
+    c.haPagadoHoy ? 'SI' : 'NO'
+  ]);
+  
+  const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Cartera_Ruta_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('📊 Cartera exportada en CSV exitosamente', 'success');
+}
+
+async function exportarCuadreCSV() {
+  try {
+    const cuadre = await api('/caja/cuadre/hoy');
+    const movimientos = await api('/caja/movimientos');
+    const m = obtenerMonedaActual();
+    
+    let lines = [
+      '\uFEFFCUADRE DE CAJA DIARIO - CREDIYA',
+      `Fecha: ${new Date().toLocaleDateString('es-PE')}`,
+      `Moneda: ${m.nombre} (${m.simbolo.trim()})`,
+      '',
+      'RESUMEN FINANCIERO',
+      `Total Cobrado Hoy,${cuadre.totalCobrado || 0}`,
+      `Préstamos / Renovaciones,${cuadre.totalPrestadoNuevo || 0}`,
+      `Ingresos Manuales,${cuadre.totalIngresos ?? cuadre.totalIngresosManuales ?? 0}`,
+      `Egresos / Retiros,${(cuadre.totalEgresos ?? cuadre.totalEgresosManuales ?? 0) + (cuadre.totalRetiros || 0)}`,
+      `Efectivo Esperado en Caja,${cuadre.saldoEsperadoEnCaja ?? cuadre.saldoEnCajaEsperado ?? 0}`,
+      '',
+      'DETALLE DE MOVIMIENTOS',
+      'Hora,Tipo,Concepto,Valor'
+    ];
+    
+    if (movimientos && movimientos.length > 0) {
+      movimientos.forEach(mov => {
+        const hora = new Date(mov.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        lines.push(`"${hora}","${mov.tipo}","${(mov.concepto || '').replace(/"/g, '""')}",${mov.valor}`);
+      });
+    } else {
+      lines.push('No hay movimientos registrados hoy,,,');
+    }
+    
+    const csvContent = lines.join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Cuadre_Caja_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('📥 Cuadre de caja exportado en CSV', 'success');
+  } catch (err) {
+    console.error('Error exportando cuadre CSV:', err);
+    showToast('Error al exportar cuadre CSV: ' + err.message, 'danger');
+  }
+}
+
+// ============================================================
+// EXPOSICIÓN GLOBAL DE TODAS LAS FUNCIONES EN WINDOW
+// ============================================================
+window.setTab = setTab;
+window.switchUser = switchUser;
+window.toggleTheme = toggleTheme;
+window.cerrarSesion = cerrarSesion;
+window.cambiarMonedaGlobal = cambiarMonedaGlobal;
+window.cambiarVendedorRuta = cambiarVendedorRuta;
+window.filtrarEstadoRuta = filtrarEstadoRuta;
+window.filtrarUsuarios = filtrarUsuarios;
+window.buscarUsuario = buscarUsuario;
+window.instalarAppPWA = instalarAppPWA;
+window.toggleMenuDesplegable = toggleMenuDesplegable;
+window.abrirDrawerMenu = abrirDrawerMenu;
+window.cerrarDrawerMenu = cerrarDrawerMenu;
+
+// Resumen del Día & Cuadre
 window.cargarResumenDia = cargarResumenDia;
 window.abrirModalCajaInicial = abrirModalCajaInicial;
 window.cerrarModalCajaInicial = cerrarModalCajaInicial;
@@ -3333,3 +3436,67 @@ window.cerrarModalSeguros = cerrarModalSeguros;
 window.guardarMovimientoSeguro = guardarMovimientoSeguro;
 window.toggleSyncAuto = toggleSyncAuto;
 window.abrirModalAbonoPorId = abrirModalAbonoPorId;
+
+// Caja & CSV
+window.cargarCuadreCaja = cargarCuadreCaja;
+window.abrirModalMovimiento = abrirModalMovimiento;
+window.cerrarModalMovimiento = cerrarModalMovimiento;
+window.guardarMovimiento = guardarMovimiento;
+window.cerrarCaja = cerrarCaja;
+window.abrirModalRetiro = abrirModalRetiro;
+window.cerrarModalRetiro = cerrarModalRetiro;
+window.confirmarRetiro = confirmarRetiro;
+window.exportarCarteraCSV = exportarCarteraCSV;
+window.exportarCuadreCSV = exportarCuadreCSV;
+
+// Ruta & Abonos
+window.cargarRutaHoy = cargarRutaHoy;
+window.toggleExpandClient = toggleExpandClient;
+window.moverClienteRuta = moverClienteRuta;
+window.abrirModalAbono = abrirModalAbono;
+window.cerrarModalAbono = cerrarModalAbono;
+window.confirmarAbono = confirmarAbono;
+window.abrirModalAusente = abrirModalAusente;
+window.cerrarModalAusente = cerrarModalAusente;
+window.confirmarAusente = confirmarAusente;
+window.cerrarModalRecibo = cerrarModalRecibo;
+window.compartirWhatsAppRecibo = compartirWhatsAppRecibo;
+window.descargarImagenComprobante = descargarImagenComprobante;
+window.copiarTextoRecibo = copiarTextoRecibo;
+window.imprimirTicketPOS = imprimirTicketPOS;
+window.enviarRecordatorioWhatsApp = enviarRecordatorioWhatsApp;
+
+// Extracto & Estado de Cuenta
+window.verEstadoCuentaCliente = verEstadoCuentaCliente;
+window.cerrarModalEstadoCuenta = cerrarModalEstadoCuenta;
+window.compartirExtractoWhatsApp = compartirExtractoWhatsApp;
+window.imprimirExtractoPOS = imprimirExtractoPOS;
+
+// Renovación & Nuevo Cliente
+window.cargarClientesParaRenovacion = cargarClientesParaRenovacion;
+window.actualizarPrecalculoRenovacion = actualizarPrecalculoRenovacion;
+window.procesarRenovacion = procesarRenovacion;
+window.crearNuevoCliente = crearNuevoCliente;
+
+// Dashboard & Mora
+window.cargarDashboardEjecutivo = cargarDashboardEjecutivo;
+window.ejecutarMoraEnVivo = ejecutarMoraEnVivo;
+
+// Usuarios & Permisos
+window.cargarUsuarios = cargarUsuarios;
+window.abrirModalNuevoUsuario = abrirModalNuevoUsuario;
+window.abrirModalEditarUsuario = abrirModalEditarUsuario;
+window.cerrarModalUsuario = cerrarModalUsuario;
+window.guardarUsuario = guardarUsuario;
+window.abrirModalPassword = abrirModalPassword;
+window.cerrarModalPassword = cerrarModalPassword;
+window.guardarNuevaPassword = guardarNuevaPassword;
+window.alternarEstadoUsuario = alternarEstadoUsuario;
+window.eliminarUsuarioFrontend = eliminarUsuarioFrontend;
+
+// PIN Seguridad
+window.lockApp = lockApp;
+window.pressPin = pressPin;
+window.clearPin = clearPin;
+window.deletePin = deletePin;
+window.limpiarBusquedaRuta = limpiarBusquedaRuta;
