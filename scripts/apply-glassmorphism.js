@@ -1,4 +1,6 @@
-/* ============================================================
+const fs = require('fs');
+
+const glassmorphismCSS = `/* ============================================================
    SISTEMA DE DISEÑO: GLASSMORPHISM & CYBER DYNAMIC (APPLE VISIONOS)
    ============================================================ */
 :root,
@@ -2081,3 +2083,7 @@ body.theme-dark .ticket-row {
     grid-template-columns: 1fr;
   }
 }
+`;
+
+fs.writeFileSync('public/style.css', glassmorphismCSS, 'utf8');
+console.log('Successfully written full Glassmorphism design system to public/style.css');
