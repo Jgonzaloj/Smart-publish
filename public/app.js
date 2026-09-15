@@ -1088,6 +1088,58 @@ function filtrarEstadoRuta(estado, btn) {
   aplicarFiltrosYRenderizarRuta();
 }
 
+// DELEGACIÓN DE EVENTOS TÁCTILES ULTRA-RÁPIDA PARA MÓVILES
+function inicializarDelegacionRuta() {
+  const container = document.getElementById('lista-clientes-ruta');
+  if (!container || container.dataset.delegated === 'true') return;
+  container.dataset.delegated = 'true';
+
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchStartTime = 0;
+
+  container.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches[0]) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchStartTime = Date.now();
+    }
+  }, { passive: true });
+
+  container.addEventListener('touchend', (e) => {
+    if (!e.changedTouches || !e.changedTouches[0]) return;
+    const deltaX = Math.abs(e.changedTouches[0].clientX - touchStartX);
+    const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
+    const timeDiff = Date.now() - touchStartTime;
+
+    // Si fue un tap (movimiento menor a 15px y tiempo menor a 500ms)
+    if (deltaX < 15 && deltaY < 15 && timeDiff < 500) {
+      const card = e.target.closest('.client-card');
+      if (!card) return;
+
+      // Si el toque fue dentro de un botón interactivo (abono, ausente, etc.), dejar que actúe su propio click
+      if (e.target.closest('button, a, input, select, .order-box, .client-actions')) return;
+
+      const clienteId = card.dataset.clientId || card.id.replace('card-', '');
+      if (clienteId) {
+        toggleExpandirCliente(clienteId);
+      }
+    }
+  }, { passive: true });
+
+  container.addEventListener('click', (e) => {
+    const card = e.target.closest('.client-card');
+    if (!card) return;
+
+    if (e.target.closest('button, a, input, select, .order-box, .client-actions')) return;
+
+    const clienteId = card.dataset.clientId || card.id.replace('card-', '');
+    if (clienteId) {
+      toggleExpandirCliente(clienteId);
+    }
+  });
+}
+
 function aplicarFiltrosYRenderizarRuta() {
   const container = document.getElementById('lista-clientes-ruta');
   if (!container || !state.rutaActual) return;
@@ -1148,6 +1200,7 @@ function aplicarFiltrosYRenderizarRuta() {
   }
 
   container.innerHTML = filtrados.map((c) => renderClienteCard(c)).join('');
+  inicializarDelegacionRuta();
 }
 
 // RENDERIZADO DE TARJETA DE CLIENTE (COMPACTA + DESPLEGABLE TÁCTIL)

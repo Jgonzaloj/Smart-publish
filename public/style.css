@@ -1122,9 +1122,10 @@ body.theme-dark .brand-badge {
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: var(--card-shadow);
-  user-select: none;
   width: 100%;
   box-sizing: border-box;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .client-card:hover {
@@ -1145,6 +1146,9 @@ body.theme-dark .brand-badge {
   justify-content: space-between;
   gap: 10px;
   width: 100%;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .order-box {
