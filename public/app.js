@@ -2760,7 +2760,7 @@ function abrirModalNuevoUsuario() {
   document.getElementById('usr-moneda').value = obtenerMonedaActual().codigo;
   document.getElementById('usr-password').value = '';
   document.getElementById('usr-password').required = true;
-  document.getElementById('usr-pin').value = '1234';
+  document.getElementById('usr-pin').value = '';
   document.getElementById('usr-pass-fields').style.display = 'grid';
 
   document.getElementById('modal-usuario').classList.remove('hidden');

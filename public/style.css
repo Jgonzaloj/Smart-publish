@@ -3065,25 +3065,29 @@ body.theme-dark .auth-tabs {
    ESTILOS ESPECÍFICOS: RESUMEN DEL DÍA ESTILO V13 PRO
    ============================================================ */
 .v13-resumen-card {
-  background: var(--bg-card);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border: 1px solid var(--border-color);
+  background: #FFFFFF !important;
+  border: 1.5px solid #CBD5E1 !important;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
   margin-bottom: 16px;
   width: 100%;
 }
 
+body.theme-dark .v13-resumen-card {
+  background: #1E293B !important;
+  border: 1.5px solid #334155 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
 .v13-card-header {
-  background: var(--badge-dark);
-  padding: 12px 16px;
+  background: #0F172A !important;
+  padding: 14px 18px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--border-color);
-  color: #FFFFFF;
+  border-bottom: 1.5px solid #334155;
+  color: #FFFFFF !important;
 }
 
 .v13-rows-container {
@@ -3095,49 +3099,81 @@ body.theme-dark .auth-tabs {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--border-subtle);
-  font-size: 0.88rem;
+  padding: 12px 18px;
+  border-bottom: 1px solid #E2E8F0;
+  font-size: 0.92rem;
+  background: #FFFFFF;
   transition: background 0.15s ease;
 }
 
+body.theme-dark .v13-row {
+  border-bottom: 1px solid #334155;
+  background: #1E293B;
+}
+
 .v13-row:hover {
-  background: var(--bg-card-hover);
+  background: #F8FAFC;
+}
+
+body.theme-dark .v13-row:hover {
+  background: #0F172A;
 }
 
 .v13-label {
-  color: var(--text-secondary);
-  font-weight: 600;
+  color: #334155 !important;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 6px;
+  font-size: 0.90rem;
+}
+
+body.theme-dark .v13-label {
+  color: #CBD5E1 !important;
 }
 
 .v13-val {
-  color: var(--text-primary);
-  font-weight: 700;
+  color: #0F172A !important;
+  font-weight: 800;
   text-align: right;
+  font-size: 0.95rem;
   font-family: inherit;
 }
 
+body.theme-dark .v13-val {
+  color: #FFFFFF !important;
+}
+
 .v13-highlight {
-  background: rgba(16, 185, 129, 0.08);
+  background: #ECFDF5 !important;
+}
+
+body.theme-dark .v13-highlight {
+  background: rgba(16, 185, 129, 0.15) !important;
 }
 
 .v13-final-row {
-  background: rgba(16, 185, 129, 0.16) !important;
-  border-top: 2px solid var(--badge-green);
-  border-bottom: 2px solid var(--badge-green);
-  padding: 14px 16px;
+  background: #DCFCE7 !important;
+  border-top: 2px solid #059669 !important;
+  border-bottom: 2px solid #059669 !important;
+  padding: 16px 18px;
+}
+
+body.theme-dark .v13-final-row {
+  background: rgba(5, 150, 105, 0.25) !important;
+  border-top: 2px solid #10B981 !important;
+  border-bottom: 2px solid #10B981 !important;
 }
 
 .v13-toggle-row {
-  background: rgba(0, 0, 0, 0.04);
-  padding: 12px 16px;
+  background: #F1F5F9 !important;
+  padding: 14px 18px;
+  border-top: 1px solid #CBD5E1;
 }
 
 body.theme-dark .v13-toggle-row {
-  background: rgba(255, 255, 255, 0.04);
+  background: #0F172A !important;
+  border-top: 1px solid #334155;
 }
 
 .btn-edit-caja {

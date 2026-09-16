@@ -22,9 +22,20 @@ async function generateManual() {
   await page.screenshot({ path: imgLogin });
   console.log('Captura 1: Portal de Login guardada');
 
-  // Acceder como Cobrador (Carlos)
+  // Iniciar sesión con credenciales de administrador o vendedor
   await page.evaluate(() => {
-    if (typeof accesoRapidoDemo === 'function') accesoRapidoDemo('vendedor');
+    document.getElementById('portal-email').value = 'admin@crediya.com';
+    document.getElementById('portal-password').value = 'admin123';
+    // Omitir portada y entrar directamente a la app
+    document.getElementById('landing-login-portal').classList.add('hidden');
+    document.getElementById('app-main-layout').classList.remove('hidden');
+    if (typeof state !== 'undefined') {
+      state.token = 'mock_jwt_token';
+      state.user = { id: 'usr-1', nombre: 'Carlos Cobrador', rol: 'VENDEDOR' };
+      state.role = 'vendedor';
+    }
+    if (typeof cargarRutaHoy === 'function') cargarRutaHoy();
+    if (typeof setTab === 'function') setTab('ruta');
   });
   await page.waitForTimeout(2000);
 
@@ -36,7 +47,11 @@ async function generateManual() {
   // 3. Expandir detalle de cliente
   await page.evaluate(() => {
     const card = document.querySelector('.client-card');
-    if (card) card.click();
+    if (card) {
+      card.classList.add('expanded');
+      const id = card.dataset.clientId || card.id.replace('card-', '');
+      if (typeof toggleExpandirCliente === 'function') toggleExpandirCliente(id);
+    }
   });
   await page.waitForTimeout(800);
   const imgCliente = path.join(screenshotsDir, '03-cliente-detalle.png');
@@ -45,8 +60,9 @@ async function generateManual() {
 
   // 4. Modal de Abono
   await page.evaluate(() => {
-    const btn = document.querySelector('.client-actions button.btn-primary');
-    if (btn) btn.click();
+    const card = document.querySelector('.client-card');
+    const id = card ? (card.dataset.clientId || card.id.replace('card-', '')) : '1';
+    if (typeof abrirModalAbono === 'function') abrirModalAbono(id);
   });
   await page.waitForTimeout(600);
   await page.evaluate(() => {
@@ -59,14 +75,13 @@ async function generateManual() {
 
   // Cerrar modal de abono
   await page.evaluate(() => {
-    const btn = document.querySelector('#modal-abono .modal-close');
-    if (btn) btn.click();
+    if (typeof cerrarModalAbono === 'function') cerrarModalAbono();
   });
   await page.waitForTimeout(500);
 
   // 5. Ir a Cuadre de Caja
   await page.evaluate(() => {
-    if (typeof showTab === 'function') showTab('caja');
+    if (typeof setTab === 'function') setTab('caja');
   });
   await page.waitForTimeout(1500);
   const imgCaja = path.join(screenshotsDir, '05-cuadre-caja.png');
@@ -75,8 +90,12 @@ async function generateManual() {
 
   // 6. Cambiar a Administrador y ver Dashboard
   await page.evaluate(async () => {
-    if (typeof switchUser === 'function') await switchUser('admin');
-    if (typeof showTab === 'function') showTab('dashboard');
+    if (typeof state !== 'undefined') {
+      state.role = 'admin';
+      state.user = { id: 'admin-1', nombre: 'Juan Administrador', rol: 'ADMIN' };
+    }
+    if (typeof setTab === 'function') setTab('dashboard');
+    if (typeof cargarDashboardEjecutivo === 'function') cargarDashboardEjecutivo();
   });
   await page.waitForTimeout(2000);
   const imgDash = path.join(screenshotsDir, '06-dashboard.png');
