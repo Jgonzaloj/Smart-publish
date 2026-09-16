@@ -387,81 +387,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   actualizarBadgeConexion();
   sincronizarAbonosOffline();
 
-  // Vinculación táctil inmediata para móviles (evita que Android descarte el clic al redimensionar o colisionar eventos)
-  const vincularBotonTactil = (target, callback) => {
-    const elements = typeof target === 'string'
-      ? (target.startsWith('.') || target.includes('[') ? document.querySelectorAll(target) : [document.getElementById(target)])
-      : [target];
-
-    elements.forEach((el) => {
-      if (!el) return;
-      let touchTimestamp = 0;
-      el.addEventListener('pointerdown', (e) => {
-        if (e.button && e.button !== 0) return;
-        touchTimestamp = Date.now();
-        callback(e);
-      }, { passive: false });
-
-      el.addEventListener('click', (e) => {
-        if (Date.now() - touchTimestamp < 700) {
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-        callback(e);
-      });
-    });
-  };
-
-  // Botones de autenticación y roles
-  vincularBotonTactil('btn-submit-login', (e) => manejarPortalLogin(e));
-  vincularBotonTactil('btn-demo-vendedor', (e) => accesoRapidoDemo('vendedor', e));
-  vincularBotonTactil('btn-demo-admin', (e) => accesoRapidoDemo('admin', e));
-  vincularBotonTactil('btn-switch-vendedor', () => switchUser('vendedor'));
-  vincularBotonTactil('btn-switch-admin', () => switchUser('admin'));
-  vincularBotonTactil('drawer-switch-vendedor', () => { switchUser('vendedor'); cerrarDrawerMenu(); });
-  vincularBotonTactil('drawer-switch-admin', () => { switchUser('admin'); cerrarDrawerMenu(); });
-
-  // Botones de cabecera superior
-  vincularBotonTactil('btn-theme-toggle', () => toggleTheme());
-  vincularBotonTactil('btn-logout-top', () => cerrarSesion());
-
-  // Botones de la barra toolbar
-  vincularBotonTactil('btn-dropdown-modulos', (e) => toggleMenuDesplegable(e));
-  vincularBotonTactil('.btn-fast-sale', () => setTab('nuevo'));
-  vincularBotonTactil('.btn-nav-drawer', () => abrirDrawerMenu());
-
-  // Botones de navegación inferior móvil
-  vincularBotonTactil('mob-nav-rutas', () => setTab('rutas'));
-  vincularBotonTactil('mob-nav-resumen', () => setTab('resumen-dia'));
-  vincularBotonTactil('mob-nav-caja', () => setTab('caja'));
-  vincularBotonTactil('mob-nav-nuevo', () => setTab('nuevo'));
-  vincularBotonTactil('mob-nav-dashboard', () => setTab('dashboard'));
-  vincularBotonTactil('mob-nav-menu', () => abrirDrawerMenu());
-
-  // Botones del menú lateral Drawer
-  vincularBotonTactil('.btn-drawer-new-sale', () => { setTab('nuevo'); cerrarDrawerMenu(); });
-  vincularBotonTactil('drawer-tab-rutas', () => { setTab('rutas'); cerrarDrawerMenu(); });
-  vincularBotonTactil('drawer-tab-resumen-dia', () => { setTab('resumen-dia'); cerrarDrawerMenu(); });
-  vincularBotonTactil('drawer-tab-caja', () => { setTab('caja'); cerrarDrawerMenu(); });
-  vincularBotonTactil('drawer-tab-nuevo', () => { setTab('nuevo'); cerrarDrawerMenu(); });
-  vincularBotonTactil('drawer-tab-renovar', () => { setTab('renovar'); cerrarDrawerMenu(); });
-  vincularBotonTactil('drawer-tab-dashboard', () => { setTab('dashboard'); cerrarDrawerMenu(); });
-  vincularBotonTactil('drawer-tab-mora', () => { setTab('mora'); cerrarDrawerMenu(); });
-  vincularBotonTactil('drawer-tab-usuarios', () => { setTab('usuarios'); cerrarDrawerMenu(); });
-  vincularBotonTactil('btn-drawer-pin', () => { lockApp(); cerrarDrawerMenu(); });
-  vincularBotonTactil('btn-drawer-logout', () => cerrarSesion());
-
-  // Items del menú desplegable
-  vincularBotonTactil('tab-rutas', () => setTab('rutas'));
-  vincularBotonTactil('tab-resumen-dia', () => setTab('resumen-dia'));
-  vincularBotonTactil('tab-caja', () => setTab('caja'));
-  vincularBotonTactil('tab-nuevo', () => setTab('nuevo'));
-  vincularBotonTactil('tab-renovar', () => setTab('renovar'));
-  vincularBotonTactil('tab-dashboard', () => setTab('dashboard'));
-  vincularBotonTactil('tab-mora', () => setTab('mora'));
-  vincularBotonTactil('tab-usuarios', () => setTab('usuarios'));
-
   // Revisar si existe sesión previa recordada
   const tokenGuardado = localStorage.getItem('crediya_token');
   const usuarioGuardado = localStorage.getItem('crediya_user');
@@ -779,6 +704,7 @@ async function switchUser(role) {
 // ============================================================
 const MODULE_METADATA = {
   rutas: { icon: '🗺️', label: 'Ruta de Hoy', desc: 'Cobranza diaria, orden de visitas y GPS' },
+  'resumen-dia': { icon: '📋', label: 'Resumen del Día', desc: 'Liquidación completa, ausentes, seguros y caja' },
   caja: { icon: '💵', label: 'Cuadre de Caja', desc: 'Arqueo, ingresos, egresos y retiros' },
   nuevo: { icon: '➕', label: 'Nueva Venta', desc: 'Registro rápido de cliente y préstamo' },
   renovar: { icon: '🔄', label: 'Renovación', desc: 'Liquidación de saldo y nuevo crédito' },
@@ -888,15 +814,15 @@ function setTab(tabId) {
     btn.classList.toggle('active', matches);
   });
   document.querySelectorAll('.drawer-nav-item').forEach((item) => {
-    const matches = item.id === `drawer-tab-${tabId}`;
+    const matches = item.id === `drawer-tab-${tabId}` || (tabId === 'resumen-dia' && item.id === 'drawer-tab-resumen');
     item.classList.toggle('active', matches);
   });
   document.querySelectorAll('.quick-pill').forEach((pill) => {
-    const matches = pill.id === `pill-${tabId}`;
+    const matches = pill.id === `pill-${tabId}` || (tabId === 'resumen-dia' && pill.id === 'pill-resumen-dia');
     pill.classList.toggle('active', matches);
   });
   document.querySelectorAll('.mob-nav-btn').forEach((mob) => {
-    const matches = mob.id === `mob-nav-${tabId}`;
+    const matches = mob.id === `mob-nav-${tabId}` || (tabId === 'resumen-dia' && (mob.id === 'mob-nav-resumen' || mob.id === 'mob-nav-resumen-dia'));
     mob.classList.toggle('active', matches);
   });
 
@@ -908,6 +834,7 @@ function setTab(tabId) {
   // Cargar datos en vivo según el módulo seleccionado
   if (tabId === 'dashboard') cargarDashboardEjecutivo();
   if (tabId === 'rutas') cargarRutaHoy();
+  if (tabId === 'resumen-dia') cargarResumenDia();
   if (tabId === 'renovar') cargarClientesParaRenovacion();
   if (tabId === 'caja') cargarCuadreCaja();
   if (tabId === 'usuarios') cargarUsuarios();
@@ -1014,6 +941,14 @@ function toggleExpandirCliente(clienteId, ev) {
       return;
     }
   }
+
+  // Prevenir doble disparo / rebote en desktop y móvil (ghost clicks)
+  const ahora = Date.now();
+  if (ultimoToggleClienteId === clienteId && (ahora - ultimoToggleTiempo) < 250) {
+    return;
+  }
+  ultimoToggleTiempo = ahora;
+  ultimoToggleClienteId = clienteId;
 
   const card = document.getElementById(`card-${clienteId}`);
   if (!card) return;
@@ -3720,9 +3655,41 @@ window.alternarEstadoUsuario = alternarEstadoUsuario;
 window.eliminarUsuarioFrontend = eliminarUsuarioFrontend;
 window.toggleRbacCard = toggleRbacCard;
 
+// Navegación & Control Global
+window.setTab = setTab;
+window.cerrarSesion = cerrarSesion;
+window.abrirDrawerMenu = abrirDrawerMenu;
+window.cerrarDrawerMenu = cerrarDrawerMenu;
+window.toggleMenuDesplegable = toggleMenuDesplegable;
+window.cerrarMenuDesplegable = cerrarMenuDesplegable;
+window.toggleTheme = toggleTheme;
+window.cambiarMonedaGlobal = cambiarMonedaGlobal;
+window.cambiarVendedorRuta = cambiarVendedorRuta;
+window.instalarAppPWA = instalarAppPWA;
+
 // PIN Seguridad
 window.lockApp = lockApp;
 window.pressPin = pressPin;
 window.clearPin = clearPin;
 window.deletePin = deletePin;
 window.limpiarBusquedaRuta = limpiarBusquedaRuta;
+window.filtrarEstadoRuta = filtrarEstadoRuta;
+window.filtrarClientesRuta = filtrarClientesRuta;
+
+// Resumen del Día & V13
+window.cargarResumenDia = cargarResumenDia;
+window.abrirModalCajaInicial = abrirModalCajaInicial;
+window.cerrarModalCajaInicial = cerrarModalCajaInicial;
+window.guardarCajaInicial = guardarCajaInicial;
+window.abrirModalNoPagados = abrirModalNoPagados;
+window.cerrarModalNoPagados = cerrarModalNoPagados;
+window.abrirModalSeguros = abrirModalSeguros;
+window.cerrarModalSeguros = cerrarModalSeguros;
+window.guardarMovimientoSeguro = guardarMovimientoSeguro;
+window.toggleSyncAuto = toggleSyncAuto;
+
+// Aplazar Visita
+window.abrirModalAplazar = abrirModalAplazar;
+window.cerrarModalAplazar = cerrarModalAplazar;
+window.confirmarAplazado = confirmarAplazado;
+window.confirmarAplazar = confirmarAplazado;
