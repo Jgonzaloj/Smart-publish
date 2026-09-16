@@ -93,6 +93,8 @@ export class AbonosService {
       const ahora = new Date();
       const horaStr = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}:${String(ahora.getSeconds()).padStart(2, '0')}`;
       const recibo = {
+        clienteId: credito.clienteId,
+        creditoId: credito.id,
         fecha: ahora.toISOString().slice(0, 10),
         hora: horaStr,
         usuario: user.nombre || 'Cobrador',

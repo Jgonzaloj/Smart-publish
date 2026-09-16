@@ -1396,6 +1396,8 @@ function formatearHoraSegura(fechaInput) {
 }
 
   const reciboLocal = {
+    clienteId: client.clienteId,
+    creditoId: client.creditoActivo.id,
     fecha: new Date().toISOString().slice(0, 10),
     hora: formatearHoraSegura(),
     usuario: state.user?.nombre || 'Carlos Cobrador',
@@ -1892,6 +1894,34 @@ function imprimirTicketPOS() {
   window.print();
 }
 
+function verEstadoCuentaDesdeRecibo() {
+  const r = state.reciboActual;
+  if (!r) return;
+
+  let clienteId = r.clienteId;
+  let creditoId = r.creditoId;
+
+  if (!clienteId || !creditoId) {
+    const client = state.rutaActual?.clientes?.find((c) =>
+      (c.creditoActivo && c.creditoActivo.codigoCredito === r.codigoCredito) ||
+      (c.documento && c.documento === r.documento) ||
+      (state.selectedClientForAbono && c.clienteId === state.selectedClientForAbono.clienteId)
+    );
+    if (client) {
+      clienteId = clienteId || client.clienteId;
+      creditoId = creditoId || client.creditoActivo?.id;
+    }
+  }
+
+  if (!creditoId) {
+    showToast('No se encontró el crédito asociado para ver el estado de cuenta', 'warning');
+    return;
+  }
+
+  cerrarModalRecibo();
+  verEstadoCuentaCliente(clienteId, creditoId);
+}
+
 async function verReciboCliente(clienteId) {
   const client = state.rutaActual?.clientes.find((c) => c.clienteId === clienteId);
   if (!client || !client.creditoActivo) return;
@@ -1901,6 +1931,8 @@ async function verReciboCliente(clienteId) {
     const ultimoAbono = abonos && abonos.length > 0 ? abonos[0] : null;
 
     mostrarRecibo({
+      clienteId: client.clienteId,
+      creditoId: client.creditoActivo.id,
       fecha: ultimoAbono?.fecha ? new Date(ultimoAbono.fecha).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
       hora: formatearHoraSegura(ultimoAbono?.fecha),
       usuario: state.user?.nombre || 'Carlos Cobrador',
@@ -3194,6 +3226,7 @@ window.confirmarAbono = confirmarAbono;
 window.confirmarAusente = confirmarAusente;
 window.verReciboCliente = verReciboCliente;
 window.verEstadoCuentaCliente = verEstadoCuentaCliente;
+window.verEstadoCuentaDesdeRecibo = verEstadoCuentaDesdeRecibo;
 window.cerrarModalRecibo = cerrarModalRecibo;
 window.cerrarModalEstadoCuenta = cerrarModalEstadoCuenta;
 
@@ -3679,6 +3712,7 @@ window.compartirWhatsAppRecibo = compartirWhatsAppRecibo;
 window.descargarImagenComprobante = descargarImagenComprobante;
 window.copiarTextoRecibo = copiarTextoRecibo;
 window.imprimirTicketPOS = imprimirTicketPOS;
+window.verEstadoCuentaDesdeRecibo = verEstadoCuentaDesdeRecibo;
 window.enviarRecordatorioWhatsApp = enviarRecordatorioWhatsApp;
 
 // Extracto & Estado de Cuenta
