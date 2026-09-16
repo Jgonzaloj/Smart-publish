@@ -1004,23 +1004,17 @@ state.clienteExpandidoId = null;
 let ultimoToggleTiempo = 0;
 let ultimoToggleClienteId = null;
 
-// EXPANDIR / COLAPSAR DETALLE DEL CLIENTE AL DARLE CLIC O TOQUE (CON DEBOUNCE ANTI-GHOST CLICK)
+// EXPANDIR / COLAPSAR DETALLE DEL CLIENTE AL DARLE CLIC O TOQUE
 function toggleExpandirCliente(clienteId, ev) {
-  // Evitar doble disparo (touchend + synthetic click ghosting de 300ms en móviles)
-  const ahora = Date.now();
-  if (ultimoToggleClienteId === clienteId && (ahora - ultimoToggleTiempo) < 400) {
-    if (ev && ev.stopPropagation) ev.stopPropagation();
-    return;
-  }
-  ultimoToggleTiempo = ahora;
-  ultimoToggleClienteId = clienteId;
-
-  // Si el clic/toque fue dentro de un botón interactivo (abono, ausente, flechas, links), dejar que su propio handler actúe
-  if (ev && ev.target && typeof ev.target.closest === 'function') {
-    if (ev.target.closest('button, input, select, a, .order-box, .client-actions, .order-btn')) return;
-  }
-
   if (!clienteId) return;
+
+  // Si el clic/toque fue dentro de un botón de acción, dejar que su propio handler actúe
+  if (ev && ev.target && typeof ev.target.closest === 'function') {
+    if (ev.target.closest('button, input, select, a, .order-box, .client-actions, .btn-action-cobro, .btn-gps-navigate')) {
+      return;
+    }
+  }
+
   const card = document.getElementById(`card-${clienteId}`);
   if (!card) return;
 
@@ -1030,10 +1024,10 @@ function toggleExpandirCliente(clienteId, ev) {
     card.classList.remove('expanded');
     if (state.clienteExpandidoId === clienteId) state.clienteExpandidoId = null;
   } else {
-    // Modo acordeón: cerramos cualquier otra tarjeta abierta
-    if (state.clienteExpandidoId && state.clienteExpandidoId !== clienteId) {
-      document.getElementById(`card-${state.clienteExpandidoId}`)?.classList.remove('expanded');
-    }
+    // Cerramos cualquier otra tarjeta abierta (modo acordeón limpio)
+    document.querySelectorAll('.client-card.expanded').forEach((c) => {
+      if (c.id !== `card-${clienteId}`) c.classList.remove('expanded');
+    });
     card.classList.add('expanded');
     state.clienteExpandidoId = clienteId;
 
@@ -1071,7 +1065,7 @@ function filtrarEstadoRuta(estado, btn) {
   aplicarFiltrosYRenderizarRuta();
 }
 
-// DELEGACIÓN DE EVENTOS TÁCTILES ULTRA-RÁPIDA PARA MÓVILES
+// DELEGACIÓN DE EVENTOS PARA MÓVIL Y ESCRITORIO (TOUCH + CLICK)
 function inicializarDelegacionRuta() {
   const container = document.getElementById('lista-clientes-ruta');
   if (!container || container.dataset.delegated === 'true') return;
@@ -1081,6 +1075,7 @@ function inicializarDelegacionRuta() {
   let touchStartY = 0;
   let touchStartTime = 0;
 
+  // 1. Soporte táctil móvil
   container.addEventListener('touchstart', (e) => {
     if (e.touches && e.touches[0]) {
       touchStartX = e.touches[0].clientX;
@@ -1095,13 +1090,13 @@ function inicializarDelegacionRuta() {
     const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
     const timeDiff = Date.now() - touchStartTime;
 
-    // Si fue un tap limpio en móvil (movimiento menor a 15px y tiempo menor a 500ms)
+    // Si fue un tap limpio en móvil (sin scroll)
     if (deltaX < 15 && deltaY < 15 && timeDiff < 500) {
       const summaryRow = e.target.closest('.client-summary-row');
       const card = e.target.closest('.client-card');
       if (!card || !summaryRow) return;
 
-      if (e.target.closest('button, a, input, select, .order-box, .client-actions')) return;
+      if (e.target.closest('button, a, input, select, .order-box, .client-actions, .btn-action-cobro, .btn-gps-navigate')) return;
 
       const clienteId = card.dataset.clientId || card.id.replace('card-', '');
       if (clienteId) {
@@ -1109,6 +1104,21 @@ function inicializarDelegacionRuta() {
       }
     }
   }, { passive: true });
+
+  // 2. Soporte para Clic de Mouse en PC / Web Escritorio
+  container.addEventListener('click', (e) => {
+    if (e.target.closest('button, a, input, select, .order-box, .client-actions, .btn-action-cobro, .btn-gps-navigate')) {
+      return;
+    }
+    const summaryRow = e.target.closest('.client-summary-row');
+    const card = e.target.closest('.client-card');
+    if (!card || !summaryRow) return;
+
+    const clienteId = card.dataset.clientId || card.id.replace('card-', '');
+    if (clienteId) {
+      toggleExpandirCliente(clienteId, e);
+    }
+  });
 }
 
 function aplicarFiltrosYRenderizarRuta() {
