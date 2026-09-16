@@ -91,7 +91,7 @@
         <button class="pin-btn" onclick="pressPin('0')">0</button>
         <button class="pin-btn pin-action" onclick="deletePin()">⌫</button>
       </div>
-      <div class="pin-hint">PIN por defecto: <strong>1234</strong></div>
+      <div class="pin-hint">Ingresa tu PIN de 4 dígitos para desbloquear</div>
     </div>
   </div>
 
@@ -146,10 +146,10 @@
           </div>
 
           <div class="form-group">
-            <label for="portal-password">Contraseña o PIN de Acceso</label>
+            <label for="portal-password">Contraseña</label>
             <div class="input-with-icon">
               <span class="input-icon">🔒</span>
-              <input type="password" id="portal-password" required placeholder="admin123 o PIN: 1234" autocomplete="current-password" autocapitalize="none" autocorrect="off" enterkeyhint="go" onkeydown="if(event.key==='Enter'){event.preventDefault();manejarPortalLogin(event);}">
+              <input type="password" id="portal-password" required placeholder="••••••••" autocomplete="current-password" autocapitalize="none" autocorrect="off" enterkeyhint="go" onkeydown="if(event.key==='Enter'){event.preventDefault();manejarPortalLogin(event);}">
               <button type="button" class="btn-toggle-pass" onclick="togglePassVisibility('portal-password', this)" title="Ver/Ocultar contraseña">👁️</button>
             </div>
           </div>
@@ -159,7 +159,6 @@
               <input type="checkbox" id="portal-recordar" checked>
               <span>Recordar sesión</span>
             </label>
-            <span class="auth-hint">Clave: <strong>admin123</strong> (o cobrador123) / PIN: <strong>1234</strong></span>
           </div>
 
           <button type="submit" class="btn-primary btn-block btn-lg" id="btn-submit-login" style="touch-action: manipulation;">
@@ -167,29 +166,6 @@
           </button>
 
           <div id="login-error-box" class="hidden" style="margin-top: 14px; padding: 12px 14px; background: #fee2e2; border: 1px solid #ef4444; border-radius: 8px; color: #b91c1c; font-size: 0.88rem; font-weight: 600; text-align: center; line-height: 1.4;"></div>
-
-          <!-- SECCIÓN DE ACCESO RÁPIDO PARA PRUEBAS -->
-          <div class="demo-access-box">
-            <div class="demo-divider">
-              <span>o acceso rápido de prueba (1 clic)</span>
-            </div>
-            <div class="demo-buttons-grid">
-              <button type="button" class="btn-demo-card btn-demo-vendedor" id="btn-demo-vendedor" onclick="accesoRapidoDemo('vendedor', event)" style="touch-action: manipulation;">
-                <span class="demo-icon">👤</span>
-                <div class="demo-text">
-                  <strong>Cobrador / Vendedor</strong>
-                  <small>Carlos • Ruta en calle</small>
-                </div>
-              </button>
-              <button type="button" class="btn-demo-card btn-demo-admin" id="btn-demo-admin" onclick="accesoRapidoDemo('admin', event)" style="touch-action: manipulation;">
-                <span class="demo-icon">👑</span>
-                <div class="demo-text">
-                  <strong>Administrador</strong>
-                  <small>Juan • Control total</small>
-                </div>
-              </button>
-            </div>
-          </div>
         </form>
 
         <!-- FORMULARIO 2: REGISTRO DE NUEVA EMPRESA -->
@@ -297,12 +273,9 @@
           <button id="btn-pwa-header" class="btn-role btn-pwa-header hidden" onclick="instalarAppPWA()" title="Instalar en este dispositivo">
             📲 Instalar App
           </button>
-          <button id="btn-switch-vendedor" class="btn-role active" onclick="switchUser('vendedor')">
-            👤 Carlos
-          </button>
-          <button id="btn-switch-admin" class="btn-role" onclick="switchUser('admin')">
-            👑 Juan
-          </button>
+          <span class="btn-role" id="header-user-badge">
+            <span id="header-user-role-icon">👤</span> <span id="header-user-name">Usuario</span>
+          </span>
           <button id="btn-theme-toggle" class="btn-role btn-theme-toggle" title="Alternar Modo Crema / Oscuro" onclick="toggleTheme()">
             <span id="theme-toggle-icon">🌙</span> <span id="theme-toggle-text">Oscuro</span>
           </button>

@@ -7,9 +7,9 @@ services:
     container_name: crediya-postgres
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-crediya_app}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-SuperClaveSegura2026!}
-      POSTGRES_DB: ${POSTGRES_DB:-crediya_db}
+      POSTGRES_USER: ${POSTGRES_USER:?Error: Variable POSTGRES_USER obligatoria en .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Error: Variable POSTGRES_PASSWORD obligatoria en .env}
+      POSTGRES_DB: ${POSTGRES_DB:?Error: Variable POSTGRES_DB obligatoria en .env}
       TZ: ${TZ:-America/Bogota}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
@@ -17,7 +17,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./prisma/rls_policies.sql:/docker-entrypoint-initdb.d/99-rls_policies.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-crediya_app} -d ${POSTGRES_DB:-crediya_db}"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -35,9 +35,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-crediya_app}:${POSTGRES_PASSWORD:-SuperClaveSegura2026!}@postgres:5432/${POSTGRES_DB:-crediya_db}?schema=public
-      JWT_SECRET: ${JWT_SECRET:-genera-una-clave-larga-y-secreta-para-produccion-2026}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?Error: Variable JWT_SECRET obligatoria en .env}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?Error: Variable ALLOWED_ORIGINS obligatoria en .env}
       TZ: ${TZ:-America/Bogota}
     ports:
       - "3000:3000"

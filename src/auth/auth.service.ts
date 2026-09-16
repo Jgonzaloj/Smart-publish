@@ -27,17 +27,7 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    let passwordMatch = await bcrypt.compare(cleanPass, cred.passwordHash).catch(() => false);
-
-    // En entornos no productivos de desarrollo/demo local, permitir claves demo explícitas
-    if (!passwordMatch && process.env.NODE_ENV !== 'production') {
-      if (
-        (cleanPass === 'admin123' && cleanEmail === 'admin@crediya.com') ||
-        (cleanPass === 'cobrador123' && cleanEmail === 'carlos@crediya.com')
-      ) {
-        passwordMatch = true;
-      }
-    }
+    const passwordMatch = await bcrypt.compare(cleanPass, cred.passwordHash).catch(() => false);
 
     if (!passwordMatch) {
       throw new UnauthorizedException('Credenciales inválidas');

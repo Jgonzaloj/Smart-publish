@@ -105,18 +105,6 @@ async function cambiarMonedaGlobal(codigoMoneda) {
   }
 }
 
-// Usuarios demo preconfigurados
-const DEMO_USERS = {
-  vendedor: {
-    email: 'carlos@crediya.com',
-    password: 'cobrador123',
-  },
-  admin: {
-    email: 'admin@crediya.com',
-    password: 'admin123',
-  },
-};
-
 // API Helper
 async function api(endpoint, options = {}) {
   const headers = {
@@ -136,32 +124,8 @@ async function api(endpoint, options = {}) {
 
     // Si el token guardado en el navegador venció o es inválido (401)
     if (res.status === 401 && !endpoint.includes('/auth/login')) {
-      const role = state.role || (localStorage.getItem('crediya_role') || 'admin');
-      if (DEMO_USERS[role]) {
-        try {
-          const creds = DEMO_USERS[role];
-          const loginRes = await fetch('/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: creds.email, password: creds.password }),
-          });
-          if (loginRes.ok) {
-            const loginData = await loginRes.json();
-            state.token = loginData.accessToken;
-            state.user = loginData.usuario;
-            localStorage.setItem('crediya_token', state.token);
-            localStorage.setItem('crediya_user', JSON.stringify(state.user));
-            headers['Authorization'] = `Bearer ${state.token}`;
-            res = await fetch(endpoint, { ...options, headers });
-          }
-        } catch (authErr) {
-          console.warn('No se pudo autorenovar sesión:', authErr);
-        }
-      }
-      if (res.status === 401) {
-        cerrarSesion();
-        throw new Error('Tu sesión ha expirado. Inicia sesión nuevamente.');
-      }
+      cerrarSesion();
+      throw new Error('Tu sesión ha expirado. Inicia sesión nuevamente.');
     }
 
     const data = await res.json().catch(() => ({}));
@@ -876,9 +840,13 @@ function actualizarInfoUsuarioDrawer() {
   const roleEl = document.getElementById('drawer-user-role');
   const avatarEl = document.getElementById('drawer-user-avatar');
   const tenantEl = document.getElementById('drawer-tenant-name');
+  const headerNameEl = document.getElementById('header-user-name');
+  const headerRoleIconEl = document.getElementById('header-user-role-icon');
 
   if (state.user) {
     if (nombreEl) nombreEl.innerText = state.user.nombre || 'Usuario';
+    if (headerNameEl) headerNameEl.innerText = state.user.nombre || 'Usuario';
+    if (headerRoleIconEl) headerRoleIconEl.innerText = state.role === 'admin' ? '👑' : '👤';
     if (roleEl) {
       roleEl.innerText = state.role === 'admin' ? '👑 Administrador' : '👤 Cobrador';
       roleEl.className = `badge-role ${state.role === 'admin' ? 'badge-role-admin' : 'badge-role-vendedor'}`;
@@ -2500,9 +2468,9 @@ async function verifyPinCode() {
     const res = await api('/auth/pin/verificar', {
       method: 'POST',
       body: JSON.stringify({ pin }),
-    }).catch(() => ({ valido: pin === '1234' })); // Fallback PIN demo
+    });
 
-    if (res.valido || pin === '1234') {
+    if (res && res.valido) {
       document.getElementById('pin-overlay').classList.add('hidden');
       showToast('🔓 Aplicación desbloqueada', 'success');
       state.pinBuffer = '';
@@ -2510,14 +2478,9 @@ async function verifyPinCode() {
       showToast('PIN Incorrecto', 'danger');
       clearPin();
     }
-  } catch {
-    if (pin === '1234') {
-      document.getElementById('pin-overlay').classList.add('hidden');
-      showToast('🔓 Aplicación desbloqueada', 'success');
-    } else {
-      showToast('PIN Incorrecto', 'danger');
-      clearPin();
-    }
+  } catch (err) {
+    showToast('PIN Incorrecto o error al verificar', 'danger');
+    clearPin();
   }
 }
 
