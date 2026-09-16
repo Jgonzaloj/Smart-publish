@@ -3297,7 +3297,7 @@ function abrirModalCajaInicial() {
   const input = document.getElementById('input-caja-inicial-valor');
   if (input && estadoResumenDia) {
     input.value = estadoResumenDia.cajaInicial || '';
-    input.focus();
+    if (typeof input.focus === 'function') input.focus();
   }
 }
 
