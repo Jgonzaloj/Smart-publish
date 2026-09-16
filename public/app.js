@@ -496,14 +496,14 @@ async function manejarPortalLogin(e) {
 
   if (isSubmittingLogin) return;
 
-  cerrarTecladoVirtual();
-
   const emailInput = document.getElementById('portal-email');
   const passInput = document.getElementById('portal-password');
   const email = (emailInput?.value || '').trim().toLowerCase();
   const password = (passInput?.value || '').trim();
   const recordar = document.getElementById('portal-recordar')?.checked ?? true;
   const btnSubmit = document.getElementById('btn-submit-login');
+
+  cerrarTecladoVirtual();
 
   const errBox = document.getElementById('login-error-box');
   if (errBox) {
@@ -517,11 +517,6 @@ async function manejarPortalLogin(e) {
     if (errBox) {
       errBox.innerText = `⚠️ ${msg}`;
       errBox.classList.remove('hidden');
-    }
-    if (!email && emailInput) {
-      setTimeout(() => emailInput.focus(), 150);
-    } else if (!password && passInput) {
-      setTimeout(() => passInput.focus(), 150);
     }
     return;
   }
