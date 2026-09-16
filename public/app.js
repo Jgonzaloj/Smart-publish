@@ -144,9 +144,13 @@ async function api(endpoint, options = {}) {
 // ============================================================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
-      console.warn('Registro de Service Worker no completado:', err);
-    });
+    navigator.serviceWorker.register('/sw.js?v=31', { updateViaCache: 'none' })
+      .then((reg) => {
+        reg.update();
+      })
+      .catch((err) => {
+        console.warn('Registro de Service Worker:', err);
+      });
   });
 }
 
