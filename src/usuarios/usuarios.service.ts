@@ -54,7 +54,9 @@ export class UsuariosService {
       return usuarios.map((u) => {
         const misClientes = clientes.filter((c) => c.vendedorId === u.id);
         const misCreditos = creditos.filter((cr) => cr.vendedorId === u.id);
-        const carteraActiva = misCreditos.reduce((sum, cr) => sum + Number(cr.saldoActual), 0);
+        const carteraActiva = misCreditos
+          .reduce((sum, cr) => sum.plus(new Prisma.Decimal(cr.saldoActual || 0)), new Prisma.Decimal(0))
+          .toNumber();
 
         return {
           ...u,

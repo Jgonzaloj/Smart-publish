@@ -29,15 +29,12 @@ export class AuthService {
 
     let passwordMatch = await bcrypt.compare(cleanPass, cred.passwordHash).catch(() => false);
 
-    // Permitir flexibilidad para credenciales demo (admin123, cobrador123) o PIN por defecto 1234
-    if (!passwordMatch) {
+    // En entornos no productivos de desarrollo/demo local, permitir claves demo explícitas
+    if (!passwordMatch && process.env.NODE_ENV !== 'production') {
       if (
-        (cleanPass === 'admin123' || cleanPass === 'cobrador123' || cleanPass === '1234') &&
-        (cleanEmail === 'admin@crediya.com' || cleanEmail === 'carlos@crediya.com')
+        (cleanPass === 'admin123' && cleanEmail === 'admin@crediya.com') ||
+        (cleanPass === 'cobrador123' && cleanEmail === 'carlos@crediya.com')
       ) {
-        passwordMatch = true;
-      } else if (cleanPass === '1234') {
-        // Permitir PIN 1234
         passwordMatch = true;
       }
     }

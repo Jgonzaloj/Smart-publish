@@ -1,7 +1,14 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtPayload } from '../auth/jwt.strategy';
 import { CrearMovimientoDto, RetiroCajaDto, CerrarCuadreDto } from './dto/caja.dto';
+
+function toDecimal(val: any): Prisma.Decimal {
+  if (val === null || val === undefined) return new Prisma.Decimal(0);
+  if (val instanceof Prisma.Decimal) return val;
+  return new Prisma.Decimal(val);
+}
 
 @Injectable()
 export class CajaService {
@@ -63,9 +70,10 @@ export class CajaService {
       });
 
       if (cuadreExistente) {
+        const nuevoTotal = toDecimal(cuadreExistente.totalRetiros).plus(toDecimal(dto.valor));
         await tx.cuadreCaja.update({
           where: { id: cuadreExistente.id },
-          data: { totalRetiros: Number(cuadreExistente.totalRetiros) + dto.valor },
+          data: { totalRetiros: nuevoTotal },
         });
       } else {
         await tx.cuadreCaja.create({
@@ -110,35 +118,54 @@ export class CajaService {
           : null,
       ]);
 
-      const totalCobrado = abonosDia.reduce((sum, a) => sum + Number(a.valorAbonado), 0);
-      const recaudoEfectivo = abonosDia.filter((a: any) => !a.metodoPago || a.metodoPago === 'EFECTIVO').reduce((sum, a) => sum + Number(a.valorAbonado), 0);
-      const recaudoTransferencia = abonosDia.filter((a: any) => a.metodoPago && a.metodoPago !== 'EFECTIVO').reduce((sum, a) => sum + Number(a.valorAbonado), 0);
-      const totalPrestadoNuevo = creditosNuevos.reduce((sum, c) => sum + Number(c.valorPrestamo), 0);
-      const totalIngresos = movimientos.filter((m) => m.tipo === 'INGRESO' && !(m as any).esSeguro).reduce((s, m) => s + Number(m.valor), 0);
-      const totalEgresos = movimientos.filter((m) => m.tipo === 'EGRESO' && !(m as any).esSeguro).reduce((s, m) => s + Number(m.valor), 0);
-      const ingresosSeguros = movimientos.filter((m) => m.tipo === 'INGRESO' && (m as any).esSeguro).reduce((s, m) => s + Number(m.valor), 0);
-      const retirosSeguros = movimientos.filter((m) => m.tipo === 'EGRESO' && (m as any).esSeguro).reduce((s, m) => s + Number(m.valor), 0);
-      const totalRetiros = cuadrePersistido ? Number(cuadrePersistido.totalRetiros) : 0;
-      const cajaInicial = cuadrePersistido ? Number((cuadrePersistido as any).cajaInicial || 0) : 0;
-      const cajaSeguros = ingresosSeguros - retirosSeguros;
+      const totalCobradoDec = abonosDia.reduce((sum, a) => sum.plus(toDecimal(a.valorAbonado)), new Prisma.Decimal(0));
+      const recaudoEfectivoDec = abonosDia
+        .filter((a: any) => !a.metodoPago || a.metodoPago === 'EFECTIVO')
+        .reduce((sum, a) => sum.plus(toDecimal(a.valorAbonado)), new Prisma.Decimal(0));
+      const recaudoTransferenciaDec = abonosDia
+        .filter((a: any) => a.metodoPago && a.metodoPago !== 'EFECTIVO')
+        .reduce((sum, a) => sum.plus(toDecimal(a.valorAbonado)), new Prisma.Decimal(0));
 
-      const saldoEsperadoEnCaja = cajaInicial + recaudoEfectivo + totalIngresos - totalPrestadoNuevo - totalEgresos - totalRetiros;
+      const totalPrestadoNuevoDec = creditosNuevos.reduce((sum, c) => sum.plus(toDecimal(c.valorPrestamo)), new Prisma.Decimal(0));
+      const totalIngresosDec = movimientos
+        .filter((m) => m.tipo === 'INGRESO' && !(m as any).esSeguro)
+        .reduce((s, m) => s.plus(toDecimal(m.valor)), new Prisma.Decimal(0));
+      const totalEgresosDec = movimientos
+        .filter((m) => m.tipo === 'EGRESO' && !(m as any).esSeguro)
+        .reduce((s, m) => s.plus(toDecimal(m.valor)), new Prisma.Decimal(0));
+      const ingresosSegurosDec = movimientos
+        .filter((m) => m.tipo === 'INGRESO' && (m as any).esSeguro)
+        .reduce((s, m) => s.plus(toDecimal(m.valor)), new Prisma.Decimal(0));
+      const retirosSegurosDec = movimientos
+        .filter((m) => m.tipo === 'EGRESO' && (m as any).esSeguro)
+        .reduce((s, m) => s.plus(toDecimal(m.valor)), new Prisma.Decimal(0));
+
+      const totalRetirosDec = toDecimal(cuadrePersistido?.totalRetiros);
+      const cajaInicialDec = toDecimal((cuadrePersistido as any)?.cajaInicial);
+      const cajaSegurosDec = ingresosSegurosDec.minus(retirosSegurosDec);
+
+      const saldoEsperadoEnCajaDec = cajaInicialDec
+        .plus(recaudoEfectivoDec)
+        .plus(totalIngresosDec)
+        .minus(totalPrestadoNuevoDec)
+        .minus(totalEgresosDec)
+        .minus(totalRetirosDec);
 
       return {
         fecha: inicio.toISOString().slice(0, 10),
         vendedorId: vendedorId ?? null,
-        cajaInicial,
-        totalCobrado,
-        recaudoEfectivo,
-        recaudoTransferencia,
-        totalPrestadoNuevo,
-        totalIngresos,
-        totalEgresos,
-        totalRetiros,
-        ingresosSeguros,
-        retirosSeguros,
-        cajaSeguros,
-        saldoEsperadoEnCaja,
+        cajaInicial: cajaInicialDec.toNumber(),
+        totalCobrado: totalCobradoDec.toNumber(),
+        recaudoEfectivo: recaudoEfectivoDec.toNumber(),
+        recaudoTransferencia: recaudoTransferenciaDec.toNumber(),
+        totalPrestadoNuevo: totalPrestadoNuevoDec.toNumber(),
+        totalIngresos: totalIngresosDec.toNumber(),
+        totalEgresos: totalEgresosDec.toNumber(),
+        totalRetiros: totalRetirosDec.toNumber(),
+        ingresosSeguros: ingresosSegurosDec.toNumber(),
+        retirosSeguros: retirosSegurosDec.toNumber(),
+        cajaSeguros: cajaSegurosDec.toNumber(),
+        saldoEsperadoEnCaja: saldoEsperadoEnCajaDec.toNumber(),
         cerrado: !!cuadrePersistido?.observaciones,
       };
     });
@@ -218,28 +245,44 @@ export class CajaService {
       const pagosEnRuta = abonosDia.filter((a: any) => !a.esAdicional).length;
       const pagosAdicionales = abonosDia.filter((a: any) => a.esAdicional).length;
 
-      const cajaInicial = cuadrePersistido ? Number((cuadrePersistido as any).cajaInicial || 0) : 0;
-      const recaudoEsperado = creditosActivos.reduce((s, c) => s + Number(c.valorCuota), 0);
-      const recaudoDia = abonosDia.reduce((s, a) => s + Number(a.valorAbonado), 0);
-      const porcentajeRecaudo = recaudoEsperado > 0 ? Number(((recaudoDia / recaudoEsperado) * 100).toFixed(1)) : 0;
+      const cajaInicialDec = toDecimal((cuadrePersistido as any)?.cajaInicial);
+      const recaudoEsperadoDec = creditosActivos.reduce((s, c) => s.plus(toDecimal(c.valorCuota)), new Prisma.Decimal(0));
+      const recaudoDiaDec = abonosDia.reduce((s, a) => s.plus(toDecimal(a.valorAbonado)), new Prisma.Decimal(0));
+      
+      const porcentajeRecaudo = recaudoEsperadoDec.gt(0)
+        ? Number(recaudoDiaDec.dividedBy(recaudoEsperadoDec).times(100).toFixed(1))
+        : 0;
 
-      const efectivo = abonosDia
+      const efectivoDec = abonosDia
         .filter((a: any) => !a.metodoPago || a.metodoPago === 'EFECTIVO')
-        .reduce((s, a) => s + Number(a.valorAbonado), 0);
-      const transferencia = abonosDia
+        .reduce((s, a) => s.plus(toDecimal(a.valorAbonado)), new Prisma.Decimal(0));
+      const transferenciaDec = abonosDia
         .filter((a: any) => a.metodoPago && a.metodoPago !== 'EFECTIVO')
-        .reduce((s, a) => s + Number(a.valorAbonado), 0);
+        .reduce((s, a) => s.plus(toDecimal(a.valorAbonado)), new Prisma.Decimal(0));
 
-      const totalVentas = creditosNuevos.reduce((s, c) => s + Number(c.valorPrestamo), 0);
-      const retirosCaja = cuadrePersistido ? Number(cuadrePersistido.totalRetiros) : 0;
-      const egresos = movimientos.filter((m) => m.tipo === 'EGRESO' && !(m as any).esSeguro).reduce((s, m) => s + Number(m.valor), 0);
-      const ingresos = movimientos.filter((m) => m.tipo === 'INGRESO' && !(m as any).esSeguro).reduce((s, m) => s + Number(m.valor), 0);
+      const totalVentasDec = creditosNuevos.reduce((s, c) => s.plus(toDecimal(c.valorPrestamo)), new Prisma.Decimal(0));
+      const retirosCajaDec = toDecimal(cuadrePersistido?.totalRetiros);
+      const egresosDec = movimientos
+        .filter((m) => m.tipo === 'EGRESO' && !(m as any).esSeguro)
+        .reduce((s, m) => s.plus(toDecimal(m.valor)), new Prisma.Decimal(0));
+      const ingresosDec = movimientos
+        .filter((m) => m.tipo === 'INGRESO' && !(m as any).esSeguro)
+        .reduce((s, m) => s.plus(toDecimal(m.valor)), new Prisma.Decimal(0));
 
-      const ingresosSeguros = movimientos.filter((m) => m.tipo === 'INGRESO' && (m as any).esSeguro).reduce((s, m) => s + Number(m.valor), 0);
-      const retiroCajaSeguros = movimientos.filter((m) => m.tipo === 'EGRESO' && (m as any).esSeguro).reduce((s, m) => s + Number(m.valor), 0);
-      const cajaSeguros = ingresosSeguros - retiroCajaSeguros;
+      const ingresosSegurosDec = movimientos
+        .filter((m) => m.tipo === 'INGRESO' && (m as any).esSeguro)
+        .reduce((s, m) => s.plus(toDecimal(m.valor)), new Prisma.Decimal(0));
+      const retiroCajaSegurosDec = movimientos
+        .filter((m) => m.tipo === 'EGRESO' && (m as any).esSeguro)
+        .reduce((s, m) => s.plus(toDecimal(m.valor)), new Prisma.Decimal(0));
+      const cajaSegurosDec = ingresosSegurosDec.minus(retiroCajaSegurosDec);
 
-      const saldoEnCaja = Number((cajaInicial + efectivo + ingresos - totalVentas - retirosCaja - egresos).toFixed(2));
+      const saldoEnCajaDec = cajaInicialDec
+        .plus(efectivoDec)
+        .plus(ingresosDec)
+        .minus(totalVentasDec)
+        .minus(retirosCajaDec)
+        .minus(egresosDec);
 
       // Clientes no pagados para el botón "[✔️ No Pagos]"
       const clientesNoPagados = creditosActivos
@@ -252,8 +295,8 @@ export class CajaService {
             movil: cli?.movil || '',
             direccion: cli?.direccion || '',
             estadoVisita: cli?.estadoVisita || 'AL_DIA',
-            valorCuota: Number(cr.valorCuota),
-            saldoActual: Number(cr.saldoActual),
+            valorCuota: toDecimal(cr.valorCuota).toNumber(),
+            saldoActual: toDecimal(cr.saldoActual).toNumber(),
           };
         });
 
@@ -267,20 +310,20 @@ export class CajaService {
         pagosRegistradosTexto: `${pagosEnRuta}/${numeroClientes} Adicionales: ${pagosAdicionales}`,
         pagosEnRuta,
         pagosAdicionales,
-        cajaInicial,
-        recaudoEsperado,
-        recaudoDia,
+        cajaInicial: cajaInicialDec.toNumber(),
+        recaudoEsperado: recaudoEsperadoDec.toNumber(),
+        recaudoDia: recaudoDiaDec.toNumber(),
         porcentajeRecaudo,
-        efectivo,
-        transferencia,
-        totalVentas,
-        retirosCaja,
-        egresos,
-        ingresos,
-        retiroCajaSeguros,
-        ingresosSeguros,
-        cajaSeguros,
-        saldoEnCaja,
+        efectivo: efectivoDec.toNumber(),
+        transferencia: transferenciaDec.toNumber(),
+        totalVentas: totalVentasDec.toNumber(),
+        retirosCaja: retirosCajaDec.toNumber(),
+        egresos: egresosDec.toNumber(),
+        ingresos: ingresosDec.toNumber(),
+        retiroCajaSeguros: retiroCajaSegurosDec.toNumber(),
+        ingresosSeguros: ingresosSegurosDec.toNumber(),
+        cajaSeguros: cajaSegurosDec.toNumber(),
+        saldoEnCaja: saldoEnCajaDec.toNumber(),
         sincronizacionAutomatica: true,
         clientesNoPagados,
       };
@@ -361,19 +404,78 @@ export class CajaService {
     });
   }
 
-  /** Vista consolidada del administrador: cuadre de todos los vendedores en una fecha. */
+  /** Vista consolidada del administrador optimizada: consulta en una sola pasada para todos los vendedores (evita N+1). */
   async resumenAdmin(user: JwtPayload, fecha?: string) {
-    const vendedores = await this.prisma.withTenant(user.tenantId, async (tx) =>
-      tx.usuario.findMany({ where: { rol: 'VENDEDOR', activo: true } }),
-    );
+    const { inicio, fin } = this.rangoDia(fecha);
 
-    const resultados = await Promise.all(
-      vendedores.map(async (v) => {
-        const resumen = await this.obtenerCuadreDia(user, fecha, v.id);
-        return { vendedor: { id: v.id, nombre: v.nombre }, ...resumen };
-      }),
-    );
+    return this.prisma.withTenant(user.tenantId, async (tx) => {
+      const [vendedores, abonosTodos, creditosTodos, movimientosTodos, cuadresTodos] = await Promise.all([
+        tx.usuario.findMany({ where: { rol: 'VENDEDOR', activo: true } }),
+        tx.abono.findMany({ where: { fecha: { gte: inicio, lte: fin } } }),
+        tx.credito.findMany({ where: { fechaInicio: { gte: inicio, lte: fin } } }),
+        tx.movimientoCaja.findMany({ where: { fecha: { gte: inicio, lte: fin } } }),
+        tx.cuadreCaja.findMany({ where: { fecha: { gte: inicio, lte: fin } } }),
+      ]);
 
-    return resultados;
+      return vendedores.map((v) => {
+        const abonosVendedor = abonosTodos.filter((a) => a.usuarioId === v.id);
+        const creditosVendedor = creditosTodos.filter((c) => c.vendedorId === v.id);
+        const movimientosVendedor = movimientosTodos.filter((m) => m.vendedorId === v.id);
+        const cuadreVendedor = cuadresTodos.find((c) => c.vendedorId === v.id);
+
+        const totalCobradoDec = abonosVendedor.reduce((sum, a) => sum.plus(toDecimal(a.valorAbonado)), new Prisma.Decimal(0));
+        const recaudoEfectivoDec = abonosVendedor
+          .filter((a: any) => !a.metodoPago || a.metodoPago === 'EFECTIVO')
+          .reduce((sum, a) => sum.plus(toDecimal(a.valorAbonado)), new Prisma.Decimal(0));
+        const recaudoTransferenciaDec = abonosVendedor
+          .filter((a: any) => a.metodoPago && a.metodoPago !== 'EFECTIVO')
+          .reduce((sum, a) => sum.plus(toDecimal(a.valorAbonado)), new Prisma.Decimal(0));
+
+        const totalPrestadoNuevoDec = creditosVendedor.reduce((sum, c) => sum.plus(toDecimal(c.valorPrestamo)), new Prisma.Decimal(0));
+        const totalIngresosDec = movimientosVendedor
+          .filter((m) => m.tipo === 'INGRESO' && !(m as any).esSeguro)
+          .reduce((s, m) => s.plus(toDecimal(m.valor)), new Prisma.Decimal(0));
+        const totalEgresosDec = movimientosVendedor
+          .filter((m) => m.tipo === 'EGRESO' && !(m as any).esSeguro)
+          .reduce((s, m) => s.plus(toDecimal(m.valor)), new Prisma.Decimal(0));
+        const ingresosSegurosDec = movimientosVendedor
+          .filter((m) => m.tipo === 'INGRESO' && (m as any).esSeguro)
+          .reduce((s, m) => s.plus(toDecimal(m.valor)), new Prisma.Decimal(0));
+        const retirosSegurosDec = movimientosVendedor
+          .filter((m) => m.tipo === 'EGRESO' && (m as any).esSeguro)
+          .reduce((s, m) => s.plus(toDecimal(m.valor)), new Prisma.Decimal(0));
+
+        const totalRetirosDec = toDecimal(cuadreVendedor?.totalRetiros);
+        const cajaInicialDec = toDecimal((cuadreVendedor as any)?.cajaInicial);
+        const cajaSegurosDec = ingresosSegurosDec.minus(retirosSegurosDec);
+
+        const saldoEsperadoEnCajaDec = cajaInicialDec
+          .plus(recaudoEfectivoDec)
+          .plus(totalIngresosDec)
+          .minus(totalPrestadoNuevoDec)
+          .minus(totalEgresosDec)
+          .minus(totalRetirosDec);
+
+        return {
+          vendedor: { id: v.id, nombre: v.nombre },
+          fecha: inicio.toISOString().slice(0, 10),
+          vendedorId: v.id,
+          cajaInicial: cajaInicialDec.toNumber(),
+          totalCobrado: totalCobradoDec.toNumber(),
+          recaudoEfectivo: recaudoEfectivoDec.toNumber(),
+          recaudoTransferencia: recaudoTransferenciaDec.toNumber(),
+          totalPrestadoNuevo: totalPrestadoNuevoDec.toNumber(),
+          totalIngresos: totalIngresosDec.toNumber(),
+          totalEgresos: totalEgresosDec.toNumber(),
+          totalRetiros: totalRetirosDec.toNumber(),
+          ingresosSeguros: ingresosSegurosDec.toNumber(),
+          retirosSeguros: retirosSegurosDec.toNumber(),
+          cajaSeguros: cajaSegurosDec.toNumber(),
+          saldoEsperadoEnCaja: saldoEsperadoEnCajaDec.toNumber(),
+          cerrado: !!cuadreVendedor?.observaciones,
+        };
+      });
+    });
   }
 }
+

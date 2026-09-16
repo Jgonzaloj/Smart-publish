@@ -27,12 +27,9 @@ let AuthService = class AuthService {
             throw new common_1.UnauthorizedException('Credenciales inválidas');
         }
         let passwordMatch = await bcrypt.compare(cleanPass, cred.passwordHash).catch(() => false);
-        if (!passwordMatch) {
-            if ((cleanPass === 'admin123' || cleanPass === 'cobrador123' || cleanPass === '1234') &&
-                (cleanEmail === 'admin@crediya.com' || cleanEmail === 'carlos@crediya.com')) {
-                passwordMatch = true;
-            }
-            else if (cleanPass === '1234') {
+        if (!passwordMatch && process.env.NODE_ENV !== 'production') {
+            if ((cleanPass === 'admin123' && cleanEmail === 'admin@crediya.com') ||
+                (cleanPass === 'cobrador123' && cleanEmail === 'carlos@crediya.com')) {
                 passwordMatch = true;
             }
         }

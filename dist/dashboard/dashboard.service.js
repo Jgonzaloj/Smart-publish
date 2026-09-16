@@ -11,8 +11,16 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DashboardService = void 0;
 const common_1 = require("@nestjs/common");
+const client_1 = require("@prisma/client");
 const prisma_service_1 = require("../prisma/prisma.service");
 const mora_service_1 = require("../mora/mora.service");
+
+function toDecimal(val) {
+    if (val === null || val === undefined) return new client_1.Prisma.Decimal(0);
+    if (val instanceof client_1.Prisma.Decimal) return val;
+    return new client_1.Prisma.Decimal(val);
+}
+
 let DashboardService = class DashboardService {
     constructor(prisma, moraService) {
         this.prisma = prisma;
@@ -36,9 +44,9 @@ let DashboardService = class DashboardService {
                 tx.cliente.findMany(),
             ]);
             const creditosActivos = creditos.filter((c) => c.estado === 'ACTIVO' || c.estado === 'EN_MORA');
-            const totalPrestadoHistorico = creditos.reduce((sum, c) => sum + Number(c.valorPrestamo), 0);
-            const totalRecuperadoHistorico = abonos.reduce((sum, a) => sum + Number(a.valorAbonado), 0);
-            const carteraActivaTotal = creditosActivos.reduce((sum, c) => sum + Number(c.saldoActual), 0);
+            const totalPrestadoHistoricoDec = creditos.reduce((sum, c) => sum.plus(toDecimal(c.valorPrestamo)), new client_1.Prisma.Decimal(0));
+            const totalRecuperadoHistoricoDec = abonos.reduce((sum, a) => sum.plus(toDecimal(a.valorAbonado)), new client_1.Prisma.Decimal(0));
+            const carteraActivaTotalDec = creditosActivos.reduce((sum, c) => sum.plus(toDecimal(c.saldoActual)), new client_1.Prisma.Decimal(0));
             const abonosHoy = abonos.filter((a) => {
                 const raw = a.fecha || a.createdAt;
                 if (!raw)
@@ -46,20 +54,20 @@ let DashboardService = class DashboardService {
                 const f = new Date(raw);
                 return !isNaN(f.getTime()) && f >= inicioHoy && f <= finHoy;
             });
-            const totalCobradoHoy = abonosHoy.reduce((sum, a) => sum + Number(a.valorAbonado), 0);
-            const totalEsperadoHoy = creditosActivos.reduce((sum, c) => sum + Number(c.valorCuota), 0);
-            const porcentajeCumplimientoHoy = totalEsperadoHoy > 0
-                ? Math.min(100, Math.round((totalCobradoHoy / totalEsperadoHoy) * 100))
+            const totalCobradoHoyDec = abonosHoy.reduce((sum, a) => sum.plus(toDecimal(a.valorAbonado)), new client_1.Prisma.Decimal(0));
+            const totalEsperadoHoyDec = creditosActivos.reduce((sum, c) => sum.plus(toDecimal(c.valorCuota)), new client_1.Prisma.Decimal(0));
+            const porcentajeCumplimientoHoy = totalEsperadoHoyDec.gt(0)
+                ? Math.min(100, Math.round(totalCobradoHoyDec.dividedBy(totalEsperadoHoyDec).times(100).toNumber()))
                 : 0;
-            let saldoPar30 = 0;
-            let saldoPar60 = 0;
+            let saldoPar30Dec = new client_1.Prisma.Decimal(0);
+            let saldoPar60Dec = new client_1.Prisma.Decimal(0);
             let creditosAlDia = 0;
             let creditosEnAtraso = 0;
             let creditosEnMoraSevera = 0;
             creditosActivos.forEach((c) => {
                 const calculoMora = this.moraService.calcularAtraso(c);
                 const atrasadas = calculoMora.cuotasAtrasadas;
-                const saldo = Number(c.saldoActual);
+                const saldoDec = toDecimal(c.saldoActual);
                 if (atrasadas === 0) {
                     creditosAlDia++;
                 }
@@ -68,19 +76,19 @@ let DashboardService = class DashboardService {
                 }
                 else if (atrasadas >= 30 && atrasadas < 60) {
                     creditosEnMoraSevera++;
-                    saldoPar30 += saldo;
+                    saldoPar30Dec = saldoPar30Dec.plus(saldoDec);
                 }
                 else if (atrasadas >= 60) {
                     creditosEnMoraSevera++;
-                    saldoPar30 += saldo;
-                    saldoPar60 += saldo;
+                    saldoPar30Dec = saldoPar30Dec.plus(saldoDec);
+                    saldoPar60Dec = saldoPar60Dec.plus(saldoDec);
                 }
             });
-            const porcentajePar30 = carteraActivaTotal > 0
-                ? Number(((saldoPar30 / carteraActivaTotal) * 100).toFixed(2))
+            const porcentajePar30 = carteraActivaTotalDec.gt(0)
+                ? Number(saldoPar30Dec.dividedBy(carteraActivaTotalDec).times(100).toFixed(2))
                 : 0;
-            const porcentajePar60 = carteraActivaTotal > 0
-                ? Number(((saldoPar60 / carteraActivaTotal) * 100).toFixed(2))
+            const porcentajePar60 = carteraActivaTotalDec.gt(0)
+                ? Number(saldoPar60Dec.dividedBy(carteraActivaTotalDec).times(100).toFixed(2))
                 : 0;
             const ultimos7Dias = [];
             const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -96,25 +104,25 @@ let DashboardService = class DashboardService {
                     const fa = new Date(raw);
                     return !isNaN(fa.getTime()) && fa >= inicioDia && fa <= finDia;
                 });
-                const totalDia = abonosDelDia.reduce((sum, a) => sum + Number(a.valorAbonado), 0);
+                const totalDiaDec = abonosDelDia.reduce((sum, a) => sum.plus(toDecimal(a.valorAbonado)), new client_1.Prisma.Decimal(0));
                 const fechaStr = inicioDia.toISOString().slice(0, 10);
                 const diaNombre = diasSemana[inicioDia.getDay()];
                 ultimos7Dias.push({
                     fecha: fechaStr,
                     dia: `${diaNombre} ${inicioDia.getDate()}`,
-                    total: totalDia,
+                    total: totalDiaDec.toNumber(),
                     abonosCount: abonosDelDia.length,
                 });
             }
             const rankingCobradores = usuarios.map((u) => {
                 const clientesCobrador = clientes.filter((cl) => cl.vendedorId === u.id);
                 const creditosCobrador = creditosActivos.filter((cr) => cr.vendedorId === u.id);
-                const carteraCobrador = creditosCobrador.reduce((sum, cr) => sum + Number(cr.saldoActual), 0);
+                const carteraCobradorDec = creditosCobrador.reduce((sum, cr) => sum.plus(toDecimal(cr.saldoActual)), new client_1.Prisma.Decimal(0));
                 const abonosCobradorHoy = abonosHoy.filter((a) => a.usuarioId === u.id);
-                const cobradoHoy = abonosCobradorHoy.reduce((sum, a) => sum + Number(a.valorAbonado), 0);
-                const esperadoCobradorHoy = creditosCobrador.reduce((sum, cr) => sum + Number(cr.valorCuota), 0);
-                const efectividad = esperadoCobradorHoy > 0
-                    ? Math.min(100, Math.round((cobradoHoy / esperadoCobradorHoy) * 100))
+                const cobradoHoyDec = abonosCobradorHoy.reduce((sum, a) => sum.plus(toDecimal(a.valorAbonado)), new client_1.Prisma.Decimal(0));
+                const esperadoCobradorHoyDec = creditosCobrador.reduce((sum, cr) => sum.plus(toDecimal(cr.valorCuota)), new client_1.Prisma.Decimal(0));
+                const efectividad = esperadoCobradorHoyDec.gt(0)
+                    ? Math.min(100, Math.round(cobradoHoyDec.dividedBy(esperadoCobradorHoyDec).times(100).toNumber()))
                     : 0;
                 return {
                     id: u.id,
@@ -122,8 +130,8 @@ let DashboardService = class DashboardService {
                     posicion: u.posicion || 'Ruta General',
                     totalClientes: clientesCobrador.length,
                     creditosActivos: creditosCobrador.length,
-                    carteraTotal: carteraCobrador,
-                    cobradoHoy,
+                    carteraTotal: carteraCobradorDec.toNumber(),
+                    cobradoHoy: cobradoHoyDec.toNumber(),
                     efectividad,
                     activo: u.activo,
                 };
@@ -131,19 +139,19 @@ let DashboardService = class DashboardService {
             rankingCobradores.sort((a, b) => b.cobradoHoy - a.cobradoHoy);
             return {
                 financiero: {
-                    totalPrestadoHistorico,
-                    totalRecuperadoHistorico,
-                    carteraActivaTotal,
-                    totalCobradoHoy,
-                    totalEsperadoHoy,
+                    totalPrestadoHistorico: totalPrestadoHistoricoDec.toNumber(),
+                    totalRecuperadoHistorico: totalRecuperadoHistoricoDec.toNumber(),
+                    carteraActivaTotal: carteraActivaTotalDec.toNumber(),
+                    totalCobradoHoy: totalCobradoHoyDec.toNumber(),
+                    totalEsperadoHoy: totalEsperadoHoyDec.toNumber(),
                     porcentajeCumplimientoHoy,
                     clientesTotal: clientes.length,
                     creditosActivosTotal: creditosActivos.length,
                 },
                 riesgo: {
-                    saldoPar30,
+                    saldoPar30: saldoPar30Dec.toNumber(),
                     porcentajePar30,
-                    saldoPar60,
+                    saldoPar60: saldoPar60Dec.toNumber(),
                     porcentajePar60,
                     creditosAlDia,
                     creditosEnAtraso,
@@ -155,10 +163,9 @@ let DashboardService = class DashboardService {
         });
     }
 };
-exports.DashboardService = DashboardService;
-exports.DashboardService = DashboardService = __decorate([
+DashboardService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        mora_service_1.MoraService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService, mora_service_1.MoraService])
 ], DashboardService);
+exports.DashboardService = DashboardService;
 //# sourceMappingURL=dashboard.service.js.map

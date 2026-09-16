@@ -13,6 +13,7 @@
     "db:seed": "node scripts/seed-db.js",
     "db:apply-rls": "node scripts/apply-rls.js",
     "prisma:studio": "prisma studio",
+    "test": "node scripts/run-tests.js",
     "test:e2e": "playwright test"
   },
   "dependencies": {

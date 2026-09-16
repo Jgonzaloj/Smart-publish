@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsuariosService = void 0;
 const common_1 = require("@nestjs/common");
+const client_1 = require("@prisma/client");
 const bcrypt = require("bcrypt");
 const prisma_service_1 = require("../prisma/prisma.service");
 const usuarios_dto_1 = require("./dto/usuarios.dto");
@@ -48,7 +49,9 @@ let UsuariosService = class UsuariosService {
             return usuarios.map((u) => {
                 const misClientes = clientes.filter((c) => c.vendedorId === u.id);
                 const misCreditos = creditos.filter((cr) => cr.vendedorId === u.id);
-                const carteraActiva = misCreditos.reduce((sum, cr) => sum + Number(cr.saldoActual), 0);
+                const carteraActiva = misCreditos
+                    .reduce((sum, cr) => sum.plus(new client_1.Prisma.Decimal(cr.saldoActual || 0)), new client_1.Prisma.Decimal(0))
+                    .toNumber();
                 return {
                     ...u,
                     totalClientes: misClientes.length,
