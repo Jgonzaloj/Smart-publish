@@ -818,7 +818,7 @@ function setTab(tabId) {
     btn.classList.toggle('active', matches);
   });
   document.querySelectorAll('.drawer-nav-item').forEach((item) => {
-    const matches = item.id === `drawer-tab-${tabId}` || (tabId === 'resumen-dia' && item.id === 'drawer-tab-resumen');
+    const matches = item.id === `drawer-tab-${tabId}` || (tabId === 'resumen-dia' && (item.id === 'drawer-tab-resumen' || item.id === 'drawer-tab-resumen-dia'));
     item.classList.toggle('active', matches);
   });
   document.querySelectorAll('.quick-pill').forEach((pill) => {
@@ -830,21 +830,25 @@ function setTab(tabId) {
     mob.classList.toggle('active', matches);
   });
 
-  // Mostrar la sección correspondiente
+  // Mostrar la sección correspondiente de inmediato
   document.querySelectorAll('.tab-section').forEach((sec) => sec.classList.remove('active'));
   const sec = document.getElementById(`sec-${tabId}`);
   if (sec) sec.classList.add('active');
 
-  // Cargar datos en vivo según el módulo seleccionado
-  if (tabId === 'dashboard') cargarDashboardEjecutivo();
-  if (tabId === 'rutas') cargarRutaHoy();
-  if (tabId === 'resumen-dia') cargarResumenDia();
-  if (tabId === 'renovar') cargarClientesParaRenovacion();
-  if (tabId === 'caja') cargarCuadreCaja();
-  if (tabId === 'usuarios') cargarUsuarios();
-  if (tabId === 'nuevo') {
-    actualizarEtiquetasNuevoCredito();
-    poblarSelectorVendedorNuevoCliente();
+  // Cargar datos en vivo de forma asíncrona y protegida
+  try {
+    if (tabId === 'dashboard') cargarDashboardEjecutivo();
+    else if (tabId === 'rutas') cargarRutaHoy();
+    else if (tabId === 'resumen-dia') cargarResumenDia();
+    else if (tabId === 'renovar') cargarClientesParaRenovacion();
+    else if (tabId === 'caja') cargarCuadreCaja();
+    else if (tabId === 'usuarios') cargarUsuarios();
+    else if (tabId === 'nuevo') {
+      actualizarEtiquetasNuevoCredito();
+      poblarSelectorVendedorNuevoCliente();
+    }
+  } catch (err) {
+    console.warn('Error al cargar datos del módulo ' + tabId, err);
   }
 
   // Scroll suave al inicio de la página
@@ -1264,20 +1268,31 @@ async function moverRuta(clienteId, delta) {
 
 // 2. MODAL DE ABONO
 function abrirModalAbono(clienteId) {
-  const client = state.rutaActual.clientes.find((c) => c.clienteId === clienteId);
+  if (!clienteId) return;
+  const clientes = state.rutaActual?.clientes || [];
+  const client = clientes.find((c) => String(c.clienteId) === String(clienteId) || String(c.id) === String(clienteId));
   if (!client || !client.creditoActivo) {
-    showToast('Cliente no tiene crédito activo', 'danger');
+    showToast('Cliente no tiene crédito activo', 'warning');
     return;
   }
 
   state.selectedClientForAbono = client;
-  document.getElementById('modal-abono-cliente').innerText = `${client.nombresAlias} ${client.apellidos || ''}`;
-  document.getElementById('modal-abono-codigo').innerText = client.creditoActivo.codigoCredito;
-  document.getElementById('modal-abono-saldo').innerText = fmtMoneda(client.creditoActivo.saldoActual);
-  document.getElementById('modal-abono-cuota-sug').innerText = fmtMoneda(client.creditoActivo.valorCuota);
-  document.getElementById('modal-abono-monto').value = client.creditoActivo.valorCuota;
+  const elCli = document.getElementById('modal-abono-cliente');
+  if (elCli) elCli.innerText = `${client.nombresAlias} ${client.apellidos || ''}`.trim();
 
-  document.getElementById('modal-abono').classList.remove('hidden');
+  const elCod = document.getElementById('modal-abono-codigo');
+  if (elCod) elCod.innerText = client.creditoActivo.codigoCredito || '-';
+
+  const elSaldo = document.getElementById('modal-abono-saldo');
+  if (elSaldo) elSaldo.innerText = fmtMoneda(client.creditoActivo.saldoActual);
+
+  const elCuota = document.getElementById('modal-abono-cuota-sug');
+  if (elCuota) elCuota.innerText = fmtMoneda(client.creditoActivo.valorCuota);
+
+  const elMonto = document.getElementById('modal-abono-monto');
+  if (elMonto) elMonto.value = client.creditoActivo.valorCuota;
+
+  document.getElementById('modal-abono')?.classList.remove('hidden');
 }
 
 function cerrarModalAbono() {
@@ -1840,12 +1855,14 @@ function verEstadoCuentaDesdeRecibo() {
 }
 
 async function verReciboCliente(clienteId) {
-  const client = state.rutaActual?.clientes.find((c) => c.clienteId === clienteId);
+  if (!clienteId) return;
+  const clientes = state.rutaActual?.clientes || [];
+  const client = clientes.find((c) => String(c.clienteId) === String(clienteId) || String(c.id) === String(clienteId));
   if (!client || !client.creditoActivo) return;
 
   try {
-    const abonos = await api(`/abonos/credito/${client.creditoActivo.id}`);
-    const ultimoAbono = abonos && abonos.length > 0 ? abonos[0] : null;
+    const abonos = await api(`/abonos/credito/${client.creditoActivo.id}`).catch(() => []);
+    const ultimoAbono = Array.isArray(abonos) && abonos.length > 0 ? abonos[0] : null;
 
     mostrarRecibo({
       clienteId: client.clienteId,
@@ -1859,7 +1876,7 @@ async function verReciboCliente(clienteId) {
       tipoAbono: (client.creditoActivo.saldoActual <= 0) ? 'Liquidación total' : 'Abono normal',
       codigoCredito: client.creditoActivo.codigoCredito,
       saldoAnterior: ultimoAbono ? ultimoAbono.saldoAnterior : client.creditoActivo.saldoActual,
-      valorAbonado: ultimoAbono ? ultimoAbono.valorAbonado : client.totalAbonadoHoy || client.creditoActivo.valorCuota,
+      valorAbonado: ultimoAbono ? ultimoAbono.valorAbonado : (client.totalAbonadoHoy || client.creditoActivo.valorCuota),
       saldoNuevo: ultimoAbono ? ultimoAbono.saldoNuevo : client.creditoActivo.saldoActual,
       formaPago: client.creditoActivo.formaPago ? client.creditoActivo.formaPago.charAt(0).toUpperCase() + client.creditoActivo.formaPago.slice(1) : 'Diario',
       cuotasPagadas: client.creditoActivo.cuotasPagadas || 1,
@@ -1871,23 +1888,29 @@ async function verReciboCliente(clienteId) {
       precisionGps: ultimoAbono?.precisionGps,
     });
   } catch (err) {
-    console.error(err);
+    console.error('Error al ver recibo:', err);
   }
 }
 
 // 3. MODAL AUSENTE
 function abrirModalAusente(clienteId) {
-  const client = state.rutaActual?.clientes.find((c) => c.clienteId === clienteId);
+  if (!clienteId) return;
+  const clientes = state.rutaActual?.clientes || [];
+  const client = clientes.find((c) => String(c.clienteId) === String(clienteId) || String(c.id) === String(clienteId));
   if (!client) return;
 
   state.selectedClientForAusente = client;
-  document.getElementById('modal-ausente-cliente').innerText = `${client.nombresAlias} ${client.apellidos || ''}`;
-  document.getElementById('modal-ausente-obs').value = '';
-  document.getElementById('modal-ausente').classList.remove('hidden');
+  const elCli = document.getElementById('modal-ausente-cliente');
+  if (elCli) elCli.innerText = `${client.nombresAlias} ${client.apellidos || ''}`.trim();
+
+  const elObs = document.getElementById('modal-ausente-obs');
+  if (elObs) elObs.value = '';
+
+  document.getElementById('modal-ausente')?.classList.remove('hidden');
 }
 
 function cerrarModalAusente() {
-  document.getElementById('modal-ausente').classList.add('hidden');
+  document.getElementById('modal-ausente')?.classList.add('hidden');
   state.selectedClientForAusente = null;
 }
 
@@ -2054,46 +2077,57 @@ async function ejecutarMoraEnVivo() {
 // 5. RENOVACIÓN DE CRÉDITOS
 async function cargarClientesParaRenovacion() {
   const select = document.getElementById('renovar-credito-select');
+  if (!select) return;
   select.innerHTML = '<option value="">-- Cargando clientes... --</option>';
 
   try {
-    const clientes = await api('/clientes');
+    const res = await api('/clientes').catch(() => []);
+    const clientes = Array.isArray(res) ? res : (res?.data || res?.clientes || []);
     state.clientesConCredito = clientes;
 
     const options = clientes
-      .filter((c) => c.creditos && c.creditos.length > 0)
+      .filter((c) => c && c.creditos && c.creditos.length > 0)
       .map((c) => {
         const cr = c.creditos[0];
-        return `<option value="${cr.id}" data-saldo="${cr.saldoActual}" data-cliente="${c.nombresAlias}" data-prod="${cr.productoId}">
-          ${c.nombresAlias} (${cr.codigoCredito}) - Saldo: $${Number(cr.saldoActual).toLocaleString()}
+        return `<option value="${cr.id}" data-saldo="${cr.saldoActual}" data-cliente="${escapeHtml(c.nombresAlias)}" data-prod="${cr.productoId || ''}">
+          ${escapeHtml(c.nombresAlias)} (${cr.codigoCredito}) - Saldo: $${Number(cr.saldoActual).toLocaleString()}
         </option>`;
       });
 
     select.innerHTML = '<option value="">-- Selecciona un cliente con crédito --</option>' + options.join('');
     actualizarPrecalculoRenovacion();
   } catch (err) {
-    console.error(err);
+    console.error('Error al cargar clientes para renovación:', err);
   }
 }
 
 function actualizarPrecalculoRenovacion() {
   const select = document.getElementById('renovar-credito-select');
-  const option = select.options[select.selectedIndex];
+  const option = (select && select.options && select.selectedIndex >= 0) ? select.options[select.selectedIndex] : null;
 
   const saldoAnt = option && option.value ? Number(option.getAttribute('data-saldo') || 0) : 0;
-  const nuevoMonto = Number(document.getElementById('ren-monto').value) || 0;
-  const cuotas = Number(document.getElementById('ren-cuotas').value) || 1;
-  const interes = Number(document.getElementById('ren-interes').value) || 0;
+  const nuevoMonto = Number(document.getElementById('ren-monto')?.value) || 0;
+  const cuotas = Number(document.getElementById('ren-cuotas')?.value) || 1;
+  const interes = Number(document.getElementById('ren-interes')?.value) || 0;
 
   const totalConInteres = nuevoMonto * (1 + interes / 100);
   const cuota = totalConInteres / cuotas;
   const neto = Math.max(0, nuevoMonto - saldoAnt);
 
-  document.getElementById('prev-saldo-ant').innerText = fmtMoneda(saldoAnt);
-  document.getElementById('prev-nuevo-monto').innerText = fmtMoneda(nuevoMonto);
-  document.getElementById('prev-total-interes').innerText = fmtMoneda(totalConInteres);
-  document.getElementById('prev-cuota').innerText = fmtMoneda(Math.round(cuota));
-  document.getElementById('prev-neto').innerText = fmtMoneda(Math.round(neto));
+  const elSaldoAnt = document.getElementById('prev-saldo-ant');
+  if (elSaldoAnt) elSaldoAnt.innerText = fmtMoneda(saldoAnt);
+
+  const elNuevo = document.getElementById('prev-nuevo-monto');
+  if (elNuevo) elNuevo.innerText = fmtMoneda(nuevoMonto);
+
+  const elTotal = document.getElementById('prev-total-interes');
+  if (elTotal) elTotal.innerText = fmtMoneda(totalConInteres);
+
+  const elCuota = document.getElementById('prev-cuota');
+  if (elCuota) elCuota.innerText = fmtMoneda(Math.round(cuota));
+
+  const elNeto = document.getElementById('prev-neto');
+  if (elNeto) elNeto.innerText = fmtMoneda(Math.round(neto));
 }
 
 async function procesarRenovacion() {
@@ -2138,33 +2172,47 @@ async function procesarRenovacion() {
 // 6. CUADRE DE CAJA
 async function cargarCuadreCaja() {
   try {
-    const cuadre = await api('/caja/cuadre/hoy');
-    document.getElementById('caja-cobrado').innerText = fmtMoneda(cuadre.totalCobrado || 0);
-    document.getElementById('caja-prestado').innerText = fmtMoneda(cuadre.totalPrestadoNuevo || 0);
-    document.getElementById('caja-ingresos').innerText = fmtMoneda(cuadre.totalIngresos ?? cuadre.totalIngresosManuales ?? 0);
-    document.getElementById('caja-egresos').innerText = fmtMoneda((cuadre.totalEgresos ?? cuadre.totalEgresosManuales ?? 0) + (cuadre.totalRetiros || 0));
-    document.getElementById('caja-saldo-esperado').innerText = fmtMoneda(cuadre.saldoEsperadoEnCaja ?? cuadre.saldoEnCajaEsperado ?? 0);
+    const cuadre = await api('/caja/cuadre/hoy').catch(() => ({}));
+    if (cuadre) {
+      const elC = document.getElementById('caja-cobrado');
+      if (elC) elC.innerText = fmtMoneda(cuadre.totalCobrado || 0);
 
-    // Movimientos
-    const movimientos = await api('/caja/movimientos');
-    const tbody = document.getElementById('tabla-movimientos-body');
-    if (movimientos.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="empty-cell">No hay movimientos registrados hoy.</td></tr>';
-      return;
+      const elP = document.getElementById('caja-prestado');
+      if (elP) elP.innerText = fmtMoneda(cuadre.totalPrestadoNuevo || 0);
+
+      const elI = document.getElementById('caja-ingresos');
+      if (elI) elI.innerText = fmtMoneda(cuadre.totalIngresos ?? cuadre.totalIngresosManuales ?? 0);
+
+      const elE = document.getElementById('caja-egresos');
+      if (elE) elE.innerText = fmtMoneda((cuadre.totalEgresos ?? cuadre.totalEgresosManuales ?? 0) + (cuadre.totalRetiros || 0));
+
+      const elS = document.getElementById('caja-saldo-esperado');
+      if (elS) elS.innerText = fmtMoneda(cuadre.saldoEsperadoEnCaja ?? cuadre.saldoEnCajaEsperado ?? 0);
     }
 
-    tbody.innerHTML = movimientos
-      .map(
-        (m) => `
-        <tr>
-          <td>${new Date(m.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-          <td><span class="status-badge ${m.tipo === 'INGRESO' ? 'status-al-dia' : 'status-atrasado'}">${m.tipo}</span></td>
-          <td>${m.concepto}</td>
-          <td><strong>$${Number(m.valor).toLocaleString()}</strong></td>
-        </tr>
-      `,
-      )
-      .join('');
+    // Movimientos
+    const movRes = await api('/caja/movimientos').catch(() => []);
+    const movimientos = Array.isArray(movRes) ? movRes : (movRes?.movimientos || movRes?.data || []);
+    const tbody = document.getElementById('tabla-movimientos-body');
+    if (tbody) {
+      if (movimientos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-cell">No hay movimientos registrados hoy.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = movimientos
+        .map(
+          (m) => `
+          <tr>
+            <td>${m.fecha ? new Date(m.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+            <td><span class="status-badge ${m.tipo === 'INGRESO' ? 'status-al-dia' : 'status-atrasado'}">${m.tipo}</span></td>
+            <td>${escapeHtml(m.concepto || '-')}</td>
+            <td><strong>${fmtMoneda(m.valor || 0)}</strong></td>
+          </tr>
+        `,
+        )
+        .join('');
+    }
   } catch (err) {
     console.error('Error cargando caja:', err);
   }
@@ -2500,23 +2548,21 @@ async function poblarSelectorVendedores() {
   if (!sel || state.role !== 'admin') return;
 
   try {
-    const usuarios = await api('/usuarios?rol=VENDEDOR').catch(() => []);
-    sel.innerHTML = '<option value="" selected>🌐 Toda la Empresa / Todos los Clientes (Supervisión)</option>';
+    const uRes = await api('/usuarios?rol=VENDEDOR').catch(() => []);
+    const usuarios = Array.isArray(uRes) ? uRes : (uRes?.usuarios || uRes?.data || []);
+    let html = '<option value="" selected>🌐 Toda la Empresa / Todos los Clientes (Supervisión)</option>';
 
     if (state.user?.id) {
-      const optAdmin = document.createElement('option');
-      optAdmin.value = state.user.id;
-      optAdmin.textContent = `👑 Mi Cartera (${state.user.nombre || 'Administrador'})`;
-      sel.appendChild(optAdmin);
+      html += `<option value="${state.user.id}">👑 Mi Cartera (${escapeHtml(state.user.nombre || 'Administrador')})</option>`;
     }
 
     usuarios.forEach((u) => {
-      const opt = document.createElement('option');
-      opt.value = u.id;
-      opt.textContent = `👤 ${u.nombre} (${u.posicion || 'Ruta'})`;
-      sel.appendChild(opt);
+      if (u && u.id) {
+        html += `<option value="${u.id}">👤 ${escapeHtml(u.nombre)} (${escapeHtml(u.posicion || 'Ruta')})</option>`;
+      }
     });
 
+    sel.innerHTML = html;
     sel.value = '';
   } catch (err) {
     console.warn('No se pudo poblar selector de vendedores:', err);
