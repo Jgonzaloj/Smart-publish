@@ -1033,13 +1033,26 @@ state.filtroEstadoRuta = 'TODOS';
 state.busquedaClienteRuta = '';
 state.clienteExpandidoId = null;
 
-// EXPANDIR / COLAPSAR DETALLE DEL CLIENTE AL DARLE CLIC O TOQUE
+let ultimoToggleTiempo = 0;
+let ultimoToggleClienteId = null;
+
+// EXPANDIR / COLAPSAR DETALLE DEL CLIENTE AL DARLE CLIC O TOQUE (CON DEBOUNCE ANTI-GHOST CLICK)
 function toggleExpandirCliente(clienteId, ev) {
-  // Si el clic/toque fue dentro de un botón interactivo, dejamos que su propio onclick actúe
+  // Evitar doble disparo (touchend + synthetic click ghosting de 300ms en móviles)
+  const ahora = Date.now();
+  if (ultimoToggleClienteId === clienteId && (ahora - ultimoToggleTiempo) < 400) {
+    if (ev && ev.stopPropagation) ev.stopPropagation();
+    return;
+  }
+  ultimoToggleTiempo = ahora;
+  ultimoToggleClienteId = clienteId;
+
+  // Si el clic/toque fue dentro de un botón interactivo (abono, ausente, flechas, links), dejar que su propio handler actúe
   if (ev && ev.target && typeof ev.target.closest === 'function') {
-    if (ev.target.closest('button, input, select, a, .order-box, .client-actions')) return;
+    if (ev.target.closest('button, input, select, a, .order-box, .client-actions, .order-btn')) return;
   }
 
+  if (!clienteId) return;
   const card = document.getElementById(`card-${clienteId}`);
   if (!card) return;
 
@@ -1049,7 +1062,7 @@ function toggleExpandirCliente(clienteId, ev) {
     card.classList.remove('expanded');
     if (state.clienteExpandidoId === clienteId) state.clienteExpandidoId = null;
   } else {
-    // Modo acordeón: cerramos cualquier otra tarjeta abierta para mantener la interfaz despejada
+    // Modo acordeón: cerramos cualquier otra tarjeta abierta
     if (state.clienteExpandidoId && state.clienteExpandidoId !== clienteId) {
       document.getElementById(`card-${state.clienteExpandidoId}`)?.classList.remove('expanded');
     }
@@ -1058,7 +1071,9 @@ function toggleExpandirCliente(clienteId, ev) {
 
     // Asegurar que quede visible suavemente en dispositivos móviles
     setTimeout(() => {
-      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      try {
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (e) {}
     }, 60);
   }
 }
@@ -1112,32 +1127,20 @@ function inicializarDelegacionRuta() {
     const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
     const timeDiff = Date.now() - touchStartTime;
 
-    // Si fue un tap (movimiento menor a 15px y tiempo menor a 500ms)
+    // Si fue un tap limpio en móvil (movimiento menor a 15px y tiempo menor a 500ms)
     if (deltaX < 15 && deltaY < 15 && timeDiff < 500) {
+      const summaryRow = e.target.closest('.client-summary-row');
       const card = e.target.closest('.client-card');
-      if (!card) return;
+      if (!card || !summaryRow) return;
 
-      // Si el toque fue dentro de un botón interactivo (abono, ausente, etc.), dejar que actúe su propio click
       if (e.target.closest('button, a, input, select, .order-box, .client-actions')) return;
 
       const clienteId = card.dataset.clientId || card.id.replace('card-', '');
       if (clienteId) {
-        toggleExpandirCliente(clienteId);
+        toggleExpandirCliente(clienteId, e);
       }
     }
   }, { passive: true });
-
-  container.addEventListener('click', (e) => {
-    const card = e.target.closest('.client-card');
-    if (!card) return;
-
-    if (e.target.closest('button, a, input, select, .order-box, .client-actions')) return;
-
-    const clienteId = card.dataset.clientId || card.id.replace('card-', '');
-    if (clienteId) {
-      toggleExpandirCliente(clienteId);
-    }
-  });
 }
 
 function aplicarFiltrosYRenderizarRuta() {
@@ -1228,9 +1231,9 @@ function renderClienteCard(c) {
   const isExpanded = state.clienteExpandidoId === c.clienteId;
 
   return `
-    <div class="client-card ${isExpanded ? 'expanded' : ''}" id="card-${c.clienteId}" data-client-id="${c.clienteId}" onclick="toggleExpandirCliente('${c.clienteId}', event)">
+    <div class="client-card ${isExpanded ? 'expanded' : ''}" id="card-${c.clienteId}" data-client-id="${c.clienteId}">
       <!-- 1. VISTA RESUMIDA DE LA LISTA (SIEMPRE VISIBLE, ULTRA RESPONSIVA) -->
-      <div class="client-summary-row" data-client-id="${c.clienteId}">
+      <div class="client-summary-row" data-client-id="${c.clienteId}" onclick="toggleExpandirCliente('${c.clienteId}', event)">
         <div class="order-box" onclick="event.stopPropagation()">
           <div class="order-badge">#${c.orden}</div>
           <div class="order-arrows">
