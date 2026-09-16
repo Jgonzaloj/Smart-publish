@@ -25,6 +25,9 @@ let ClientesController = class ClientesController {
     crear(dto, user) {
         return this.clientesService.crear(dto, user);
     }
+    actualizarGps(id, body, user) {
+        return this.clientesService.actualizarGps(id, body, user);
+    }
     renovarCredito(dto, user) {
         return this.clientesService.renovarCredito(dto, user);
     }
@@ -44,6 +47,15 @@ __decorate([
     __metadata("design:paramtypes", [crear_cliente_dto_1.CrearClienteDto, Object]),
     __metadata("design:returntype", void 0)
 ], ClientesController.prototype, "crear", null);
+__decorate([
+    (0, common_1.Patch)(':id/gps'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], ClientesController.prototype, "actualizarGps", null);
 __decorate([
     (0, common_1.Post)('creditos/renovar'),
     __param(0, (0, common_1.Body)()),

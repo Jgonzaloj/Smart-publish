@@ -212,6 +212,31 @@ let ClientesService = class ClientesService {
             };
         });
     }
+    async actualizarGps(clienteId, body, user) {
+        return this.prisma.withTenant(user.tenantId, async (tx) => {
+            const cliente = await tx.cliente.update({
+                where: { id: clienteId },
+                data: {
+                    latitud: body.latitud,
+                    longitud: body.longitud,
+                    precisionGps: body.precisionGps ?? null,
+                },
+            });
+            await tx.credito.updateMany({
+                where: {
+                    clienteId,
+                    tenantId: user.tenantId,
+                    estado: { in: ['ACTIVO', 'EN_MORA'] },
+                },
+                data: {
+                    latitud: body.latitud,
+                    longitud: body.longitud,
+                    precisionGps: body.precisionGps ?? null,
+                },
+            });
+            return { message: 'Ubicación GPS actualizada con éxito', cliente };
+        });
+    }
 };
 exports.ClientesService = ClientesService;
 exports.ClientesService = ClientesService = __decorate([

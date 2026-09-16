@@ -139,6 +139,7 @@ async function runAuditedTests() {
         { id: 'cr1', clienteId: 'cli1', vendedorId, estado: 'ACTIVO', valorPrestamo: new Prisma.Decimal(1000), valorCuota: new Prisma.Decimal(150), saldoActual: new Prisma.Decimal(850), fechaInicio: new Date() },
         { id: 'cr2', clienteId: 'cli2', vendedorId, estado: 'ACTIVO', valorPrestamo: new Prisma.Decimal(2000), valorCuota: new Prisma.Decimal(250), saldoActual: new Prisma.Decimal(1750), fechaInicio: new Date() },
       ],
+      updateMany: async (args) => ({ count: 1 }),
     },
     cliente: {
       findMany: async () => [
@@ -147,6 +148,7 @@ async function runAuditedTests() {
         { id: 'cli3', vendedorId, nombresAlias: 'Pedro', apellidos: 'Lopez', movil: '3003', estadoVisita: 'APLAZADO' },
       ],
       count: async () => 1,
+      update: async (args) => ({ id: args.where.id, ...args.data }),
     },
     usuario: {
       findFirst: async () => ({ id: vendedorId, nombre: 'Carlos Cobrador', posicion: 'Ruta 1' }),
@@ -189,6 +191,9 @@ async function runAuditedTests() {
 
   const clientesCobrador = await clientesService.listar(userCobrador);
   assert(clientesCobrador.length === 3, 'Clientes listados bajo aislamiento de tenant');
+
+  const updateGps = await clientesService.actualizarGps('cli1', { latitud: -12.0463, longitud: -77.0428, precisionGps: 10 }, userCobrador);
+  assert(updateGps && updateGps.cliente && updateGps.cliente.latitud === -12.0463, 'Endpoint PATCH /clientes/:id/gps actualiza coordenadas GPS');
 
   console.log(`\n==============================================`);
   console.log(`🎯 RESULTADO FINAL DE LA SUITE DE AUDITORÍA:`);
