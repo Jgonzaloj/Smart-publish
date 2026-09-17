@@ -105,7 +105,7 @@ async function cambiarMonedaGlobal(codigoMoneda) {
   }
 }
 
-// API Helper
+// API Helper con Timeout Estricto mediante AbortController
 async function api(endpoint, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
@@ -116,11 +116,18 @@ async function api(endpoint, options = {}) {
     headers['Authorization'] = `Bearer ${state.token}`;
   }
 
+  const timeoutMs = options.timeout || 10000; // 10 segundos máximo por petición
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     let res = await fetch(endpoint, {
       ...options,
       headers,
+      signal: controller.signal,
     });
+
+    clearTimeout(timer);
 
     // Si el token guardado en el navegador venció o es inválido (401)
     if (res.status === 401 && !endpoint.includes('/auth/login')) {
@@ -134,6 +141,12 @@ async function api(endpoint, options = {}) {
     }
     return data;
   } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') {
+      const timeoutError = new Error('Tiempo de espera agotado. El servidor tardó demasiado en responder.');
+      showToast(timeoutError.message, 'danger');
+      throw timeoutError;
+    }
     showToast(err.message, 'danger');
     throw err;
   }
@@ -527,10 +540,19 @@ async function manejarPortalLogin(e) {
     btnSubmit.innerText = '⏳ Verificando credenciales...';
   }
 
+  const safetyTimer = setTimeout(() => {
+    isSubmittingLogin = false;
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerText = '🚀 Entrar a mi Plataforma';
+    }
+  }, 12000);
+
   try {
     const res = await api('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
+      timeout: 10000,
     });
 
     state.token = res.accessToken;
@@ -573,6 +595,7 @@ async function manejarPortalLogin(e) {
       errBox.classList.remove('hidden');
     }
   } finally {
+    clearTimeout(safetyTimer);
     isSubmittingLogin = false;
     if (btnSubmit) {
       btnSubmit.disabled = false;
