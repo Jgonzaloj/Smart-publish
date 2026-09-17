@@ -32,6 +32,15 @@ let CajaController = class CajaController {
     registrarRetiro(dto, user) {
         return this.cajaService.registrarRetiro(dto, user);
     }
+    obtenerResumenDia(fecha, vendedorId, user) {
+        return this.cajaService.obtenerResumenDia(user, fecha, vendedorId);
+    }
+    setCajaInicial(dto, user) {
+        return this.cajaService.setCajaInicial(dto, user);
+    }
+    registrarMovimientoSeguro(dto, user) {
+        return this.cajaService.registrarMovimientoSeguro(dto, user);
+    }
     obtenerCuadreDia(fecha, user) {
         return this.cajaService.obtenerCuadreDia(user, fecha);
     }
@@ -67,6 +76,31 @@ __decorate([
     __metadata("design:paramtypes", [caja_dto_1.RetiroCajaDto, Object]),
     __metadata("design:returntype", void 0)
 ], CajaController.prototype, "registrarRetiro", null);
+__decorate([
+    (0, common_1.Get)('resumen-dia'),
+    __param(0, (0, common_1.Query)('fecha')),
+    __param(1, (0, common_1.Query)('vendedorId')),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object, Object]),
+    __metadata("design:returntype", void 0)
+], CajaController.prototype, "obtenerResumenDia", null);
+__decorate([
+    (0, common_1.Post)('caja-inicial'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [caja_dto_1.SetCajaInicialDto, Object]),
+    __metadata("design:returntype", void 0)
+], CajaController.prototype, "setCajaInicial", null);
+__decorate([
+    (0, common_1.Post)('movimiento-seguro'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [caja_dto_1.MovimientoSeguroDto, Object]),
+    __metadata("design:returntype", void 0)
+], CajaController.prototype, "registrarMovimientoSeguro", null);
 __decorate([
     (0, common_1.Get)('cuadre/hoy'),
     __param(0, (0, common_1.Query)('fecha')),

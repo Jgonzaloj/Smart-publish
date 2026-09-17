@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ConsultaFechaDto = exports.CerrarCuadreDto = exports.RetiroCajaDto = exports.CrearMovimientoDto = void 0;
+exports.MovimientoSeguroDto = exports.SetCajaInicialDto = exports.ConsultaFechaDto = exports.CerrarCuadreDto = exports.RetiroCajaDto = exports.CrearMovimientoDto = void 0;
 const class_validator_1 = require("class-validator");
 class CrearMovimientoDto {
 }
@@ -56,4 +56,35 @@ __decorate([
     (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
 ], ConsultaFechaDto.prototype, "fecha", void 0);
+class SetCajaInicialDto {
+}
+exports.SetCajaInicialDto = SetCajaInicialDto;
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    __metadata("design:type", Number)
+], SetCajaInicialDto.prototype, "cajaInicial", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], SetCajaInicialDto.prototype, "fecha", void 0);
+class MovimientoSeguroDto {
+}
+exports.MovimientoSeguroDto = MovimientoSeguroDto;
+__decorate([
+    (0, class_validator_1.IsIn)(['INGRESO', 'EGRESO']),
+    __metadata("design:type", String)
+], MovimientoSeguroDto.prototype, "tipo", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.01),
+    __metadata("design:type", Number)
+], MovimientoSeguroDto.prototype, "valor", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], MovimientoSeguroDto.prototype, "concepto", void 0);
+
 //# sourceMappingURL=caja.dto.js.map
