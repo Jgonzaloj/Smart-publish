@@ -157,7 +157,7 @@ async function api(endpoint, options = {}) {
 // ============================================================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js?v=33', { updateViaCache: 'none' })
+    navigator.serviceWorker.register('/sw.js?v=34', { updateViaCache: 'none' })
       .then((reg) => {
         reg.update();
       })
@@ -2767,7 +2767,7 @@ function renderizarUsuarios(lista) {
 
       return `
         <tr>
-          <td>
+          <td data-label="Usuario">
             <div class="user-cell">
               <div class="user-avatar ${isAdmin ? 'avatar-admin' : ''}">${inicial}</div>
               <div>
@@ -2776,17 +2776,17 @@ function renderizarUsuarios(lista) {
               </div>
             </div>
           </td>
-          <td>${roleBadge}</td>
-          <td>
+          <td data-label="Rol">${roleBadge}</td>
+          <td data-label="Teléfono">
             <div>${u.telefono ? escapeHtml(u.telefono) : '<span class="text-muted">Sin teléfono</span>'}</div>
           </td>
-          <td>
+          <td data-label="Zona / Posición">
             <div>${u.posicion ? escapeHtml(u.posicion) : '<span class="text-muted">Ruta general</span>'}</div>
           </td>
-          <td><strong>${clientesText}</strong></td>
-          <td><span class="text-accent font-bold">${carteraText}</span></td>
-          <td>${statusBadge}</td>
-          <td class="text-right">${acciones}</td>
+          <td data-label="Clientes"><strong>${clientesText}</strong></td>
+          <td data-label="Cartera"><span class="text-accent font-bold">${carteraText}</span></td>
+          <td data-label="Estado">${statusBadge}</td>
+          <td data-label="Acciones" class="text-right">${acciones}</td>
         </tr>
       `;
     })

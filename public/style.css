@@ -3523,18 +3523,122 @@ body.theme-dark .directory-toolbar .search-box input {
     min-width: 100%;
   }
 
+  .rbac-card {
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
   .rbac-header {
     padding: 12px 14px;
+    gap: 8px;
   }
 
   .rbac-header h3 {
-    font-size: 0.88rem;
+    font-size: 0.85rem;
+  }
+
+  .rbac-badge {
+    font-size: 0.68rem;
+    padding: 2px 6px;
+  }
+
+  .rbac-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    border-radius: 0 0 16px 16px;
+  }
+
+  .rbac-table {
+    min-width: 440px;
+    width: 100%;
   }
 
   .rbac-table td,
   .rbac-table th {
-    padding: 10px 12px;
-    font-size: 0.78rem;
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
+
+  .badge-rbac {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
+
+  /* Transformación Móvil de la Tabla de Usuarios en Tarjetas Modernas */
+  #sec-usuarios .table-container {
+    overflow: visible;
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+    border: none;
+  }
+
+  #sec-usuarios .data-table thead {
+    display: none;
+  }
+
+  #sec-usuarios .data-table,
+  #sec-usuarios .data-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    background: transparent;
+  }
+
+  #sec-usuarios .data-table tbody tr {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+    gap: 8px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  #sec-usuarios .data-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border: none;
+    font-size: 0.85rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  #sec-usuarios .data-table td:first-child {
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 4px;
+    width: 100%;
+  }
+
+  #sec-usuarios .data-table td:last-child {
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
+    margin-top: 6px;
+    justify-content: flex-end;
+    gap: 8px;
+    width: 100%;
+  }
+
+  #sec-usuarios .data-table td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  #sec-usuarios .data-table td:first-child::before,
+  #sec-usuarios .data-table td:last-child::before {
+    display: none;
   }
 }
 
