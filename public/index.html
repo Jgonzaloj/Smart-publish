@@ -7,19 +7,6 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>CrediYa — Sistema de Créditos & Cobranza Multi-Tenant</title>
-  <script>
-    // Auto-purga inmediata de Service Workers y cachés obsoletas para garantizar carga limpia
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(regs) {
-        regs.forEach(function(r) { r.unregister(); });
-      });
-      if (window.caches) {
-        caches.keys().then(function(names) {
-          names.forEach(function(n) { caches.delete(n); });
-        });
-      }
-    }
-  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -61,21 +48,6 @@
       var saved = localStorage.getItem('crediya_theme') || 'cream';
       if (saved === 'dark') {
         document.documentElement.classList.add('theme-dark');
-      }
-      // Limpiar caché vieja y service workers en navegadores móviles
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for (var i = 0; i < registrations.length; i++) {
-            registrations[i].unregister();
-          }
-        });
-      }
-      if ('caches' in window) {
-        caches.keys().then(function(names) {
-          for (var j = 0; j < names.length; j++) {
-            caches.delete(names[j]);
-          }
-        });
       }
     })();
   </script>
@@ -152,7 +124,7 @@
         </div>
 
         <!-- FORMULARIO 1: LOGIN -->
-        <form id="form-portal-login" class="auth-form" action="javascript:void(0);" novalidate onsubmit="manejarPortalLogin(event); return false;">
+        <form id="form-portal-login" class="auth-form" novalidate>
           <div class="form-group">
             <label for="portal-email">Correo Electrónico</label>
             <div class="input-with-icon">
@@ -165,7 +137,7 @@
             <label for="portal-password">Contraseña</label>
             <div class="input-with-icon">
               <span class="input-icon">🔒</span>
-              <input type="password" id="portal-password" required placeholder="••••••••" autocomplete="current-password" autocapitalize="none" autocorrect="off" enterkeyhint="go" onkeydown="if(event.key==='Enter'){event.preventDefault();manejarPortalLogin(event);}">
+              <input type="password" id="portal-password" required placeholder="••••••••" autocomplete="current-password" autocapitalize="none" autocorrect="off" enterkeyhint="go">
               <button type="button" class="btn-toggle-pass" onclick="togglePassVisibility('portal-password', this)" title="Ver/Ocultar contraseña">👁️</button>
             </div>
           </div>
@@ -177,7 +149,7 @@
             </label>
           </div>
 
-          <button type="button" class="btn-primary btn-block btn-lg" id="btn-submit-login" onclick="manejarPortalLogin(event)" style="touch-action: manipulation; cursor: pointer;">
+          <button type="submit" class="btn-primary btn-block btn-lg" id="btn-submit-login" style="touch-action: manipulation; cursor: pointer;">
             🚀 Entrar a mi Plataforma
           </button>
 
@@ -1417,7 +1389,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="cerrarModalAbono()">Cancelar</button>
-        <button class="btn-primary" onclick="confirmarAbono()">✅ Guardar Abono</button>
+        <button class="btn-primary" id="btn-confirmar-abono" onclick="confirmarAbono()">✅ Guardar Abono</button>
       </div>
     </div>
   </div>

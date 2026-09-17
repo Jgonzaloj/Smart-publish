@@ -1313,87 +1313,131 @@ function abrirModalAbono(clienteId) {
   document.getElementById('modal-abono')?.classList.remove('hidden');
 }
 
+function generarUUID() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+let isSubmittingAbono = false;
+
 function cerrarModalAbono() {
-  document.getElementById('modal-abono').classList.add('hidden');
+  document.getElementById('modal-abono')?.classList.add('hidden');
   state.selectedClientForAbono = null;
+  isSubmittingAbono = false;
+  const btn = document.getElementById('btn-confirmar-abono');
+  if (btn) {
+    btn.disabled = false;
+    btn.innerText = '✅ Guardar Abono';
+  }
 }
 
 async function confirmarAbono() {
-  const monto = Number(document.getElementById('modal-abono-monto').value);
+  if (isSubmittingAbono) return;
+
+  const monto = Number(document.getElementById('modal-abono-monto')?.value);
   if (!monto || monto <= 0) {
     showToast('Ingresa un valor válido', 'danger');
     return;
   }
 
   const client = state.selectedClientForAbono;
-  if (!client) return;
+  if (!client || !client.creditoActivo) return;
 
-  // Capturar coordenadas GPS del cobrador para auditoría anti-fraude
-  const gps = await obtenerUbicacionGPS();
-
-  const payload = {
-    creditoId: client.creditoActivo.id,
-    valorAbonado: monto,
-    ...(gps || {}),
-  };
-
-function formatearHoraSegura(fechaInput) {
-  const d = fechaInput ? new Date(fechaInput) : new Date();
-  const h = String(d.getHours()).padStart(2, '0');
-  const m = String(d.getMinutes()).padStart(2, '0');
-  const s = String(d.getSeconds()).padStart(2, '0');
-  return `${h}:${m}:${s}`;
-}
-
-  const reciboLocal = {
-    clienteId: client.clienteId,
-    creditoId: client.creditoActivo.id,
-    fecha: new Date().toISOString().slice(0, 10),
-    hora: formatearHoraSegura(),
-    usuario: state.user?.nombre || 'Carlos Cobrador',
-    documento: client.documento || '',
-    cliente: `${client.nombresAlias} ${client.apellidos || ''}`.trim(),
-    movil: client.movil || '',
-    tipoAbono: (client.creditoActivo.saldoActual - monto <= 0) ? 'Liquidación total' : 'Abono normal',
-    codigoCredito: client.creditoActivo.codigoCredito,
-    saldoAnterior: client.creditoActivo.saldoActual,
-    valorAbonado: monto,
-    saldoNuevo: Math.max(0, client.creditoActivo.saldoActual - monto),
-    formaPago: client.creditoActivo.formaPago ? client.creditoActivo.formaPago.charAt(0).toUpperCase() + client.creditoActivo.formaPago.slice(1) : 'Diario',
-    cuotasPagadas: (client.creditoActivo.cuotasPagadas || 0) + 1,
-    numeroCuotasTotal: client.creditoActivo.cuotasTotal,
-    cuotasAtrasadas: Math.max(0, (client.creditoActivo.cuotasAtrasadas || 0) - 1),
-    fechaVencimiento: client.creditoActivo.fechaVencimiento ? new Date(client.creditoActivo.fechaVencimiento).toISOString().slice(0, 10) : '',
-    ...(gps || {}),
-  };
-
-  // Si no hay red, guardamos en la cola local de IndexedDB de inmediato
-  if (!navigator.onLine) {
-    await guardarAbonoOffline(payload, reciboLocal);
-    cerrarModalAbono();
-    showToast(`📡 Cobro guardado en cola offline. Se sincronizará al volver la señal.`, 'warning');
-    mostrarRecibo(reciboLocal);
-    return;
+  const btn = document.getElementById('btn-confirmar-abono');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = '⏳ Guardando abono...';
   }
+  isSubmittingAbono = true;
 
   try {
-    const res = await api('/abonos', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+    const idempotencyKey = generarUUID();
+    const metodoPago = document.getElementById('modal-abono-metodo')?.value || 'EFECTIVO';
+    const esAdicional = document.getElementById('modal-abono-adicional')?.checked || false;
 
-    cerrarModalAbono();
-    showToast(`✅ Abono de $${monto.toLocaleString()} registrado con éxito`, 'success');
-    cargarRutaHoy();
-    cargarCuadreCaja();
+    // Capturar coordenadas GPS del cobrador para auditoría anti-fraude
+    const gps = await obtenerUbicacionGPS();
 
-    mostrarRecibo(res.recibo || reciboLocal);
-  } catch (err) {
-    console.warn('Error en red al abonar, guardando en cola offline:', err);
-    await guardarAbonoOffline(payload, reciboLocal);
-    cerrarModalAbono();
-    showToast(`📡 Sin conexión estable. Cobro respaldado en cola offline.`, 'warning');
-    mostrarRecibo(reciboLocal);
+    const payload = {
+      idempotencyKey,
+      creditoId: client.creditoActivo.id,
+      valorAbonado: monto,
+      metodoPago,
+      esAdicional,
+      ...(gps || {}),
+    };
+
+    function formatearHoraSegura(fechaInput) {
+      const d = fechaInput ? new Date(fechaInput) : new Date();
+      const h = String(d.getHours()).padStart(2, '0');
+      const m = String(d.getMinutes()).padStart(2, '0');
+      const s = String(d.getSeconds()).padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
+
+    const reciboLocal = {
+      id: idempotencyKey,
+      clienteId: client.clienteId,
+      creditoId: client.creditoActivo.id,
+      fecha: new Date().toISOString().slice(0, 10),
+      hora: formatearHoraSegura(),
+      usuario: state.user?.nombre || 'Carlos Cobrador',
+      documento: client.documento || '',
+      cliente: `${client.nombresAlias} ${client.apellidos || ''}`.trim(),
+      movil: client.movil || '',
+      tipoAbono: (client.creditoActivo.saldoActual - monto <= 0) ? 'Liquidación total' : 'Abono normal',
+      codigoCredito: client.creditoActivo.codigoCredito,
+      saldoAnterior: client.creditoActivo.saldoActual,
+      valorAbonado: monto,
+      saldoNuevo: Math.max(0, client.creditoActivo.saldoActual - monto),
+      formaPago: client.creditoActivo.formaPago ? client.creditoActivo.formaPago.charAt(0).toUpperCase() + client.creditoActivo.formaPago.slice(1) : 'Diario',
+      cuotasPagadas: (client.creditoActivo.cuotasPagadas || 0) + 1,
+      numeroCuotasTotal: client.creditoActivo.cuotasTotal,
+      cuotasAtrasadas: Math.max(0, (client.creditoActivo.cuotasAtrasadas || 0) - 1),
+      fechaVencimiento: client.creditoActivo.fechaVencimiento ? new Date(client.creditoActivo.fechaVencimiento).toISOString().slice(0, 10) : '',
+      ...(gps || {}),
+    };
+
+    // Si no hay red, guardamos en la cola local de IndexedDB de inmediato
+    if (!navigator.onLine) {
+      await guardarAbonoOffline(payload, reciboLocal);
+      cerrarModalAbono();
+      showToast(`📡 Cobro guardado en cola offline. Se sincronizará al volver la señal.`, 'warning');
+      mostrarRecibo(reciboLocal);
+      return;
+    }
+
+    try {
+      const res = await api('/abonos', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      cerrarModalAbono();
+      showToast(`✅ Abono de $${monto.toLocaleString()} registrado con éxito`, 'success');
+      cargarRutaHoy();
+      cargarCuadreCaja();
+
+      mostrarRecibo(res.recibo || reciboLocal);
+    } catch (err) {
+      console.warn('Error en red al abonar, guardando en cola offline con clave de idempotencia:', err);
+      await guardarAbonoOffline(payload, reciboLocal);
+      cerrarModalAbono();
+      showToast(`📡 Sin conexión estable. Cobro respaldado en cola offline.`, 'warning');
+      mostrarRecibo(reciboLocal);
+    }
+  } finally {
+    isSubmittingAbono = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = '✅ Guardar Abono';
+    }
   }
 }
 
@@ -3761,3 +3805,33 @@ window.abrirModalAplazar = abrirModalAplazar;
 window.cerrarModalAplazar = cerrarModalAplazar;
 window.confirmarAplazado = confirmarAplazado;
 window.confirmarAplazar = confirmarAplazado;
+
+// ============================================================
+// INICIALIZACIÓN DE EVENT LISTENERS NATIVOS HTML5
+// ============================================================
+function inicializarEventosNativos() {
+  const formLogin = document.getElementById('form-portal-login');
+  if (formLogin && !formLogin.dataset.listenerBound) {
+    formLogin.dataset.listenerBound = 'true';
+    formLogin.addEventListener('submit', (e) => {
+      e.preventDefault();
+      manejarPortalLogin(e);
+    });
+  }
+
+  const formRegistro = document.getElementById('form-portal-registro');
+  if (formRegistro && !formRegistro.dataset.listenerBound) {
+    formRegistro.dataset.listenerBound = 'true';
+    formRegistro.addEventListener('submit', (e) => {
+      e.preventDefault();
+      manejarPortalRegistro(e);
+    });
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', inicializarEventosNativos);
+} else {
+  inicializarEventosNativos();
+}
+

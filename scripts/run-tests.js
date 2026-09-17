@@ -195,6 +195,71 @@ async function runAuditedTests() {
   const updateGps = await clientesService.actualizarGps('cli1', { latitud: -12.0463, longitud: -77.0428, precisionGps: 10 }, userCobrador);
   assert(updateGps && updateGps.cliente && updateGps.cliente.latitud === -12.0463, 'Endpoint PATCH /clientes/:id/gps actualiza coordenadas GPS');
 
+  console.log('\n🛡️ ==========================================');
+  console.log('🛡️ 5. PRUEBAS DE IDEMPOTENCIA Y DOBLE ABONO');
+  console.log('🛡️ ==========================================');
+
+  const abonosCreados = [];
+  const mockCreditoDb = {
+    id: 'cr-idempotent-1',
+    clienteId: 'cli1',
+    vendedorId: vendedorId,
+    codigoCredito: 'CR-1001',
+    valorPrestamo: new Prisma.Decimal(1000),
+    valorCuota: new Prisma.Decimal(50),
+    saldoActual: new Prisma.Decimal(500),
+    interes: new Prisma.Decimal(20),
+    numeroCuotasTotal: 24,
+    cuotasPagadas: 10,
+    formaPago: 'diario',
+    fechaInicio: new Date(),
+    fechaVencimiento: new Date(Date.now() + 30 * 86400000),
+    estado: 'ACTIVO',
+    cliente: { id: 'cli1', nombresAlias: 'Juan', apellidos: 'Perez', documento: '12345678', movil: '3001' },
+  };
+
+  const mockPrismaAbonos = {
+    withTenant: async (_t, cb) => cb(mockPrismaAbonos),
+    credito: {
+      findFirst: async () => mockCreditoDb,
+      update: async (args) => {
+        mockCreditoDb.saldoActual = new Prisma.Decimal(args.data.saldoActual);
+        mockCreditoDb.cuotasPagadas = args.data.cuotasPagadas;
+        return mockCreditoDb;
+      },
+    },
+    abono: {
+      findFirst: async ({ where }) => abonosCreados.find((a) => a.id === where.id) || null,
+      create: async ({ data }) => {
+        const nuevo = { ...data, id: data.id || 'abn-' + (abonosCreados.length + 1) };
+        abonosCreados.push(nuevo);
+        return nuevo;
+      },
+    },
+    cliente: {
+      update: async () => ({}),
+    },
+  };
+
+  const abonosService = new AbonosService(mockPrismaAbonos, moraService);
+  const idempotencyKey = 'uuid-abono-unico-12345';
+
+  // 1er intento de cobro
+  const res1 = await abonosService.crear(
+    { creditoId: 'cr-idempotent-1', valorAbonado: 50, idempotencyKey },
+    userCobrador
+  );
+  assert(res1 && res1.id === idempotencyKey && abonosCreados.length === 1, 'Primer abono registrado con UUID idempotente');
+  assert(Number(mockCreditoDb.saldoActual) === 450, 'Saldo de crédito descontado correctamente (500 - 50 = 450)');
+
+  // 2do intento con el MISMO idempotencyKey (simula retry de red / sincronización offline)
+  const res2 = await abonosService.crear(
+    { creditoId: 'cr-idempotent-1', valorAbonado: 50, idempotencyKey },
+    userCobrador
+  );
+  assert(res2 && res2.id === idempotencyKey && abonosCreados.length === 1, 'Segundo abono con misma key retorna registro existente SIN duplicar');
+  assert(Number(mockCreditoDb.saldoActual) === 450, 'Saldo NO se descontó dos veces (saldo protegido contra doble cobro)');
+
   console.log(`\n==============================================`);
   console.log(`🎯 RESULTADO FINAL DE LA SUITE DE AUDITORÍA:`);
   console.log(`   Total de Pruebas: ${passed + failed}`);

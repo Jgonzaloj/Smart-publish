@@ -19,6 +19,46 @@ export class AbonosService {
    */
   async crear(dto: CrearAbonoDto, user: JwtPayload) {
     return this.prisma.withTenant(user.tenantId, async (tx) => {
+      const abonoId = dto.idempotencyKey || dto.id;
+      if (abonoId) {
+        const existingAbono = await tx.abono.findFirst({
+          where: { id: abonoId },
+          include: { credito: { include: { cliente: true } } },
+        });
+
+        if (existingAbono) {
+          const ahora = existingAbono.fecha || new Date();
+          const horaStr = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}:${String(ahora.getSeconds()).padStart(2, '0')}`;
+          const recibo = {
+            clienteId: existingAbono.credito?.clienteId,
+            creditoId: existingAbono.creditoId,
+            fecha: ahora.toISOString().slice(0, 10),
+            hora: horaStr,
+            usuario: user.nombre || 'Cobrador',
+            documento: existingAbono.credito?.cliente?.documento || '',
+            cliente: `${existingAbono.credito?.cliente?.nombresAlias || ''} ${existingAbono.credito?.cliente?.apellidos || ''}`.trim(),
+            movil: existingAbono.credito?.cliente?.movil || '',
+            tipoAbono: Number(existingAbono.saldoNuevo) <= 0 ? 'Liquidación total' : 'Abono normal',
+            codigoCredito: existingAbono.credito?.codigoCredito,
+            saldoAnterior: Number(existingAbono.saldoAnterior),
+            valorAbonado: Number(existingAbono.valorAbonado),
+            saldoNuevo: Number(existingAbono.saldoNuevo),
+            formaPago: existingAbono.credito?.formaPago ? existingAbono.credito.formaPago.charAt(0).toUpperCase() + existingAbono.credito.formaPago.slice(1) : 'Diario',
+            cuotasPagadas: existingAbono.numeroCuota,
+            numeroCuotasTotal: existingAbono.credito?.numeroCuotasTotal,
+            cuotasAtrasadas: existingAbono.cuotasAtrasadas,
+            fechaVencimiento: existingAbono.credito?.fechaVencimiento ? new Date(existingAbono.credito.fechaVencimiento).toISOString().slice(0, 10) : '',
+            latitud: existingAbono.latitud ? Number(existingAbono.latitud) : undefined,
+            longitud: existingAbono.longitud ? Number(existingAbono.longitud) : undefined,
+            precisionGps: existingAbono.precisionGps ? Number(existingAbono.precisionGps) : undefined,
+          };
+          return {
+            ...existingAbono,
+            recibo,
+          };
+        }
+      }
+
       const credito = await tx.credito.findFirst({
         where: { id: dto.creditoId },
         include: { cliente: true },
@@ -52,6 +92,7 @@ export class AbonosService {
 
       const abono = await tx.abono.create({
         data: {
+          ...(abonoId ? { id: abonoId } : {}),
           tenantId: user.tenantId,
           creditoId: credito.id,
           usuarioId: user.sub,

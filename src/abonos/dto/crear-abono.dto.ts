@@ -3,6 +3,8 @@ import { IsString, IsNumber, Min, IsOptional, IsIn, IsBoolean } from 'class-vali
 export class CrearAbonoDto {
   @IsString() creditoId: string;
   @IsNumber() @Min(0.01) valorAbonado: number;
+  @IsOptional() @IsString() idempotencyKey?: string;
+  @IsOptional() @IsString() id?: string;
   @IsOptional() @IsIn(['EFECTIVO', 'TRANSFERENCIA', 'NEQUI', 'YAPE', 'OTRO']) metodoPago?: 'EFECTIVO' | 'TRANSFERENCIA' | 'NEQUI' | 'YAPE' | 'OTRO';
   @IsOptional() @IsBoolean() esAdicional?: boolean;
   @IsOptional() @IsNumber() latitud?: number;
