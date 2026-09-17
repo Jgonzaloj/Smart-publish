@@ -157,7 +157,7 @@ async function api(endpoint, options = {}) {
 // ============================================================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js?v=31', { updateViaCache: 'none' })
+    navigator.serviceWorker.register('/sw.js?v=32', { updateViaCache: 'none' })
       .then((reg) => {
         reg.update();
       })
