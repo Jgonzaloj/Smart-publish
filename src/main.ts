@@ -11,21 +11,10 @@ import rateLimit from 'express-rate-limit';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 1. Cabeceras de seguridad HTTP con Helmet
+  // 1. Cabeceras de seguridad HTTP con Helmet (sin CSP para evitar bloqueo de eventos en navegadores móviles)
   app.use(
     helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-          scriptSrcAttr: ["'unsafe-inline'"],
-          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-          fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
-          imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-          connectSrc: ["'self'", 'http:', 'https:', 'data:', 'blob:'],
-          upgradeInsecureRequests: null,
-        },
-      },
+      contentSecurityPolicy: false,
       hsts: false,
       crossOriginEmbedderPolicy: false,
       crossOriginOpenerPolicy: false,

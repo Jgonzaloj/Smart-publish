@@ -12,18 +12,7 @@ const express_rate_limit_1 = require("express-rate-limit");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.use((0, helmet_1.default)({
-        contentSecurityPolicy: {
-            directives: {
-                defaultSrc: ["'self'"],
-                scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-                scriptSrcAttr: ["'unsafe-inline'"],
-                styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-                fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
-                imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-                connectSrc: ["'self'", 'http:', 'https:', 'data:', 'blob:'],
-                upgradeInsecureRequests: null,
-            },
-        },
+        contentSecurityPolicy: false,
         hsts: false,
         crossOriginEmbedderPolicy: false,
         crossOriginOpenerPolicy: false,

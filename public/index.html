@@ -25,7 +25,7 @@
     }
     #app-main-layout.hidden { display: none !important; }
   </style>
-  <link rel="stylesheet" href="/style.css?v=20260917-32">
+  <link rel="stylesheet" href="/style.css?v=20260917-33">
   <meta name="theme-color" content="#6366f1">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -115,10 +115,10 @@
       <div class="landing-auth-card">
         <!-- Tabs de Selección: Iniciar Sesión / Nueva Empresa -->
         <div class="auth-tabs">
-          <button class="auth-tab-btn active" id="tab-auth-login" onclick="cambiarModoAuth('login')">
+          <button class="auth-tab-btn active" id="tab-auth-login">
             🔑 Iniciar Sesión
           </button>
-          <button class="auth-tab-btn" id="tab-auth-registro" onclick="cambiarModoAuth('registro')">
+          <button class="auth-tab-btn" id="tab-auth-registro">
             🏢 Registrar Nueva Empresa
           </button>
         </div>
@@ -138,7 +138,7 @@
             <div class="input-with-icon">
               <span class="input-icon">🔒</span>
               <input type="password" id="portal-password" required placeholder="••••••••" autocomplete="current-password" autocapitalize="none" autocorrect="off" enterkeyhint="go">
-              <button type="button" class="btn-toggle-pass" onclick="togglePassVisibility('portal-password', this)" title="Ver/Ocultar contraseña">👁️</button>
+              <button type="button" class="btn-toggle-pass" id="btn-toggle-portal-pass" title="Ver/Ocultar contraseña">👁️</button>
             </div>
           </div>
 
@@ -157,7 +157,7 @@
         </form>
 
         <!-- FORMULARIO 2: REGISTRO DE NUEVA EMPRESA -->
-        <form id="form-portal-registro" class="auth-form hidden" onsubmit="manejarPortalRegistro(event)">
+        <form id="form-portal-registro" class="auth-form hidden">
           <div class="form-group">
             <label for="reg-empresa">Nombre de tu Empresa / Negocio *</label>
             <div class="input-with-icon">
@@ -200,7 +200,7 @@
             <div class="input-with-icon">
               <span class="input-icon">🔒</span>
               <input type="password" id="reg-password" required minlength="6" placeholder="Mínimo 6 caracteres">
-              <button type="button" class="btn-toggle-pass" onclick="togglePassVisibility('reg-password', this)">👁️</button>
+              <button type="button" class="btn-toggle-pass" id="btn-toggle-reg-pass">👁️</button>
             </div>
           </div>
 
@@ -1760,6 +1760,6 @@
   <!-- TOAST NOTIFICACIONES -->
   <div id="toast" class="toast hidden"></div>
 
-  <script src="/app.js?v=20260917-32"></script>
+  <script src="/app.js?v=20260917-33"></script>
 </body>
 </html>

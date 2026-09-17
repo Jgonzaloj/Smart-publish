@@ -1,5 +1,5 @@
 // Service Worker para CrediYa - Estrategia Network-First estricta y soporte offline
-const CACHE_NAME = 'crediya-cache-v32';
+const CACHE_NAME = 'crediya-cache-v33';
 
 const STATIC_ASSETS = [
   '/',

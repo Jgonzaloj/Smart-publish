@@ -157,7 +157,7 @@ async function api(endpoint, options = {}) {
 // ============================================================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js?v=32', { updateViaCache: 'none' })
+    navigator.serviceWorker.register('/sw.js?v=33', { updateViaCache: 'none' })
       .then((reg) => {
         reg.update();
       })
@@ -3825,6 +3825,34 @@ function inicializarEventosNativos() {
     formRegistro.addEventListener('submit', (e) => {
       e.preventDefault();
       manejarPortalRegistro(e);
+    });
+  }
+
+  const tabLogin = document.getElementById('tab-auth-login');
+  if (tabLogin && !tabLogin.dataset.listenerBound) {
+    tabLogin.dataset.listenerBound = 'true';
+    tabLogin.addEventListener('click', () => cambiarModoAuth('login'));
+  }
+
+  const tabReg = document.getElementById('tab-auth-registro');
+  if (tabReg && !tabReg.dataset.listenerBound) {
+    tabReg.dataset.listenerBound = 'true';
+    tabReg.addEventListener('click', () => cambiarModoAuth('registro'));
+  }
+
+  const btnTogglePortalPass = document.getElementById('btn-toggle-portal-pass');
+  if (btnTogglePortalPass && !btnTogglePortalPass.dataset.listenerBound) {
+    btnTogglePortalPass.dataset.listenerBound = 'true';
+    btnTogglePortalPass.addEventListener('click', function() {
+      togglePassVisibility('portal-password', this);
+    });
+  }
+
+  const btnToggleRegPass = document.getElementById('btn-toggle-reg-pass');
+  if (btnToggleRegPass && !btnToggleRegPass.dataset.listenerBound) {
+    btnToggleRegPass.dataset.listenerBound = 'true';
+    btnToggleRegPass.addEventListener('click', function() {
+      togglePassVisibility('reg-password', this);
     });
   }
 }
