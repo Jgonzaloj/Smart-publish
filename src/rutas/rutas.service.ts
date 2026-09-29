@@ -136,7 +136,18 @@ export class RutasService {
           totalRecaudadoHoy += totalAbonadoHoy;
           totalEsperadoHoy += Number(creditoActivo.valorCuota);
 
-          const calculoMora = this.moraService.calcularAtraso(creditoActivo, inicioDia);
+          const valorCuota = Number(creditoActivo.valorCuota) > 0 ? Number(creditoActivo.valorCuota) : 1;
+          const totalConInteres = Number(creditoActivo.valorPrestamo) * (1 + Number(creditoActivo.interes) / 100);
+          const totalAbonado = Math.max(0, totalConInteres - Number(creditoActivo.saldoActual));
+          const cuotasCalculadas = Number(creditoActivo.saldoActual) <= 0
+            ? creditoActivo.numeroCuotasTotal
+            : Math.min(creditoActivo.numeroCuotasTotal, Math.round(totalAbonado / valorCuota));
+          const cuotasPagadasFinal = Math.max(creditoActivo.cuotasPagadas || 0, cuotasCalculadas);
+
+          const calculoMora = this.moraService.calcularAtraso({
+            ...creditoActivo,
+            cuotasPagadas: cuotasPagadasFinal,
+          }, inicioDia);
 
           creditoItem = {
             id: creditoActivo.id,
@@ -146,7 +157,7 @@ export class RutasService {
             formaPago: creditoActivo.formaPago,
             saldoActual: Number(creditoActivo.saldoActual),
             cuotasTotal: creditoActivo.numeroCuotasTotal,
-            cuotasPagadas: creditoActivo.cuotasPagadas,
+            cuotasPagadas: cuotasPagadasFinal,
             cuotasAtrasadas: calculoMora.cuotasAtrasadas,
             estado: calculoMora.nuevoEstado,
             fechaVencimiento: creditoActivo.fechaVencimiento,

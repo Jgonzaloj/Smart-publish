@@ -72,8 +72,13 @@ let AbonosService = class AbonosService {
             }
             const saldoAnterior = Number(credito.saldoActual);
             const saldoNuevo = Number((saldoAnterior - dto.valorAbonado).toFixed(2));
-            const cuotasPagadas = credito.cuotasPagadas + 1;
             const quedaPagado = saldoNuevo <= 0;
+            const valorCuota = Number(credito.valorCuota) > 0 ? Number(credito.valorCuota) : 1;
+            const totalConInteres = Number(credito.valorPrestamo) * (1 + Number(credito.interes) / 100);
+            const totalAbonadoAcumulado = Math.max(0, totalConInteres - saldoNuevo);
+            const cuotasPagadas = quedaPagado
+                ? credito.numeroCuotasTotal
+                : Math.min(credito.numeroCuotasTotal, Math.round(totalAbonadoAcumulado / valorCuota));
             const calculoMora = this.moraService.calcularAtraso({
                 ...credito,
                 cuotasPagadas,
