@@ -1161,10 +1161,21 @@ function renderClienteCard(c) {
     statusBadge = '<span class="status-badge status-al-dia">🟢 AL DÍA</span>';
   }
 
+  let cuotasPagadas = c.creditoActivo?.cuotasPagadas || 0;
+  if (c.creditoActivo) {
+    const vCuota = Number(c.creditoActivo.valorCuota) || 1;
+    const totCuotas = Number(c.creditoActivo.cuotasTotal) || 24;
+    const totDeuda = Number(c.creditoActivo.valorPrestamo) ? (Number(c.creditoActivo.valorPrestamo) * 1.2) : (vCuota * totCuotas);
+    const saldoAct = Number(c.creditoActivo.saldoActual) || 0;
+    const amortizado = Math.max(0, totDeuda - saldoAct);
+    const cuotasAmortizadas = saldoAct <= 0 ? totCuotas : Math.min(totCuotas, Math.round(amortizado / vCuota));
+    cuotasPagadas = Math.max(cuotasPagadas, cuotasAmortizadas);
+  }
+
   const saldoFmt = c.creditoActivo ? fmtMoneda(c.creditoActivo.saldoActual) : fmtMoneda(0);
   const cuotaFmt = c.creditoActivo ? fmtMoneda(c.creditoActivo.valorCuota) : fmtMoneda(0);
   const progresoCuotas = c.creditoActivo
-    ? `Cuota ${c.creditoActivo.cuotasPagadas} de ${c.creditoActivo.cuotasTotal} (${c.creditoActivo.formaPago})`
+    ? `Cuota ${cuotasPagadas} de ${c.creditoActivo.cuotasTotal} (${c.creditoActivo.formaPago})`
     : 'Sin crédito activo';
 
   const isExpanded = state.clienteExpandidoId === c.clienteId;
@@ -1388,6 +1399,13 @@ async function confirmarAbono() {
       return `${h}:${m}:${s}`;
     }
 
+    const saldoNuevo = Math.max(0, client.creditoActivo.saldoActual - monto);
+    const vCuota = Number(client.creditoActivo.valorCuota) || 1;
+    const totCuotas = Number(client.creditoActivo.cuotasTotal) || 24;
+    const totDeuda = Number(client.creditoActivo.valorPrestamo) ? (Number(client.creditoActivo.valorPrestamo) * 1.2) : (vCuota * totCuotas);
+    const amortizado = Math.max(0, totDeuda - saldoNuevo);
+    const cuotasPagadasCalc = saldoNuevo <= 0 ? totCuotas : Math.min(totCuotas, Math.round(amortizado / vCuota));
+
     const reciboLocal = {
       id: idempotencyKey,
       clienteId: client.clienteId,
@@ -1398,15 +1416,15 @@ async function confirmarAbono() {
       documento: client.documento || '',
       cliente: `${client.nombresAlias} ${client.apellidos || ''}`.trim(),
       movil: client.movil || '',
-      tipoAbono: (client.creditoActivo.saldoActual - monto <= 0) ? 'Liquidación total' : 'Abono normal',
+      tipoAbono: (saldoNuevo <= 0) ? 'Liquidación total' : 'Abono normal',
       codigoCredito: client.creditoActivo.codigoCredito,
       saldoAnterior: client.creditoActivo.saldoActual,
       valorAbonado: monto,
-      saldoNuevo: Math.max(0, client.creditoActivo.saldoActual - monto),
+      saldoNuevo,
       formaPago: client.creditoActivo.formaPago ? client.creditoActivo.formaPago.charAt(0).toUpperCase() + client.creditoActivo.formaPago.slice(1) : 'Diario',
-      cuotasPagadas: (client.creditoActivo.cuotasPagadas || 0) + 1,
+      cuotasPagadas: cuotasPagadasCalc,
       numeroCuotasTotal: client.creditoActivo.cuotasTotal,
-      cuotasAtrasadas: Math.max(0, (client.creditoActivo.cuotasAtrasadas || 0) - 1),
+      cuotasAtrasadas: Math.max(0, (client.creditoActivo.cuotasAtrasadas || 0) - Math.max(1, Math.round(monto / vCuota))),
       fechaVencimiento: client.creditoActivo.fechaVencimiento ? new Date(client.creditoActivo.fechaVencimiento).toISOString().slice(0, 10) : '',
       ...(gps || {}),
     };
