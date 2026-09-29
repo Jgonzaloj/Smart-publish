@@ -111,7 +111,10 @@ export class ClientesService {
    */
   async listar(user: JwtPayload) {
     return this.prisma.withTenant(user.tenantId, async (tx) => {
-      const where = user.rol === 'VENDEDOR' ? { vendedorId: user.sub } : {};
+      const where: any = { tenantId: user.tenantId };
+      if (user.rol === 'VENDEDOR') {
+        where.vendedorId = user.sub;
+      }
       return tx.cliente.findMany({
         where,
         include: { creditos: { orderBy: { fechaInicio: 'desc' }, take: 1 } },
@@ -123,7 +126,7 @@ export class ClientesService {
   async obtener(id: string, user: JwtPayload) {
     return this.prisma.withTenant(user.tenantId, async (tx) => {
       const cliente = await tx.cliente.findFirst({
-        where: { id },
+        where: { id, tenantId: user.tenantId },
         include: { creditos: { include: { abonos: true, codeudores: true, seguro: true } } },
       });
       if (!cliente) throw new NotFoundException('Cliente no encontrado');
@@ -135,68 +138,112 @@ export class ClientesService {
   }
 
   /**
-   * Renovación de crédito: liquida el saldo anterior pendiente,
-   * marca el crédito viejo como RENOVADO, y emite un nuevo crédito
-   * vinculando renovadoDeId.
+   * Renovación de crédito / Nuevo crédito para cliente existente:
+   * Si tiene saldo pendiente anterior, lo liquida contablemente y cruza desembolsos.
+   * Si el crédito anterior ya estaba pagado o el cliente no tenía crédito activo ("Sin crédito activo"),
+   * emite el nuevo crédito directamente sin errores.
    */
   async renovarCredito(dto: any, user: JwtPayload) {
     return this.prisma.withTenant(user.tenantId, async (tx) => {
-      const creditoAnterior = await tx.credito.findFirst({
-        where: { id: dto.creditoAnteriorId, tenantId: user.tenantId },
-        include: { cliente: true },
-      });
+      let creditoAnterior: any = null;
+      let cliente: any = null;
 
-      if (!creditoAnterior) {
-        throw new NotFoundException('Crédito anterior a renovar no encontrado');
+      if (dto.creditoAnteriorId) {
+        creditoAnterior = await tx.credito.findFirst({
+          where: { id: dto.creditoAnteriorId, tenantId: user.tenantId },
+          include: { cliente: true },
+        });
+        if (creditoAnterior) {
+          cliente = creditoAnterior.cliente;
+        }
       }
 
-      if (user.rol === 'VENDEDOR' && creditoAnterior.vendedorId !== user.sub) {
-        throw new ForbiddenException('No puedes renovar créditos de otro vendedor');
+      if (!cliente && dto.clienteId) {
+        cliente = await tx.cliente.findFirst({
+          where: { id: dto.clienteId, tenantId: user.tenantId },
+          include: {
+            creditos: {
+              orderBy: { fechaInicio: 'desc' },
+              take: 1,
+            },
+          },
+        });
+        if (cliente && cliente.creditos && cliente.creditos.length > 0) {
+          const crActivo = await tx.credito.findFirst({
+            where: {
+              clienteId: cliente.id,
+              tenantId: user.tenantId,
+              estado: { in: ['ACTIVO', 'EN_MORA'] },
+              saldoActual: { gt: 0 },
+            },
+            orderBy: { fechaInicio: 'desc' },
+          });
+          creditoAnterior = crActivo || cliente.creditos[0];
+        }
       }
 
-      if (['CANCELADO', 'RENOVADO'].includes(creditoAnterior.estado)) {
-        throw new BadRequestException(`El crédito ya se encuentra en estado ${creditoAnterior.estado}`);
+      if (!cliente && !creditoAnterior) {
+        throw new NotFoundException('Cliente o crédito a renovar no encontrado');
       }
 
-      const saldoPendienteAnterior = Number(creditoAnterior.saldoActual);
+      const clienteIdFinal = cliente?.id || creditoAnterior?.clienteId;
+      const vendedorIdAsignado = user.rol === 'VENDEDOR' ? user.sub : (cliente?.vendedorId || creditoAnterior?.vendedorId || user.sub);
+
+      if (user.rol === 'VENDEDOR') {
+        if (creditoAnterior && creditoAnterior.vendedorId !== user.sub) {
+          throw new ForbiddenException('No puedes renovar créditos de otro vendedor');
+        }
+        if (cliente && cliente.vendedorId !== user.sub) {
+          throw new ForbiddenException('No puedes otorgar créditos a clientes de otro vendedor');
+        }
+      }
+
+      // Validar si el crédito anterior requiere liquidación
+      const tieneCreditoPendiente = creditoAnterior && 
+        ['ACTIVO', 'EN_MORA'].includes(creditoAnterior.estado) && 
+        Number(creditoAnterior.saldoActual) > 0;
+
+      const saldoPendienteAnterior = tieneCreditoPendiente ? Number(creditoAnterior.saldoActual) : 0;
       const descontar = dto.descontarSaldoAnterior !== false;
 
-      if (descontar && dto.valorPrestamo < saldoPendienteAnterior) {
+      if (tieneCreditoPendiente && descontar && dto.valorPrestamo < saldoPendienteAnterior) {
         throw new BadRequestException(
-          `El valor del nuevo préstamo ($${dto.valorPrestamo}) no puede ser inferior al saldo a cancelar ($${saldoPendienteAnterior})`,
+          `El valor del nuevo préstamo ($${dto.valorPrestamo}) no puede ser inferior al saldo pendiente a cancelar ($${saldoPendienteAnterior})`,
         );
       }
 
-      const netoEntregado = descontar
+      const netoEntregado = (tieneCreditoPendiente && descontar)
         ? Number((dto.valorPrestamo - saldoPendienteAnterior).toFixed(2))
         : dto.valorPrestamo;
 
       const valorConInteres = dto.valorPrestamo * (1 + dto.interes / 100);
       const valorCuota = Number((valorConInteres / dto.numeroCuotas).toFixed(2));
 
-      // 1. Cerrar crédito anterior como RENOVADO
-      await tx.credito.update({
-        where: { id: creditoAnterior.id },
-        data: {
-          saldoActual: 0,
-          estado: 'RENOVADO',
-        },
-      });
-
-      // 2. Si había saldo pendiente, registrar el abono contable de liquidación
-      if (saldoPendienteAnterior > 0) {
-        await tx.abono.create({
+      // 1. Si había un crédito pendiente por liquidar, marcarlo como RENOVADO
+      if (tieneCreditoPendiente) {
+        await tx.credito.update({
+          where: { id: creditoAnterior.id },
           data: {
-            tenantId: user.tenantId,
-            creditoId: creditoAnterior.id,
-            usuarioId: user.sub,
-            saldoAnterior: saldoPendienteAnterior,
-            valorAbonado: saldoPendienteAnterior,
-            saldoNuevo: 0,
-            numeroCuota: creditoAnterior.cuotasPagadas + 1,
-            cuotasAtrasadas: 0,
+            saldoActual: 0,
+            estado: 'RENOVADO',
           },
         });
+
+        // 2. Registrar el abono contable de liquidación por renovación
+        if (saldoPendienteAnterior > 0) {
+          await tx.abono.create({
+            data: {
+              tenantId: user.tenantId,
+              creditoId: creditoAnterior.id,
+              usuarioId: user.sub,
+              saldoAnterior: saldoPendienteAnterior,
+              valorAbonado: saldoPendienteAnterior,
+              saldoNuevo: 0,
+              numeroCuota: (creditoAnterior.cuotasPagadas || 0) + 1,
+              cuotasAtrasadas: 0,
+            },
+          });
+        }
       }
 
       // 3. Crear el nuevo crédito
@@ -206,14 +253,26 @@ export class ClientesService {
       if (!prod) {
         prod = await tx.productoCredito.findFirst({ where: { tenantId: user.tenantId, activo: true } });
       }
-      const prodId = prod?.id || creditoAnterior.productoId;
+      let prodId = prod?.id || creditoAnterior?.productoId;
+
+      if (!prodId) {
+        const prodCreado = await tx.productoCredito.create({
+          data: {
+            tenantId: user.tenantId,
+            nombre: 'Crédito General',
+            interesDefault: dto.interes || 20.0,
+            activo: true,
+          },
+        });
+        prodId = prodCreado.id;
+      }
 
       const codigoNuevo = this.generarCodigoCredito();
       const creditoNuevo = await tx.credito.create({
         data: {
           tenantId: user.tenantId,
-          clienteId: creditoAnterior.clienteId,
-          vendedorId: user.sub,
+          clienteId: clienteIdFinal,
+          vendedorId: vendedorIdAsignado,
           productoId: prodId,
           codigoCredito: codigoNuevo,
           valorPrestamo: dto.valorPrestamo,
@@ -224,13 +283,13 @@ export class ClientesService {
           saldoActual: valorConInteres,
           fechaVencimiento: this.calcularFechaVencimiento(dto.formaPago, dto.numeroCuotas),
           estado: 'ACTIVO',
-          renovadoDeId: creditoAnterior.id,
+          renovadoDeId: tieneCreditoPendiente ? creditoAnterior.id : (creditoAnterior ? creditoAnterior.id : null),
         },
       });
 
       // 4. Restaurar estado de visita del cliente a AL_DIA
       await tx.cliente.update({
-        where: { id: creditoAnterior.clienteId },
+        where: { id: clienteIdFinal },
         data: { estadoVisita: 'AL_DIA' },
       });
 
@@ -241,16 +300,18 @@ export class ClientesService {
             tenantId: user.tenantId,
             vendedorId: user.sub,
             tipo: 'EGRESO',
-            concepto: `Desembolso neto renovación ${creditoAnterior.codigoCredito} -> ${codigoNuevo}`,
+            concepto: tieneCreditoPendiente
+              ? `Desembolso neto renovación ${creditoAnterior?.codigoCredito} -> ${codigoNuevo}`
+              : `Desembolso nuevo crédito ${codigoNuevo}`,
             valor: netoEntregado,
           },
         });
       }
 
       return {
-        message: 'Crédito renovado exitosamente',
+        message: tieneCreditoPendiente ? 'Crédito renovado exitosamente' : 'Nuevo crédito emitido exitosamente',
         creditoNuevo,
-        creditoAnteriorId: creditoAnterior.id,
+        creditoAnteriorId: creditoAnterior?.id || null,
         saldoLiquidado: saldoPendienteAnterior,
         netoEntregadoCliente: netoEntregado,
       };

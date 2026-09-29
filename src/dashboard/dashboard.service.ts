@@ -29,22 +29,45 @@ export class DashboardService {
       // 1. Obtener todas las entidades principales del tenant
       const [creditos, abonos, usuarios, clientes] = await Promise.all([
         tx.credito.findMany({
+          where: { tenantId: user.tenantId },
           include: { cliente: true },
         }),
         tx.abono.findMany({
+          where: { tenantId: user.tenantId },
           orderBy: { fecha: 'desc' },
         }),
         tx.usuario.findMany({
-          where: { rol: 'VENDEDOR' },
+          where: { tenantId: user.tenantId, rol: 'VENDEDOR' },
         }),
-        tx.cliente.findMany(),
+        tx.cliente.findMany({
+          where: { tenantId: user.tenantId },
+        }),
       ]);
 
       // 2. Métricas de Cartera Global con precisión Decimal
       const creditosActivos = creditos.filter((c) => c.estado === 'ACTIVO' || c.estado === 'EN_MORA');
+      
+      // Capital puro desembolsado en los créditos activos
+      const capitalPrestadoActivoDec = creditosActivos.reduce((sum, c) => sum.plus(toDecimal(c.valorPrestamo)), new Prisma.Decimal(0));
+      
+      // Total colocado a cobrar en créditos activos (Capital + Intereses pactados)
+      const totalColocadoActivoDec = creditosActivos.reduce((sum, c) => {
+        const totalCredito = toDecimal(c.valorCuota).times(c.numeroCuotasTotal);
+        return sum.plus(totalCredito);
+      }, new Prisma.Decimal(0));
+
+      // Rendimiento / Intereses pactados en créditos activos
+      const interesesActivosDec = totalColocadoActivoDec.minus(capitalPrestadoActivoDec);
+
+      // Cartera activa en calle (Saldo real pendiente por cobrar)
+      const carteraActivaTotalDec = creditosActivos.reduce((sum, c) => sum.plus(toDecimal(c.saldoActual)), new Prisma.Decimal(0));
+      
+      // Cobrado sobre créditos activos: Total Colocado - Saldo en Calle
+      const recuperadoActivoDec = totalColocadoActivoDec.minus(carteraActivaTotalDec);
+
+      // Totales históricos acumulados de la empresa
       const totalPrestadoHistoricoDec = creditos.reduce((sum, c) => sum.plus(toDecimal(c.valorPrestamo)), new Prisma.Decimal(0));
       const totalRecuperadoHistoricoDec = abonos.reduce((sum, a) => sum.plus(toDecimal(a.valorAbonado)), new Prisma.Decimal(0));
-      const carteraActivaTotalDec = creditosActivos.reduce((sum, c) => sum.plus(toDecimal(c.saldoActual)), new Prisma.Decimal(0));
 
       // 3. Métricas de la Jornada de Hoy
       const abonosHoy = abonos.filter((a) => {
@@ -153,6 +176,10 @@ export class DashboardService {
 
       return {
         financiero: {
+          capitalPrestadoActivo: capitalPrestadoActivoDec.toNumber(),
+          totalColocadoActivo: totalColocadoActivoDec.toNumber(),
+          interesesActivos: interesesActivosDec.toNumber(),
+          recuperadoActivo: recuperadoActivoDec.toNumber(),
           totalPrestadoHistorico: totalPrestadoHistoricoDec.toNumber(),
           totalRecuperadoHistorico: totalRecuperadoHistoricoDec.toNumber(),
           carteraActivaTotal: carteraActivaTotalDec.toNumber(),

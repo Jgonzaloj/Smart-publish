@@ -89,9 +89,15 @@ class RenovarCreditoDto {
 }
 exports.RenovarCreditoDto = RenovarCreditoDto;
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], RenovarCreditoDto.prototype, "creditoAnteriorId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], RenovarCreditoDto.prototype, "clienteId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),

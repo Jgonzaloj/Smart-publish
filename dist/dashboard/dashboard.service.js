@@ -44,9 +44,16 @@ let DashboardService = class DashboardService {
                 tx.cliente.findMany(),
             ]);
             const creditosActivos = creditos.filter((c) => c.estado === 'ACTIVO' || c.estado === 'EN_MORA');
+            const capitalPrestadoActivoDec = creditosActivos.reduce((sum, c) => sum.plus(toDecimal(c.valorPrestamo)), new client_1.Prisma.Decimal(0));
+            const totalColocadoActivoDec = creditosActivos.reduce((sum, c) => {
+                const totalCredito = toDecimal(c.valorCuota).times(c.numeroCuotasTotal);
+                return sum.plus(totalCredito);
+            }, new client_1.Prisma.Decimal(0));
+            const interesesActivosDec = totalColocadoActivoDec.minus(capitalPrestadoActivoDec);
+            const carteraActivaTotalDec = creditosActivos.reduce((sum, c) => sum.plus(toDecimal(c.saldoActual)), new client_1.Prisma.Decimal(0));
+            const recuperadoActivoDec = totalColocadoActivoDec.minus(carteraActivaTotalDec);
             const totalPrestadoHistoricoDec = creditos.reduce((sum, c) => sum.plus(toDecimal(c.valorPrestamo)), new client_1.Prisma.Decimal(0));
             const totalRecuperadoHistoricoDec = abonos.reduce((sum, a) => sum.plus(toDecimal(a.valorAbonado)), new client_1.Prisma.Decimal(0));
-            const carteraActivaTotalDec = creditosActivos.reduce((sum, c) => sum.plus(toDecimal(c.saldoActual)), new client_1.Prisma.Decimal(0));
             const abonosHoy = abonos.filter((a) => {
                 const raw = a.fecha || a.createdAt;
                 if (!raw)
@@ -139,6 +146,10 @@ let DashboardService = class DashboardService {
             rankingCobradores.sort((a, b) => b.cobradoHoy - a.cobradoHoy);
             return {
                 financiero: {
+                    capitalPrestadoActivo: capitalPrestadoActivoDec.toNumber(),
+                    totalColocadoActivo: totalColocadoActivoDec.toNumber(),
+                    interesesActivos: interesesActivosDec.toNumber(),
+                    recuperadoActivo: recuperadoActivoDec.toNumber(),
                     totalPrestadoHistorico: totalPrestadoHistoricoDec.toNumber(),
                     totalRecuperadoHistorico: totalRecuperadoHistoricoDec.toNumber(),
                     carteraActivaTotal: carteraActivaTotalDec.toNumber(),

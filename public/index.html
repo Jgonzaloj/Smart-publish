@@ -25,7 +25,7 @@
     }
     #app-main-layout.hidden { display: none !important; }
   </style>
-  <link rel="stylesheet" href="/style.css?v=20260917-34">
+  <link rel="stylesheet" href="/style.css?v=20260928-v35">
   <meta name="theme-color" content="#6366f1">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -399,22 +399,22 @@
         </div>
       </div>
 
-      <!-- KPIs Financieros Principales -->
+      <!-- KPIs Financieros Principales (Balance Cuadrado) -->
       <div class="metrics-grid">
         <div class="metric-card metric-primary">
           <span class="metric-label">Capital Total Prestado</span>
           <span class="metric-val" id="dash-prestado">$0</span>
-          <span class="metric-sub" id="dash-prestado-sub">0 créditos históricos</span>
+          <span class="metric-sub" id="dash-prestado-sub">0 créditos activos</span>
         </div>
         <div class="metric-card metric-success">
           <span class="metric-label">Capital Recuperado</span>
           <span class="metric-val" id="dash-recuperado">$0</span>
-          <span class="metric-sub">Total abonos cobrados</span>
+          <span class="metric-sub" id="dash-recuperado-sub">Total abonos cobrados</span>
         </div>
         <div class="metric-card metric-warning">
           <span class="metric-label">Cartera Activa en Calle</span>
           <span class="metric-val" id="dash-cartera-activa">$0</span>
-          <span class="metric-sub" id="dash-cartera-sub">Saldo total pendiente</span>
+          <span class="metric-sub" id="dash-cartera-sub">Saldo total por cobrar</span>
         </div>
         <div class="metric-card">
           <span class="metric-label">Cobranza de Hoy</span>
@@ -422,6 +422,30 @@
           <span class="metric-sub" id="dash-cumplimiento">Meta: $0 (0%)</span>
         </div>
       </div>
+
+      <!-- Conciliación y Balance Financiero de Cartera -->
+      <div class="dash-balance-banner">
+        <div class="balance-banner-content">
+          <div class="balance-item">
+            <span class="balance-label">💵 Total Colocado (Capital + Interés):</span>
+            <strong id="dash-total-colocado" class="balance-val">$0</strong>
+          </div>
+          <div class="balance-separator">=</div>
+          <div class="balance-item">
+            <span class="balance-label">✅ Cobrado Acumulado:</span>
+            <strong id="dash-balance-cobrado" class="balance-val text-success">$0</strong>
+          </div>
+          <div class="balance-separator">+</div>
+          <div class="balance-item">
+            <span class="balance-label">⏳ Saldo en Calle:</span>
+            <strong id="dash-balance-calle" class="balance-val text-warning">$0</strong>
+          </div>
+          <div class="balance-badge">
+            <span>⚖️ 100% Cuadrado</span>
+          </div>
+        </div>
+      </div>
+
 
       <!-- Indicadores de Calidad de Cartera y Riesgo (PAR) -->
       <div class="dash-risk-grid mt-4">
@@ -1726,6 +1750,91 @@
     </div>
   </div>
 
+  <!-- MODAL: RENOVAR / NUEVO CRÉDITO PARA CLIENTE -->
+  <div id="modal-renovacion" class="modal-backdrop hidden">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <h3 id="modal-renovacion-titulo">🔄 Renovar / Otorgar Crédito</h3>
+        <button class="modal-close" onclick="cerrarModalRenovacion()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="renovacion-client-info" style="background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <span class="text-muted text-xs" style="text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Cliente Titular:</span>
+              <div id="modal-ren-cliente-nombre" style="font-size: 1.15rem; font-weight: 800; color: #111827; margin-top: 2px;">-</div>
+              <div id="modal-ren-cliente-detalles" class="text-muted text-sm" style="margin-top: 2px;">DNI: - • Cel: -</div>
+            </div>
+            <div style="text-align: right;">
+              <span id="modal-ren-badge-estado" class="badge-role badge-role-admin">Sin crédito activo</span>
+              <div style="margin-top: 4px; font-size: 0.88rem;">Saldo anterior: <strong id="modal-ren-saldo-pendiente" class="text-danger">S/ 0</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <input type="hidden" id="modal-ren-cliente-id" value="">
+        <input type="hidden" id="modal-ren-credito-id" value="">
+        <input type="hidden" id="modal-ren-producto-id" value="">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label id="lbl-modal-ren-monto">Nuevo Préstamo ($) *</label>
+            <input type="number" id="modal-ren-monto" placeholder="Ej. 300" min="0.01" step="any" oninput="actualizarPrecalculoModalRenovacion()">
+          </div>
+          <div class="form-group">
+            <label>Número de Cuotas *</label>
+            <input type="number" id="modal-ren-cuotas" value="24" min="1" oninput="actualizarPrecalculoModalRenovacion()">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Interés (%) *</label>
+            <input type="number" id="modal-ren-interes" value="20" min="0" oninput="actualizarPrecalculoModalRenovacion()">
+          </div>
+          <div class="form-group">
+            <label>Forma de Pago *</label>
+            <select id="modal-ren-forma" class="select-vendedor-admin" onchange="actualizarPrecalculoModalRenovacion()">
+              <option value="diario">Diario</option>
+              <option value="semanal">Semanal</option>
+              <option value="quincenal">Quincenal</option>
+              <option value="mensual">Mensual</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Pre-cálculo y Liquidación -->
+        <div class="preview-card" style="background: rgba(243, 244, 246, 0.6); border: 1px solid rgba(229, 231, 235, 0.8); border-radius: 10px; padding: 14px; margin-top: 14px;">
+          <h4 style="margin: 0 0 10px 0; font-size: 0.92rem; color: #374151; font-weight: 700;">📊 Liquidación Contable de la Operación</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
+            <div>
+              <span class="text-muted text-xs">Total con Interés:</span>
+              <div id="modal-ren-prev-total" style="font-weight: 800; font-size: 1.05rem;">S/ 0</div>
+            </div>
+            <div>
+              <span class="text-muted text-xs">Valor por Cuota:</span>
+              <div id="modal-ren-prev-cuota" style="font-weight: 800; color: #0284c7; font-size: 1.05rem;">S/ 0</div>
+            </div>
+            <div id="modal-ren-box-descuento">
+              <span class="text-muted text-xs">Saldo a Liquidar:</span>
+              <div id="modal-ren-prev-descuento" style="font-weight: 800; color: #dc2626; font-size: 1.05rem;">- S/ 0</div>
+            </div>
+            <div style="background: rgba(16,185,129,0.12); padding: 8px 12px; border-radius: 8px; border: 1px solid #10b981;">
+              <span style="font-size: 0.75rem; color: #065f46; font-weight: 700; text-transform: uppercase;">Neto a Desembolsar:</span>
+              <div id="modal-ren-prev-neto" style="font-weight: 900; color: #047857; font-size: 1.25rem;">S/ 0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="cerrarModalRenovacion()">Cancelar</button>
+        <button type="button" class="btn-primary" id="btn-confirmar-modal-renovacion" onclick="confirmarRenovacionModal()">
+          ✅ Confirmar y Desembolsar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: CAJA DE SEGUROS -->
   <div id="modal-seguros" class="modal-backdrop hidden">
     <div class="modal-card">
@@ -1760,6 +1869,6 @@
   <!-- TOAST NOTIFICACIONES -->
   <div id="toast" class="toast hidden"></div>
 
-  <script src="/app.js?v=20260917-34"></script>
+  <script src="/app.js?v=20260928-v35"></script>
 </body>
 </html>

@@ -23,7 +23,7 @@ export class UsuariosService {
    */
   async listar(user: JwtPayload, filtroRol?: RolUsuario) {
     return this.prisma.withTenant(user.tenantId, async (tx) => {
-      const where: any = {};
+      const where: any = { tenantId: user.tenantId };
       if (filtroRol) {
         where.rol = filtroRol;
       }
@@ -45,10 +45,11 @@ export class UsuariosService {
 
       // Enriquecer con métricas de clientes y créditos asignados
       const clientes = await tx.cliente.findMany({
+        where: { tenantId: user.tenantId },
         select: { id: true, vendedorId: true },
       });
       const creditos = await tx.credito.findMany({
-        where: { estado: 'ACTIVO' },
+        where: { tenantId: user.tenantId, estado: 'ACTIVO' },
         select: { id: true, vendedorId: true, saldoActual: true },
       });
 
@@ -284,8 +285,8 @@ export class UsuariosService {
         throw new NotFoundException('Usuario no encontrado');
       }
 
-      const abonosCount = await tx.abono.count({ where: { usuarioId: id } });
-      const creditosCount = await tx.credito.count({ where: { vendedorId: id } });
+      const abonosCount = await tx.abono.count({ where: { usuarioId: id, tenantId: user.tenantId } });
+      const creditosCount = await tx.credito.count({ where: { vendedorId: id, tenantId: user.tenantId } });
 
       if (abonosCount > 0 || creditosCount > 0) {
         throw new BadRequestException(

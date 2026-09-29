@@ -22,7 +22,7 @@ export class AbonosService {
       const abonoId = dto.idempotencyKey || dto.id;
       if (abonoId) {
         const existingAbono = await tx.abono.findFirst({
-          where: { id: abonoId },
+          where: { id: abonoId, tenantId: user.tenantId },
           include: { credito: { include: { cliente: true } } },
         });
 
@@ -60,7 +60,7 @@ export class AbonosService {
       }
 
       const credito = await tx.credito.findFirst({
-        where: { id: dto.creditoId },
+        where: { id: dto.creditoId, tenantId: user.tenantId },
         include: { cliente: true },
       });
       if (!credito) throw new NotFoundException('Crédito no encontrado');
@@ -166,7 +166,7 @@ export class AbonosService {
 
   async listarPorCredito(creditoId: string, user: JwtPayload) {
     return this.prisma.withTenant(user.tenantId, async (tx) => {
-      return tx.abono.findMany({ where: { creditoId }, orderBy: { fecha: 'desc' } });
+      return tx.abono.findMany({ where: { creditoId, tenantId: user.tenantId }, orderBy: { fecha: 'desc' } });
     });
   }
 
@@ -177,7 +177,7 @@ export class AbonosService {
   async obtenerExtractoCredito(creditoId: string, user: JwtPayload) {
     return this.prisma.withTenant(user.tenantId, async (tx) => {
       const credito = await tx.credito.findFirst({
-        where: { id: creditoId },
+        where: { id: creditoId, tenantId: user.tenantId },
         include: { cliente: true },
       });
 
@@ -185,13 +185,14 @@ export class AbonosService {
         throw new NotFoundException('Crédito no encontrado');
       }
 
-      const cliente = credito.cliente || (await tx.cliente.findFirst({ where: { id: credito.clienteId } }));
+      const cliente = credito.cliente || (await tx.cliente.findFirst({ where: { id: credito.clienteId, tenantId: user.tenantId } }));
       const abonos = await tx.abono.findMany({
-        where: { creditoId },
+        where: { creditoId, tenantId: user.tenantId },
         orderBy: { fecha: 'asc' },
       });
 
       const usuarios = await tx.usuario.findMany({
+        where: { tenantId: user.tenantId },
         select: { id: true, nombre: true },
       });
       const usuariosMap = new Map<string, string>();

@@ -1239,16 +1239,23 @@ function renderClienteCard(c) {
             <button type="button" class="btn-action-cobro btn-extracto" onclick="verEstadoCuentaCliente('${c.clienteId}', '${c.creditoActivo.id}'); event.stopPropagation();">
               📜 Extracto
             </button>
-          ` : ''}
-          <button type="button" class="btn-action-cobro btn-abonar-main" onclick="abrirModalAbono('${c.clienteId}'); event.stopPropagation();">
-            💵 Abonar
-          </button>
-          <button type="button" class="btn-action-cobro btn-ausente-act" onclick="abrirModalAusente('${c.clienteId}'); event.stopPropagation();">
-            🚪 Ausente
-          </button>
-          <button type="button" class="btn-action-cobro btn-aplazar-act" onclick="abrirModalAplazar('${c.clienteId}', '${escapeHtml(c.nombresAlias)}'); event.stopPropagation();">
-            ⏳ Aplazar
-          </button>
+            <button type="button" class="btn-action-cobro btn-abonar-main" onclick="abrirModalAbono('${c.clienteId}'); event.stopPropagation();">
+              💵 Abonar
+            </button>
+            <button type="button" class="btn-action-cobro btn-ausente-act" onclick="abrirModalAusente('${c.clienteId}'); event.stopPropagation();">
+              🚪 Ausente
+            </button>
+            <button type="button" class="btn-action-cobro btn-aplazar-act" onclick="abrirModalAplazar('${c.clienteId}', '${escapeHtml(c.nombresAlias)}'); event.stopPropagation();">
+              ⏳ Aplazar
+            </button>
+            <button type="button" class="btn-action-cobro btn-renovar-alt" title="Renovar crédito al cliente" onclick="abrirModalRenovacion('${c.clienteId}'); event.stopPropagation();">
+              🔄 Renovar
+            </button>
+          ` : `
+            <button type="button" class="btn-action-cobro btn-renovar-main" title="Otorgar nuevo crédito a este cliente" onclick="abrirModalRenovacion('${c.clienteId}'); event.stopPropagation();">
+              🔄 Nuevo Crédito / Renovar
+            </button>
+          `}
         </div>
       </div>
     </div>
@@ -2136,7 +2143,7 @@ async function ejecutarMoraEnVivo() {
   }
 }
 
-// 5. RENOVACIÓN DE CRÉDITOS
+// 5. RENOVACIÓN DE CRÉDITOS & NUEVOS PRÉSTAMOS
 async function cargarClientesParaRenovacion() {
   const select = document.getElementById('renovar-credito-select');
   if (!select) return;
@@ -2147,16 +2154,20 @@ async function cargarClientesParaRenovacion() {
     const clientes = Array.isArray(res) ? res : (res?.data || res?.clientes || []);
     state.clientesConCredito = clientes;
 
-    const options = clientes
-      .filter((c) => c && c.creditos && c.creditos.length > 0)
-      .map((c) => {
-        const cr = c.creditos[0];
-        return `<option value="${cr.id}" data-saldo="${cr.saldoActual}" data-cliente="${escapeHtml(c.nombresAlias)}" data-prod="${cr.productoId || ''}">
-          ${escapeHtml(c.nombresAlias)} (${cr.codigoCredito}) - Saldo: $${Number(cr.saldoActual).toLocaleString()}
-        </option>`;
-      });
+    const options = clientes.map((c) => {
+      const cr = (c.creditos && c.creditos.length > 0) ? c.creditos[0] : null;
+      const tieneActivo = cr && (cr.estado === 'ACTIVO' || cr.estado === 'EN_MORA') && Number(cr.saldoActual) > 0;
+      const saldo = tieneActivo ? Number(cr.saldoActual) : 0;
+      const etiqueta = tieneActivo
+        ? `${escapeHtml(c.nombresAlias)} ${escapeHtml(c.apellidos || '')} (${cr.codigoCredito}) - Saldo: ${fmtMoneda(saldo)}`
+        : `${escapeHtml(c.nombresAlias)} ${escapeHtml(c.apellidos || '')} - Sin crédito activo (Nuevo Préstamo)`;
 
-    select.innerHTML = '<option value="">-- Selecciona un cliente con crédito --</option>' + options.join('');
+      return `<option value="${c.id}" data-cliente-id="${c.id}" data-credito-id="${cr ? cr.id : ''}" data-saldo="${saldo}" data-cliente="${escapeHtml(c.nombresAlias)}" data-prod="${cr?.productoId || ''}">
+        ${etiqueta}
+      </option>`;
+    });
+
+    select.innerHTML = '<option value="">-- Selecciona un cliente --</option>' + options.join('');
     actualizarPrecalculoRenovacion();
   } catch (err) {
     console.error('Error al cargar clientes para renovación:', err);
@@ -2169,7 +2180,7 @@ function actualizarPrecalculoRenovacion() {
 
   const saldoAnt = option && option.value ? Number(option.getAttribute('data-saldo') || 0) : 0;
   const nuevoMonto = Number(document.getElementById('ren-monto')?.value) || 0;
-  const cuotas = Number(document.getElementById('ren-cuotas')?.value) || 1;
+  const cuotas = Math.max(1, Number(document.getElementById('ren-cuotas')?.value) || 1);
   const interes = Number(document.getElementById('ren-interes')?.value) || 0;
 
   const totalConInteres = nuevoMonto * (1 + interes / 100);
@@ -2186,32 +2197,39 @@ function actualizarPrecalculoRenovacion() {
   if (elTotal) elTotal.innerText = fmtMoneda(totalConInteres);
 
   const elCuota = document.getElementById('prev-cuota');
-  if (elCuota) elCuota.innerText = fmtMoneda(Math.round(cuota));
+  if (elCuota) elCuota.innerText = fmtMoneda(cuota);
 
   const elNeto = document.getElementById('prev-neto');
-  if (elNeto) elNeto.innerText = fmtMoneda(Math.round(neto));
+  if (elNeto) elNeto.innerText = fmtMoneda(neto);
 }
 
 async function procesarRenovacion() {
   const select = document.getElementById('renovar-credito-select');
-  const creditoId = select.value;
-  if (!creditoId) {
-    showToast('Selecciona un crédito a renovar', 'warning');
+  if (!select || !select.value) {
+    showToast('Selecciona un cliente para renovar u otorgar crédito', 'warning');
     return;
   }
 
   const option = select.options[select.selectedIndex];
-  const productoId = option.getAttribute('data-prod') || 'prod-001';
+  const clienteId = option.getAttribute('data-cliente-id');
+  const creditoId = option.getAttribute('data-credito-id');
+  const productoId = option.getAttribute('data-prod') || undefined;
   const nuevoMonto = Number(document.getElementById('ren-monto').value);
   const cuotas = Number(document.getElementById('ren-cuotas').value);
   const interes = Number(document.getElementById('ren-interes').value);
   const formaPago = document.getElementById('ren-forma').value;
 
+  if (!nuevoMonto || nuevoMonto <= 0) {
+    showToast('Ingresa un monto válido para el préstamo', 'warning');
+    return;
+  }
+
   try {
     const res = await api('/clientes/creditos/renovar', {
       method: 'POST',
       body: JSON.stringify({
-        creditoAnteriorId: creditoId,
+        clienteId,
+        creditoAnteriorId: creditoId || undefined,
         productoId,
         valorPrestamo: nuevoMonto,
         numeroCuotas: cuotas,
@@ -2221,15 +2239,175 @@ async function procesarRenovacion() {
       }),
     });
 
-    showToast(`✅ Renovación aprobada! Neto entregado: ${fmtMoneda(res.netoEntregadoCliente)}`, 'success');
+    showToast(`✅ ${res.message || 'Operación exitosa'}! Neto entregado: ${fmtMoneda(res.netoEntregadoCliente)}`, 'success');
     cargarClientesParaRenovacion();
     cargarRutaHoy();
     cargarCuadreCaja();
+    if (state.role === 'admin') cargarDashboardEjecutivo();
     setTab('rutas');
   } catch (err) {
     console.error(err);
+    showToast(`Error: ${err.message}`, 'danger');
   }
 }
+
+// ============================================================
+// MODAL DE RENOVACIÓN / NUEVO CRÉDITO DIRECTO DESDE HOJA DE RUTA
+// ============================================================
+function abrirModalRenovacion(clienteId) {
+  if (!clienteId) return;
+
+  // 1. Buscar cliente en la ruta activa o en state
+  let cliente = null;
+  if (state.rutaActual && state.rutaActual.clientes) {
+    cliente = state.rutaActual.clientes.find((c) => c.clienteId === clienteId);
+  }
+  if (!cliente && state.clientesConCredito) {
+    const found = state.clientesConCredito.find((c) => c.id === clienteId);
+    if (found) {
+      const cr = (found.creditos && found.creditos.length > 0) ? found.creditos[0] : null;
+      const tieneActivo = cr && (cr.estado === 'ACTIVO' || cr.estado === 'EN_MORA') && Number(cr.saldoActual) > 0;
+      cliente = {
+        clienteId: found.id,
+        nombresAlias: found.nombresAlias,
+        apellidos: found.apellidos,
+        documento: found.documento,
+        movil: found.movil,
+        creditoActivo: tieneActivo ? cr : null,
+      };
+    }
+  }
+
+  if (!cliente) {
+    showToast('No se encontró la información del cliente', 'warning');
+    return;
+  }
+
+  const saldo = cliente.creditoActivo ? Number(cliente.creditoActivo.saldoActual || 0) : 0;
+  const tieneActivo = saldo > 0;
+
+  document.getElementById('modal-ren-cliente-id').value = cliente.clienteId;
+  document.getElementById('modal-ren-credito-id').value = cliente.creditoActivo ? (cliente.creditoActivo.id || '') : '';
+  document.getElementById('modal-ren-producto-id').value = cliente.creditoActivo ? (cliente.creditoActivo.productoId || '') : '';
+  
+  document.getElementById('modal-ren-cliente-nombre').innerText = `${cliente.nombresAlias} ${cliente.apellidos || ''}`.trim();
+  document.getElementById('modal-ren-cliente-detalles').innerText = `${obtenerMonedaActual().prefijoDoc}: ${cliente.documento || 'S/D'} • Cel: ${cliente.movil || 'S/N'}`;
+  
+  const badge = document.getElementById('modal-ren-badge-estado');
+  if (badge) {
+    badge.innerText = tieneActivo ? `Crédito Activo #${cliente.creditoActivo.codigoCredito || ''}` : 'Sin crédito activo';
+    badge.className = tieneActivo ? 'badge-role badge-role-admin' : 'badge-role';
+  }
+
+  document.getElementById('modal-ren-saldo-pendiente').innerText = fmtMoneda(saldo);
+  
+  // Sugerir monto del nuevo préstamo
+  const inputMonto = document.getElementById('modal-ren-monto');
+  if (inputMonto) {
+    inputMonto.value = tieneActivo ? Math.max(saldo + 100, Math.ceil((saldo * 1.4) / 50) * 50) : 300;
+  }
+  
+  document.getElementById('modal-ren-cuotas').value = (cliente.creditoActivo && cliente.creditoActivo.cuotasTotal) || 24;
+  document.getElementById('modal-ren-interes').value = 20;
+  document.getElementById('modal-ren-forma').value = (cliente.creditoActivo && cliente.creditoActivo.formaPago) || 'diario';
+
+  const boxDescuento = document.getElementById('modal-ren-box-descuento');
+  if (boxDescuento) {
+    boxDescuento.style.display = tieneActivo ? 'block' : 'none';
+  }
+
+  actualizarPrecalculoModalRenovacion();
+
+  const modal = document.getElementById('modal-renovacion');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function cerrarModalRenovacion() {
+  const modal = document.getElementById('modal-renovacion');
+  if (modal) modal.classList.add('hidden');
+}
+
+function actualizarPrecalculoModalRenovacion() {
+  const saldoPendienteStr = document.getElementById('modal-ren-saldo-pendiente')?.innerText || '0';
+  // Extraemos número ignorando símbolos
+  const saldoPendiente = Number(saldoPendienteStr.replace(/[^0-9.]/g, '')) || 0;
+  const nuevoMonto = Number(document.getElementById('modal-ren-monto')?.value) || 0;
+  const cuotas = Math.max(1, Number(document.getElementById('modal-ren-cuotas')?.value) || 1);
+  const interes = Number(document.getElementById('modal-ren-interes')?.value) || 0;
+
+  const totalConInteres = nuevoMonto * (1 + interes / 100);
+  const valorCuota = totalConInteres / cuotas;
+  const neto = Math.max(0, nuevoMonto - saldoPendiente);
+
+  const elTot = document.getElementById('modal-ren-prev-total');
+  if (elTot) elTot.innerText = fmtMoneda(totalConInteres);
+
+  const elCuo = document.getElementById('modal-ren-prev-cuota');
+  if (elCuo) elCuo.innerText = fmtMoneda(valorCuota);
+
+  const elDesc = document.getElementById('modal-ren-prev-descuento');
+  if (elDesc) elDesc.innerText = saldoPendiente > 0 ? `- ${fmtMoneda(saldoPendiente)}` : fmtMoneda(0);
+
+  const elNeto = document.getElementById('modal-ren-prev-neto');
+  if (elNeto) elNeto.innerText = fmtMoneda(neto);
+}
+
+async function confirmarRenovacionModal() {
+  const clienteId = document.getElementById('modal-ren-cliente-id').value;
+  const creditoId = document.getElementById('modal-ren-credito-id').value;
+  const productoId = document.getElementById('modal-ren-producto-id').value || undefined;
+  const nuevoMonto = Number(document.getElementById('modal-ren-monto').value);
+  const cuotas = Number(document.getElementById('modal-ren-cuotas').value);
+  const interes = Number(document.getElementById('modal-ren-interes').value);
+  const formaPago = document.getElementById('modal-ren-forma').value;
+
+  if (!clienteId) {
+    showToast('No se especificó el cliente', 'warning');
+    return;
+  }
+  if (!nuevoMonto || nuevoMonto <= 0) {
+    showToast('Ingresa un valor válido para el nuevo préstamo', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btn-confirmar-modal-renovacion');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = '⏳ Desembolsando...';
+  }
+
+  try {
+    const res = await api('/clientes/creditos/renovar', {
+      method: 'POST',
+      body: JSON.stringify({
+        clienteId,
+        creditoAnteriorId: creditoId || undefined,
+        productoId,
+        valorPrestamo: nuevoMonto,
+        numeroCuotas: cuotas,
+        interes,
+        formaPago,
+        descontarSaldoAnterior: true,
+      }),
+    });
+
+    cerrarModalRenovacion();
+    showToast(`✅ ${res.message || 'Operación completada'}! Desembolso neto: ${fmtMoneda(res.netoEntregadoCliente)}`, 'success');
+    cargarRutaHoy();
+    cargarClientesParaRenovacion();
+    cargarCuadreCaja();
+    if (state.role === 'admin') cargarDashboardEjecutivo();
+  } catch (err) {
+    console.error(err);
+    showToast(`Error al procesar: ${err.message}`, 'danger');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = '✅ Confirmar y Desembolsar';
+    }
+  }
+}
+
 
 // 6. CUADRE DE CAJA
 async function cargarCuadreCaja() {
@@ -2989,18 +3167,48 @@ async function cargarDashboardEjecutivo() {
   try {
     const data = await api('/dashboard/resumen');
 
-    // 1. KPIs Financieros
+    // 1. KPIs Financieros (Balanceados y Transparentes)
     const fin = data.financiero;
-    document.getElementById('dash-prestado').innerText = fmtMoneda(fin.totalPrestadoHistorico);
-    document.getElementById('dash-prestado-sub').innerText = `${fin.creditosActivosTotal} créditos activos (${fin.clientesTotal} clientes)`;
+    const capitalPrestado = fin.capitalPrestadoActivo !== undefined ? fin.capitalPrestadoActivo : fin.totalPrestadoHistorico;
+    const totalColocado = fin.totalColocadoActivo !== undefined ? fin.totalColocadoActivo : (fin.carteraActivaTotal + fin.totalRecuperadoHistorico);
+    const carteraActiva = fin.carteraActivaTotal || 0;
+    const totalRecuperado = fin.totalRecuperadoHistorico || 0;
 
-    document.getElementById('dash-recuperado').innerText = fmtMoneda(fin.totalRecuperadoHistorico);
-    document.getElementById('dash-cartera-activa').innerText = fmtMoneda(fin.carteraActivaTotal);
-    document.getElementById('dash-cartera-sub').innerText = 'Saldo total en calle';
+    const elPrestado = document.getElementById('dash-prestado');
+    if (elPrestado) elPrestado.innerText = fmtMoneda(capitalPrestado);
+    
+    const elPrestadoSub = document.getElementById('dash-prestado-sub');
+    if (elPrestadoSub) elPrestadoSub.innerText = `${fin.creditosActivosTotal} créditos activos (${fin.clientesTotal} clientes)`;
 
-    document.getElementById('dash-cobrado-hoy').innerText = fmtMoneda(fin.totalCobradoHoy);
-    document.getElementById('dash-cumplimiento').innerText =
+    const elRecuperado = document.getElementById('dash-recuperado');
+    if (elRecuperado) elRecuperado.innerText = fmtMoneda(totalRecuperado);
+
+    const elRecuperadoSub = document.getElementById('dash-recuperado-sub');
+    if (elRecuperadoSub) elRecuperadoSub.innerText = 'Total abonos cobrados';
+
+    const elCartera = document.getElementById('dash-cartera-activa');
+    if (elCartera) elCartera.innerText = fmtMoneda(carteraActiva);
+
+    const elCarteraSub = document.getElementById('dash-cartera-sub');
+    if (elCarteraSub) elCarteraSub.innerText = 'Saldo total por cobrar';
+
+    const elCobradoHoy = document.getElementById('dash-cobrado-hoy');
+    if (elCobradoHoy) elCobradoHoy.innerText = fmtMoneda(fin.totalCobradoHoy);
+
+    const elCumplimiento = document.getElementById('dash-cumplimiento');
+    if (elCumplimiento) elCumplimiento.innerText =
       `Meta hoy: ${fmtMoneda(fin.totalEsperadoHoy)} (${fin.porcentajeCumplimientoHoy}%)`;
+
+    // Conciliación Financiera Cuadrada
+    const elTotCol = document.getElementById('dash-total-colocado');
+    if (elTotCol) elTotCol.innerText = fmtMoneda(totalColocado);
+
+    const elBalCob = document.getElementById('dash-balance-cobrado');
+    if (elBalCob) elBalCob.innerText = fmtMoneda(totalRecuperado);
+
+    const elBalCal = document.getElementById('dash-balance-calle');
+    if (elBalCal) elBalCal.innerText = fmtMoneda(carteraActiva);
+
 
     // 2. Indicadores de Riesgo (PAR 30 / PAR 60)
     const riesgo = data.riesgo;
@@ -3745,6 +3953,10 @@ window.imprimirExtractoPOS = imprimirExtractoPOS;
 window.cargarClientesParaRenovacion = cargarClientesParaRenovacion;
 window.actualizarPrecalculoRenovacion = actualizarPrecalculoRenovacion;
 window.procesarRenovacion = procesarRenovacion;
+window.abrirModalRenovacion = abrirModalRenovacion;
+window.cerrarModalRenovacion = cerrarModalRenovacion;
+window.actualizarPrecalculoModalRenovacion = actualizarPrecalculoModalRenovacion;
+window.confirmarRenovacionModal = confirmarRenovacionModal;
 window.crearNuevoCliente = crearNuevoCliente;
 window.capturarGpsNuevoCliente = capturarGpsNuevoCliente;
 window.guardarGpsClienteEnRuta = guardarGpsClienteEnRuta;

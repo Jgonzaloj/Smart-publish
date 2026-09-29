@@ -28,7 +28,8 @@ export class CrearClienteDto {
 }
 
 export class RenovarCreditoDto {
-  @IsString() creditoAnteriorId: string;
+  @IsOptional() @IsString() creditoAnteriorId?: string;
+  @IsOptional() @IsString() clienteId?: string;
   @IsOptional() @IsString() productoId?: string;
   @IsNumber() @Min(0.01) valorPrestamo: number;
   @IsInt() @Min(1) numeroCuotas: number;
@@ -36,3 +37,4 @@ export class RenovarCreditoDto {
   @IsString() formaPago: string; // diario / semanal / quincenal / mensual
   @IsOptional() descontarSaldoAnterior?: boolean;
 }
+

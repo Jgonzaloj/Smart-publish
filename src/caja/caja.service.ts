@@ -43,7 +43,7 @@ export class CajaService {
   async listarMovimientos(user: JwtPayload, fecha?: string) {
     const { inicio, fin } = this.rangoDia(fecha);
     return this.prisma.withTenant(user.tenantId, async (tx) => {
-      const where: any = { fecha: { gte: inicio, lte: fin } };
+      const where: any = { tenantId: user.tenantId, fecha: { gte: inicio, lte: fin } };
       if (user.rol === 'VENDEDOR') where.vendedorId = user.sub;
       return tx.movimientoCaja.findMany({ where, orderBy: { fecha: 'desc' } });
     });
@@ -66,7 +66,7 @@ export class CajaService {
       // Acumula el retiro en el cuadre del día (se crea si aún no existe).
       const { inicio, fin } = this.rangoDia();
       const cuadreExistente = await tx.cuadreCaja.findFirst({
-        where: { vendedorId: user.sub, fecha: { gte: inicio, lte: fin } },
+        where: { tenantId: user.tenantId, vendedorId: user.sub, fecha: { gte: inicio, lte: fin } },
       });
 
       if (cuadreExistente) {
@@ -105,16 +105,16 @@ export class CajaService {
 
       const [abonosDia, creditosNuevos, movimientos, cuadrePersistido] = await Promise.all([
         tx.abono.findMany({
-          where: { fecha: { gte: inicio, lte: fin }, ...(vendedorId ? { usuarioId: vendedorId } : {}) },
+          where: { tenantId: user.tenantId, fecha: { gte: inicio, lte: fin }, ...(vendedorId ? { usuarioId: vendedorId } : {}) },
         }),
         tx.credito.findMany({
-          where: { fechaInicio: { gte: inicio, lte: fin }, ...filtroVendedor },
+          where: { tenantId: user.tenantId, fechaInicio: { gte: inicio, lte: fin }, ...filtroVendedor },
         }),
         tx.movimientoCaja.findMany({
-          where: { fecha: { gte: inicio, lte: fin }, ...filtroVendedor },
+          where: { tenantId: user.tenantId, fecha: { gte: inicio, lte: fin }, ...filtroVendedor },
         }),
         vendedorId
-          ? tx.cuadreCaja.findFirst({ where: { vendedorId, fecha: { gte: inicio, lte: fin } } })
+          ? tx.cuadreCaja.findFirst({ where: { tenantId: user.tenantId, vendedorId, fecha: { gte: inicio, lte: fin } } })
           : null,
       ]);
 
@@ -410,11 +410,11 @@ export class CajaService {
 
     return this.prisma.withTenant(user.tenantId, async (tx) => {
       const [vendedores, abonosTodos, creditosTodos, movimientosTodos, cuadresTodos] = await Promise.all([
-        tx.usuario.findMany({ where: { rol: 'VENDEDOR', activo: true } }),
-        tx.abono.findMany({ where: { fecha: { gte: inicio, lte: fin } } }),
-        tx.credito.findMany({ where: { fechaInicio: { gte: inicio, lte: fin } } }),
-        tx.movimientoCaja.findMany({ where: { fecha: { gte: inicio, lte: fin } } }),
-        tx.cuadreCaja.findMany({ where: { fecha: { gte: inicio, lte: fin } } }),
+        tx.usuario.findMany({ where: { tenantId: user.tenantId, rol: 'VENDEDOR', activo: true } }),
+        tx.abono.findMany({ where: { tenantId: user.tenantId, fecha: { gte: inicio, lte: fin } } }),
+        tx.credito.findMany({ where: { tenantId: user.tenantId, fechaInicio: { gte: inicio, lte: fin } } }),
+        tx.movimientoCaja.findMany({ where: { tenantId: user.tenantId, fecha: { gte: inicio, lte: fin } } }),
+        tx.cuadreCaja.findMany({ where: { tenantId: user.tenantId, fecha: { gte: inicio, lte: fin } } }),
       ]);
 
       return vendedores.map((v) => {
