@@ -1966,7 +1966,15 @@ async function verReciboCliente(clienteId) {
       valorAbonado: ultimoAbono ? ultimoAbono.valorAbonado : (client.totalAbonadoHoy || client.creditoActivo.valorCuota),
       saldoNuevo: ultimoAbono ? ultimoAbono.saldoNuevo : client.creditoActivo.saldoActual,
       formaPago: client.creditoActivo.formaPago ? client.creditoActivo.formaPago.charAt(0).toUpperCase() + client.creditoActivo.formaPago.slice(1) : 'Diario',
-      cuotasPagadas: client.creditoActivo.cuotasPagadas || 1,
+      cuotasPagadas: (function() {
+        const vCuota = Number(client.creditoActivo.valorCuota) || 1;
+        const totCuotas = Number(client.creditoActivo.cuotasTotal) || 24;
+        const saldoAct = Number(client.creditoActivo.saldoActual) || 0;
+        const totDeuda = Number(client.creditoActivo.valorPrestamo) ? (Number(client.creditoActivo.valorPrestamo) * 1.2) : (vCuota * totCuotas);
+        const amortizado = Math.max(0, totDeuda - saldoAct);
+        const cuotasCalc = saldoAct <= 0 ? totCuotas : Math.min(totCuotas, Math.round(amortizado / vCuota));
+        return Math.max(Number(client.creditoActivo.cuotasPagadas) || 0, cuotasCalc);
+      })(),
       numeroCuotasTotal: client.creditoActivo.cuotasTotal || 24,
       cuotasAtrasadas: client.creditoActivo.cuotasAtrasadas || 0,
       fechaVencimiento: client.creditoActivo.fechaVencimiento ? new Date(client.creditoActivo.fechaVencimiento).toISOString().slice(0, 10) : '',
@@ -3342,6 +3350,15 @@ async function verEstadoCuentaCliente(clienteId, creditoId) {
     const cr = data.credito;
     const res = data.resumenAmortizacion;
 
+    const vCuota = Number(cr.valorCuota) || (Number(cr.totalPagar) / Number(cr.cuotasTotal || 24)) || 1;
+    const totCuotas = Number(cr.cuotasTotal) || 24;
+    const totAbonado = Number(res.totalAbonado) || (Number(cr.totalPagar) - Number(res.saldoPendiente));
+    const cuotasCalc = Number(res.saldoPendiente) <= 0
+      ? totCuotas
+      : Math.min(totCuotas, Math.round(totAbonado / vCuota));
+    const cuotasPagadasFinal = Math.max(Number(cr.cuotasPagadas) || 0, cuotasCalc);
+    cr.cuotasPagadas = cuotasPagadasFinal;
+
     document.getElementById('ec-subtitulo').innerText =
       `Cliente: ${cli.nombre} | Crédito: ${cr.codigoCredito} (${cr.formaPago.toUpperCase()}) | Tel: ${cli.movil || '-'}`;
 
@@ -3351,7 +3368,7 @@ async function verEstadoCuentaCliente(clienteId, creditoId) {
     document.getElementById('ec-saldo-pendiente').innerText = fmtMoneda(res.saldoPendiente);
 
     document.getElementById('ec-progreso-porcentaje').innerText =
-      `${res.porcentajePagado}% Pagado (${cr.cuotasPagadas} de ${cr.cuotasTotal} cuotas)`;
+      `${res.porcentajePagado}% Pagado (${cuotasPagadasFinal} de ${totCuotas} cuotas)`;
     document.getElementById('ec-progreso-fill').style.width = `${res.porcentajePagado}%`;
 
     const tbody = document.getElementById('ec-tabla-abonos-body');
@@ -3399,6 +3416,14 @@ function compartirExtractoWhatsApp() {
   const res = ext.resumenAmortizacion;
   const m = obtenerMonedaActual();
 
+  const vCuota = Number(cr.valorCuota) || (Number(cr.totalPagar) / Number(cr.cuotasTotal || 24)) || 1;
+  const totCuotas = Number(cr.cuotasTotal) || 24;
+  const totAbonado = Number(res.totalAbonado) || (Number(cr.totalPagar) - Number(res.saldoPendiente));
+  const cuotasCalc = Number(res.saldoPendiente) <= 0
+    ? totCuotas
+    : Math.min(totCuotas, Math.round(totAbonado / vCuota));
+  const cuotasPagadasFinal = Math.max(Number(cr.cuotasPagadas) || 0, cuotasCalc);
+
   let texto = `*EXTRACTO DE CRÉDITO - CREDIYA*\n`;
   texto += `━━━━━━━━━━━━━━━━━━━━━━\n`;
   texto += `👤 *Cliente:* ${cli.nombre}\n`;
@@ -3412,7 +3437,7 @@ function compartirExtractoWhatsApp() {
   texto += `📈 *Total a Pagar:* ${fmtMoneda(cr.totalPagar)}\n`;
   texto += `✅ *Total Abonado:* ${fmtMoneda(res.totalAbonado)}\n`;
   texto += `⚠️ *Saldo Pendiente:* ${fmtMoneda(res.saldoPendiente)}\n`;
-  texto += `📊 *Cuotas Pagadas:* ${cr.cuotasPagadas} de ${cr.cuotasTotal} (${res.porcentajePagado}%)\n`;
+  texto += `📊 *Cuotas Pagadas:* ${cuotasPagadasFinal} de ${totCuotas} (${res.porcentajePagado}%)\n`;
 
   if (cr.cuotasAtrasadas > 0) {
     texto += `🚨 *Cuotas Atrasadas:* ${cr.cuotasAtrasadas}\n`;

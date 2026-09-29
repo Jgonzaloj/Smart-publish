@@ -183,6 +183,7 @@ let ClientesService = class ClientesService {
                     where: { id: creditoAnterior.id },
                     data: {
                         saldoActual: 0,
+                        cuotasPagadas: creditoAnterior.numeroCuotasTotal,
                         estado: 'RENOVADO',
                     },
                 });
@@ -195,7 +196,7 @@ let ClientesService = class ClientesService {
                             saldoAnterior: saldoPendienteAnterior,
                             valorAbonado: saldoPendienteAnterior,
                             saldoNuevo: 0,
-                            numeroCuota: (creditoAnterior.cuotasPagadas || 0) + 1,
+                            numeroCuota: creditoAnterior.numeroCuotasTotal,
                             cuotasAtrasadas: 0,
                         },
                     });

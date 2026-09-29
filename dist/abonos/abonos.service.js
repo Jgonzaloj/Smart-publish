@@ -175,9 +175,14 @@ let AbonosService = class AbonosService {
             });
             const usuariosMap = new Map();
             usuarios.forEach((u) => usuariosMap.set(u.id, u.nombre));
+            const valorCuota = Number(credito.valorCuota) > 0 ? Number(credito.valorCuota) : 1;
             const totalAbonado = abonos.reduce((sum, a) => sum + Number(a.valorAbonado), 0);
             const totalPagar = Number(credito.valorPrestamo) * (1 + Number(credito.interes) / 100);
             const porcentajePagado = totalPagar > 0 ? Math.min(100, Math.round((totalAbonado / totalPagar) * 100)) : 0;
+            const cuotasCalculadas = Number(credito.saldoActual) <= 0
+                ? credito.numeroCuotasTotal
+                : Math.min(credito.numeroCuotasTotal, Math.round(totalAbonado / valorCuota));
+            const cuotasPagadasFinal = Math.max(credito.cuotasPagadas || 0, cuotasCalculadas);
             const historialAbonos = abonos.map((a, idx) => {
                 const rawDate = a.fecha || a.createdAt || new Date();
                 const dateObj = new Date(rawDate);
@@ -196,7 +201,10 @@ let AbonosService = class AbonosService {
                     precisionGps: a.precisionGps,
                 };
             });
-            const calculoMora = this.moraService.calcularAtraso(credito);
+            const calculoMora = this.moraService.calcularAtraso({
+                ...credito,
+                cuotasPagadas: cuotasPagadasFinal,
+            });
             return {
                 cliente: {
                     id: cliente?.id,
@@ -215,7 +223,7 @@ let AbonosService = class AbonosService {
                     valorCuota: Number(credito.valorCuota),
                     formaPago: credito.formaPago,
                     cuotasTotal: credito.numeroCuotasTotal,
-                    cuotasPagadas: credito.cuotasPagadas || abonos.length,
+                    cuotasPagadas: cuotasPagadasFinal,
                     cuotasAtrasadas: calculoMora.cuotasAtrasadas,
                     saldoActual: Number(credito.saldoActual),
                     estado: credito.estado,
