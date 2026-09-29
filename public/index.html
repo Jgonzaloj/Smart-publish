@@ -25,7 +25,7 @@
     }
     #app-main-layout.hidden { display: none !important; }
   </style>
-  <link rel="stylesheet" href="/style.css?v=20260928-v38">
+  <link rel="stylesheet" href="/style.css?v=20260928-v39">
   <meta name="theme-color" content="#6366f1">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -403,23 +403,23 @@
       <div class="metrics-grid">
         <div class="metric-card metric-primary">
           <span class="metric-label">Capital Total Prestado</span>
-          <span class="metric-val" id="dash-prestado">$0</span>
+          <span class="metric-val" id="dash-prestado">S/ 0</span>
           <span class="metric-sub" id="dash-prestado-sub">0 créditos activos</span>
         </div>
         <div class="metric-card metric-success">
           <span class="metric-label">Capital Recuperado</span>
-          <span class="metric-val" id="dash-recuperado">$0</span>
+          <span class="metric-val" id="dash-recuperado">S/ 0</span>
           <span class="metric-sub" id="dash-recuperado-sub">Total abonos cobrados</span>
         </div>
         <div class="metric-card metric-warning">
           <span class="metric-label">Cartera Activa en Calle</span>
-          <span class="metric-val" id="dash-cartera-activa">$0</span>
+          <span class="metric-val" id="dash-cartera-activa">S/ 0</span>
           <span class="metric-sub" id="dash-cartera-sub">Saldo total por cobrar</span>
         </div>
         <div class="metric-card">
           <span class="metric-label">Cobranza de Hoy</span>
-          <span class="metric-val text-accent" id="dash-cobrado-hoy">$0</span>
-          <span class="metric-sub" id="dash-cumplimiento">Meta: $0 (0%)</span>
+          <span class="metric-val text-accent" id="dash-cobrado-hoy">S/ 0</span>
+          <span class="metric-sub" id="dash-cumplimiento">Meta: S/ 0 (0%)</span>
         </div>
       </div>
 
@@ -428,17 +428,17 @@
         <div class="balance-banner-content">
           <div class="balance-item">
             <span class="balance-label">💵 Total Colocado (Capital + Interés):</span>
-            <strong id="dash-total-colocado" class="balance-val">$0</strong>
+            <strong id="dash-total-colocado" class="balance-val">S/ 0</strong>
           </div>
           <div class="balance-separator">=</div>
           <div class="balance-item">
             <span class="balance-label">✅ Cobrado Acumulado:</span>
-            <strong id="dash-balance-cobrado" class="balance-val text-success">$0</strong>
+            <strong id="dash-balance-cobrado" class="balance-val text-success">S/ 0</strong>
           </div>
           <div class="balance-separator">+</div>
           <div class="balance-item">
             <span class="balance-label">⏳ Saldo en Calle:</span>
-            <strong id="dash-balance-calle" class="balance-val text-warning">$0</strong>
+            <strong id="dash-balance-calle" class="balance-val text-warning">S/ 0</strong>
           </div>
           <div class="balance-badge">
             <span>⚖️ 100% Cuadrado</span>
@@ -458,12 +458,12 @@
             <div class="risk-stat-box">
               <span class="risk-stat-label">PAR 30 (Atraso > 30 días)</span>
               <span class="risk-stat-val text-warning" id="dash-par30">0%</span>
-              <small id="dash-par30-monto">$0 en riesgo</small>
+              <small id="dash-par30-monto">S/ 0 en riesgo</small>
             </div>
             <div class="risk-stat-box">
               <span class="risk-stat-label">PAR 60 (Mora Severa)</span>
               <span class="risk-stat-val text-danger" id="dash-par60">0%</span>
-              <small id="dash-par60-monto">$0 en riesgo crítico</small>
+              <small id="dash-par60-monto">S/ 0 en riesgo crítico</small>
             </div>
             <div class="risk-stat-box">
               <span class="risk-stat-label">Distribución de Cartera</span>
@@ -555,8 +555,8 @@
         </div>
         <div class="metric-card metric-info">
           <span class="metric-label">Recaudado Hoy</span>
-          <span class="metric-val" id="met-recaudado">$0</span>
-          <span class="metric-sub" id="met-esperado">Esperado: $0</span>
+          <span class="metric-val" id="met-recaudado">S/ 0</span>
+          <span class="metric-sub" id="met-esperado">Esperado: S/ 0</span>
         </div>
       </div>
 
@@ -701,24 +701,24 @@
           <h3>Liquidación Contable</h3>
           <div class="preview-item">
             <span>Saldo Anterior a Cancelar:</span>
-            <strong id="prev-saldo-ant" class="text-danger">$0</strong>
+            <strong id="prev-saldo-ant" class="text-danger">S/ 0</strong>
           </div>
           <div class="preview-item">
             <span>Nuevo Valor Préstamo:</span>
-            <strong id="prev-nuevo-monto">$0</strong>
+            <strong id="prev-nuevo-monto">S/ 0</strong>
           </div>
           <div class="preview-item">
             <span>Total con Intereses:</span>
-            <strong id="prev-total-interes">$0</strong>
+            <strong id="prev-total-interes">S/ 0</strong>
           </div>
           <div class="preview-item">
             <span>Valor de Cada Cuota:</span>
-            <strong id="prev-cuota" class="text-accent">$0</strong>
+            <strong id="prev-cuota" class="text-accent">S/ 0</strong>
           </div>
           <hr class="divider">
           <div class="preview-item highlight">
             <span>Neto a Entregar en Mano:</span>
-            <strong id="prev-neto" class="text-success">$0</strong>
+            <strong id="prev-neto" class="text-success">S/ 0</strong>
           </div>
           <div class="preview-note">
             El saldo anterior se cancela automáticamente con un abono contable y el crédito viejo pasa a estado <strong>RENOVADO</strong>.
@@ -781,51 +781,51 @@
           </div>
           <div class="v13-row">
             <span class="v13-label">Caja Inicial <button type="button" class="btn-edit-caja" onclick="abrirModalCajaInicial()" title="Editar base inicial">✏️</button></span>
-            <strong class="v13-val text-accent" id="res-caja-inicial">$0.00</strong>
+            <strong class="v13-val text-accent" id="res-caja-inicial">S/ 0.00</strong>
           </div>
           <div class="v13-row">
             <span class="v13-label">Recaudo Esperado</span>
-            <strong class="v13-val" id="res-recaudo-esperado">$0.00 (100%)</strong>
+            <strong class="v13-val" id="res-recaudo-esperado">S/ 0.00 (100%)</strong>
           </div>
           <div class="v13-row v13-highlight">
             <span class="v13-label">Recaudo del día</span>
-            <strong class="v13-val text-success" id="res-recaudo-dia">$0.00 (0.0%)</strong>
+            <strong class="v13-val text-success" id="res-recaudo-dia">S/ 0.00 (0.0%)</strong>
           </div>
           <div class="v13-row">
             <span class="v13-label">Efectivo/Transferencia</span>
-            <strong class="v13-val" id="res-efectivo-transferencia">$0.00 / $0.00</strong>
+            <strong class="v13-val" id="res-efectivo-transferencia">S/ 0.00 / S/ 0.00</strong>
           </div>
           <div class="v13-row">
             <span class="v13-label">Total Ventas</span>
-            <strong class="v13-val text-warning" id="res-total-ventas">$0.00</strong>
+            <strong class="v13-val text-warning" id="res-total-ventas">S/ 0.00</strong>
           </div>
           <div class="v13-row">
             <span class="v13-label">Retiros Caja</span>
-            <strong class="v13-val text-danger" id="res-retiros-caja">$0.00</strong>
+            <strong class="v13-val text-danger" id="res-retiros-caja">S/ 0.00</strong>
           </div>
           <div class="v13-row">
             <span class="v13-label">Egresos</span>
-            <strong class="v13-val text-danger" id="res-egresos">$0.00</strong>
+            <strong class="v13-val text-danger" id="res-egresos">S/ 0.00</strong>
           </div>
           <div class="v13-row">
             <span class="v13-label">Ingresos</span>
-            <strong class="v13-val text-success" id="res-ingresos">$0.00</strong>
+            <strong class="v13-val text-success" id="res-ingresos">S/ 0.00</strong>
           </div>
           <div class="v13-row">
             <span class="v13-label">Retiro de Caja Seguros</span>
-            <strong class="v13-val text-danger" id="res-retiro-seguros">$0.00</strong>
+            <strong class="v13-val text-danger" id="res-retiro-seguros">S/ 0.00</strong>
           </div>
           <div class="v13-row">
             <span class="v13-label">Ingresos de Seguros</span>
-            <strong class="v13-val text-success" id="res-ingresos-seguros">$0.00</strong>
+            <strong class="v13-val text-success" id="res-ingresos-seguros">S/ 0.00</strong>
           </div>
           <div class="v13-row">
             <span class="v13-label">Caja Seguros</span>
-            <strong class="v13-val" id="res-caja-seguros">$0.00</strong>
+            <strong class="v13-val" id="res-caja-seguros">S/ 0.00</strong>
           </div>
           <div class="v13-row v13-final-row">
             <span class="v13-label" style="font-weight: 800; font-size: 1.05rem;">Saldo en Caja</span>
-            <strong class="v13-val" id="res-saldo-en-caja" style="font-size: 1.35rem; color: var(--badge-green); font-family: var(--font-display);">$0.00</strong>
+            <strong class="v13-val" id="res-saldo-en-caja" style="font-size: 1.35rem; color: var(--badge-green); font-family: var(--font-display);">S/ 0.00</strong>
           </div>
           <div class="v13-row v13-toggle-row">
             <span class="v13-label" style="font-weight: 700;">Sincronización Automatica</span>
@@ -866,23 +866,23 @@
       <div class="metrics-grid">
         <div class="metric-card metric-success">
           <span class="metric-label">Total Cobrado Hoy</span>
-          <span class="metric-val" id="caja-cobrado">$0</span>
+          <span class="metric-val" id="caja-cobrado">S/ 0</span>
         </div>
         <div class="metric-card metric-warning">
           <span class="metric-label">Préstamos / Renovaciones</span>
-          <span class="metric-val" id="caja-prestado">$0</span>
+          <span class="metric-val" id="caja-prestado">S/ 0</span>
         </div>
         <div class="metric-card metric-info">
           <span class="metric-label">Ingresos Manuales</span>
-          <span class="metric-val" id="caja-ingresos">$0</span>
+          <span class="metric-val" id="caja-ingresos">S/ 0</span>
         </div>
         <div class="metric-card metric-danger">
           <span class="metric-label">Egresos / Retiros</span>
-          <span class="metric-val" id="caja-egresos">$0</span>
+          <span class="metric-val" id="caja-egresos">S/ 0</span>
         </div>
         <div class="metric-card metric-accent">
           <span class="metric-label">Efectivo Esperado en Caja</span>
-          <span class="metric-val" id="caja-saldo-esperado">$0</span>
+          <span class="metric-val" id="caja-saldo-esperado">S/ 0</span>
         </div>
       </div>
 
@@ -1101,7 +1101,7 @@
         </div>
         <div class="metric-card metric-warning">
           <span class="metric-label">Cartera en Calle</span>
-          <span class="metric-val" id="met-usr-cartera">$0</span>
+          <span class="metric-val" id="met-usr-cartera">S/ 0</span>
           <span class="metric-sub">Distribuida en cobradores</span>
         </div>
       </div>
@@ -1384,8 +1384,8 @@
       <div class="modal-body">
         <p>Cliente: <strong id="modal-abono-cliente">-</strong></p>
         <p>Código Crédito: <span id="modal-abono-codigo">-</span></p>
-        <p>Saldo Actual: <strong id="modal-abono-saldo" class="text-danger">$0</strong></p>
-        <p>Valor de la Cuota sugerida: <span id="modal-abono-cuota-sug" class="text-accent">$0</span></p>
+        <p>Saldo Actual: <strong id="modal-abono-saldo" class="text-danger">S/ 0</strong></p>
+        <p>Valor de la Cuota sugerida: <span id="modal-abono-cuota-sug" class="text-accent">S/ 0</span></p>
 
         
         <div class="form-group" style="margin-top: 15px;">
@@ -1539,15 +1539,15 @@
           </div>
           <div class="ticket-row">
             <span class="ticket-label">Saldo anterior</span>
-            <span class="ticket-value" id="rec-saldo-anterior">$240</span>
+            <span class="ticket-value" id="rec-saldo-anterior">S/ 0</span>
           </div>
           <div class="ticket-row">
             <span class="ticket-label">Valor abonado</span>
-            <span class="ticket-value font-bold" id="rec-valor-abonado">$10</span>
+            <span class="ticket-value font-bold" id="rec-valor-abonado">S/ 0</span>
           </div>
           <div class="ticket-row">
             <span class="ticket-label">Saldo nuevo</span>
-            <span class="ticket-value font-bold" id="rec-saldo-nuevo">$230</span>
+            <span class="ticket-value font-bold" id="rec-saldo-nuevo">S/ 0</span>
           </div>
           <div class="ticket-row">
             <span class="ticket-label">Forma de pago</span>
@@ -1614,19 +1614,19 @@
           <div class="ec-summary-grid">
             <div>
               <span class="ec-label">Préstamo Inicial</span>
-              <strong id="ec-prestamo-inicial">$0</strong>
+              <strong id="ec-prestamo-inicial">S/ 0</strong>
             </div>
             <div>
               <span class="ec-label">Total a Pagar</span>
-              <strong id="ec-total-pagar">$0</strong>
+              <strong id="ec-total-pagar">S/ 0</strong>
             </div>
             <div>
               <span class="ec-label">Total Abonado</span>
-              <strong class="text-success" id="ec-total-abonado">$0</strong>
+              <strong class="text-success" id="ec-total-abonado">S/ 0</strong>
             </div>
             <div>
               <span class="ec-label">Saldo Pendiente</span>
-              <strong class="text-danger" id="ec-saldo-pendiente">$0</strong>
+              <strong class="text-danger" id="ec-saldo-pendiente">S/ 0</strong>
             </div>
           </div>
           
@@ -1869,6 +1869,6 @@
   <!-- TOAST NOTIFICACIONES -->
   <div id="toast" class="toast hidden"></div>
 
-  <script src="/app.js?v=20260928-v38"></script>
+  <script src="/app.js?v=20260928-v39"></script>
 </body>
 </html>

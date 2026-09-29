@@ -38,11 +38,20 @@ function actualizarLabelsMoneda() {
   const lblRen = document.getElementById('lbl-ren-monto');
   if (lblRen) lblRen.innerText = `Nuevo Préstamo (${sim})`;
 
+  const lblModalRen = document.getElementById('lbl-modal-ren-monto');
+  if (lblModalRen) lblModalRen.innerText = `Nuevo Préstamo (${sim}) *`;
+
   const lblAbono = document.getElementById('lbl-modal-abono-monto');
   if (lblAbono) lblAbono.innerText = `Valor a Abonar (${sim}) *`;
 
   const lblRetiro = document.getElementById('lbl-ret-valor');
   if (lblRetiro) lblRetiro.innerText = `Valor a Retirar (${sim}) *`;
+
+  const lblCajaIni = document.getElementById('lbl-caja-inicial-monto');
+  if (lblCajaIni) lblCajaIni.innerText = `Monto de Caja Inicial (${sim}) *`;
+
+  const lblSeg = document.getElementById('lbl-seg-valor');
+  if (lblSeg) lblSeg.innerText = `Valor (${sim}) *`;
 
   document.querySelectorAll('.lbl-doc-tipo').forEach(el => el.innerText = m.prefijoDoc);
 }
@@ -901,8 +910,8 @@ async function cargarRutaHoy() {
     document.getElementById('met-cobrados').innerText = data.metricas.clientesCobradosHoy;
     document.getElementById('met-pendientes').innerText = data.metricas.clientesPendientesHoy;
     document.getElementById('met-ausentes').innerText = data.metricas.clientesAusentesHoy;
-    document.getElementById('met-recaudado').innerText = `$${data.metricas.totalRecaudadoHoy.toLocaleString()}`;
-    document.getElementById('met-esperado').innerText = `Esperado: $${data.metricas.totalEsperadoHoy.toLocaleString()}`;
+    document.getElementById('met-recaudado').innerText = fmtMoneda(data.metricas.totalRecaudadoHoy);
+    document.getElementById('met-esperado').innerText = `Esperado: ${fmtMoneda(data.metricas.totalEsperadoHoy)}`;
 
     const pct = data.metricas.totalClientes > 0
       ? (data.metricas.clientesCobradosHoy / data.metricas.totalClientes) * 100
@@ -1445,7 +1454,7 @@ async function confirmarAbono() {
       });
 
       cerrarModalAbono();
-      showToast(`✅ Abono de $${monto.toLocaleString()} registrado con éxito`, 'success');
+      showToast(`✅ Abono de ${fmtMoneda(monto)} registrado con éxito`, 'success');
       cargarRutaHoy();
       cargarCuadreCaja();
 
@@ -2059,18 +2068,18 @@ async function exportarCuadreCSV() {
     let csv = 'RESUMEN CUADRE DE CAJA DIARIO\n';
     csv += `Fecha,${fecha}\n`;
     csv += `Vendedor,${state.user?.nombre || 'General'}\n`;
-    csv += `Total Cobrado,$${cuadre.totalCobrado || 0}\n`;
-    csv += `Total Prestado Nuevo,$${cuadre.totalPrestadoNuevo || 0}\n`;
-    csv += `Total Ingresos Manuales,$${cuadre.totalIngresos || 0}\n`;
-    csv += `Total Egresos Manuales,$${cuadre.totalEgresos || 0}\n`;
-    csv += `Total Retiros,$${cuadre.totalRetiros || 0}\n`;
-    csv += `Saldo Esperado en Caja,$${cuadre.saldoEsperadoEnCaja || 0}\n\n`;
+    csv += `Total Cobrado,${fmtMoneda(cuadre.totalCobrado || 0)}\n`;
+    csv += `Total Prestado Nuevo,${fmtMoneda(cuadre.totalPrestadoNuevo || 0)}\n`;
+    csv += `Total Ingresos Manuales,${fmtMoneda(cuadre.totalIngresos || 0)}\n`;
+    csv += `Total Egresos Manuales,${fmtMoneda(cuadre.totalEgresos || 0)}\n`;
+    csv += `Total Retiros,${fmtMoneda(cuadre.totalRetiros || 0)}\n`;
+    csv += `Saldo Esperado en Caja,${fmtMoneda(cuadre.saldoEsperadoEnCaja || 0)}\n\n`;
 
     csv += 'DETALLE DE MOVIMIENTOS DEL DIA\n';
     csv += 'Hora,Tipo,Concepto,Valor\n';
     for (const m of movimientos) {
       const hora = new Date(m.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      csv += `"${hora}","${m.tipo}","${m.concepto.replace(/"/g, '""')}","$${m.valor}"\n`;
+      csv += `"${hora}","${m.tipo}","${m.concepto.replace(/"/g, '""')}","${fmtMoneda(m.valor)}"\n`;
     }
 
     descargarArchivoCSV(`cuadre_caja_${fecha}.csv`, csv);
@@ -2105,8 +2114,8 @@ async function exportarCarteraCSV() {
     const tel = c.movil || 'N/A';
     const dir = (c.direccion || 'Sin direccion').replace(/"/g, '""');
     const cod = cr ? cr.codigoCredito : 'N/A';
-    const saldo = cr ? `$${cr.saldoActual}` : '$0';
-    const cuota = cr ? `$${cr.valorCuota}` : '$0';
+    const saldo = cr ? fmtMoneda(cr.saldoActual) : fmtMoneda(0);
+    const cuota = cr ? fmtMoneda(cr.valorCuota) : fmtMoneda(0);
     const pagadas = cr ? cr.cuotasPagadas : 0;
     const total = cr ? cr.cuotasTotal : 0;
     const atrasadas = cr ? cr.cuotasAtrasadas : 0;
@@ -2149,7 +2158,7 @@ async function ejecutarMoraEnVivo() {
           <td>${d.cuotasEsperadas}</td>
           <td>${d.cuotasPagadas}</td>
           <td><span class="${d.cuotasAtrasadas > 0 ? 'text-danger font-bold' : ''}">${d.cuotasAtrasadas}</span></td>
-          <td>$${d.saldoActual.toLocaleString()}</td>
+          <td>${fmtMoneda(d.saldoActual)}</td>
           <td>
             <span class="status-badge ${d.nuevoEstado === 'EN_MORA' ? 'status-atrasado' : 'status-al-dia'}">
               ${d.nuevoEstado}
@@ -2553,7 +2562,7 @@ async function confirmarRetiro() {
     });
 
     cerrarModalRetiro();
-    showToast(`🏧 Retiro de $${valor.toLocaleString()} registrado en caja`, 'success');
+    showToast(`🏧 Retiro de ${fmtMoneda(valor)} registrado en caja`, 'success');
     cargarCuadreCaja();
   } catch (err) {
     console.error(err);
@@ -2912,7 +2921,7 @@ function actualizarMetricasUsuarios(usuarios) {
   if (elTotal) elTotal.innerText = total;
   if (elAdmins) elAdmins.innerText = admins;
   if (elVendedores) elVendedores.innerText = vendedores;
-  if (elCartera) elCartera.innerText = `$${cartera.toLocaleString()}`;
+  if (elCartera) elCartera.innerText = fmtMoneda(cartera);
 }
 
 function renderizarUsuarios(lista) {
