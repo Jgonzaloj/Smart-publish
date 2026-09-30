@@ -200,6 +200,7 @@ export class DashboardService {
           creditosEnMoraSevera,
         },
         ultimos7Dias,
+        semanal: ultimos7Dias,
         rankingCobradores,
       };
     });

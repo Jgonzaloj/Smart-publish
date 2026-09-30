@@ -3482,7 +3482,7 @@ async function cargarDashboardEjecutivo() {
       `🟢 ${riesgo.creditosAlDia} al día (${pctAlDia}%) | 🟡 ${riesgo.creditosEnAtraso} en atraso (${pctAtraso}%) | 🔴 ${riesgo.creditosEnMoraSevera} en mora (${pctMora}%)`;
 
     // 3. Gráfica de Cobranza Semanal
-    renderizarGraficaSemanal(data.semanal);
+    renderizarGraficaSemanal(data.semanal || data.ultimos7Dias || []);
 
     // 4. Ranking de Cobradores
     renderizarRankingCobradores(data.rankingCobradores);
