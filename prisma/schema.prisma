@@ -46,6 +46,7 @@ enum MetodoPago {
 model Tenant {
   id            String   @id @default(uuid())
   nombreNegocio String   @map("nombre_negocio")
+  logoUrl       String?  @map("logo_url")
   plan          String   @default("free")
   activo        Boolean  @default(true)
   moneda        String   @default("PEN")

@@ -111,10 +111,10 @@
         </div>
       </div>
 
-      <!-- Card de Autenticación / Registro -->
+      <!-- Card de Autenticación / Login Seguro -->
       <div class="landing-auth-card">
-        <!-- Tabs de Selección: Iniciar Sesión / Nueva Empresa -->
-        <div class="auth-tabs">
+        <!-- Tabs Ocultas: Registro Privado sólo por Administrador -->
+        <div class="auth-tabs" style="display: none;">
           <button class="auth-tab-btn active" id="tab-auth-login">
             🔑 Iniciar Sesión
           </button>
@@ -236,10 +236,10 @@
 
     <!-- Header Superior -->
     <header class="top-nav">
-      <div class="nav-brand">
-        <div class="brand-badge">⚡ CREDIYA</div>
+      <div class="nav-brand" id="nav-brand-container" style="cursor: pointer;" onclick="if(state.role==='admin') abrirModalConfigEmpresa();" title="Configurar nombre y logo de empresa">
+        <div class="brand-badge" id="header-brand-badge">⚡ CREDIYA</div>
         <div class="brand-meta">
-          <span class="brand-title">Sistema de Créditos & Cobranza</span>
+          <span class="brand-title" id="header-system-title">Sistema de Créditos & Cobranza</span>
           <span class="tenant-badge" id="tenant-name">CrediYa Microfinanzas</span>
         </div>
       </div>
@@ -407,9 +407,9 @@
           <span class="metric-sub" id="dash-prestado-sub">0 créditos activos</span>
         </div>
         <div class="metric-card metric-success">
-          <span class="metric-label">Capital Recuperado</span>
+          <span class="metric-label">Cobrado en Cartera</span>
           <span class="metric-val" id="dash-recuperado">S/ 0</span>
-          <span class="metric-sub" id="dash-recuperado-sub">Total abonos cobrados</span>
+          <span class="metric-sub" id="dash-recuperado-sub">Abonos créditos activos</span>
         </div>
         <div class="metric-card metric-warning">
           <span class="metric-label">Cartera Activa en Calle</span>
@@ -432,7 +432,7 @@
           </div>
           <div class="balance-separator">=</div>
           <div class="balance-item">
-            <span class="balance-label">✅ Cobrado Acumulado:</span>
+            <span class="balance-label">✅ Cobrado de Cartera:</span>
             <strong id="dash-balance-cobrado" class="balance-val text-success">S/ 0</strong>
           </div>
           <div class="balance-separator">+</div>
@@ -1149,8 +1149,8 @@
   <div id="drawer-backdrop" class="drawer-backdrop hidden" onclick="cerrarDrawerMenu()">
     <aside class="drawer-panel" onclick="event.stopPropagation()">
       <div class="drawer-header">
-        <div class="drawer-brand">
-          <div class="brand-badge">⚡ CREDIYA</div>
+        <div class="drawer-brand" id="drawer-brand-container" style="cursor: pointer;" onclick="if(state.role==='admin'){ abrirModalConfigEmpresa(); cerrarDrawerMenu(); }" title="Configurar empresa">
+          <div class="brand-badge" id="drawer-brand-badge">⚡ CREDIYA</div>
           <span class="drawer-tenant-badge" id="drawer-tenant-name">CrediYa Microfinanzas</span>
         </div>
         <button type="button" class="drawer-close-btn" onclick="cerrarDrawerMenu()">✕</button>
@@ -1234,6 +1234,10 @@
         <button type="button" class="drawer-nav-item drawer-item-admin" id="drawer-tab-usuarios" onclick="setTab('usuarios'); cerrarDrawerMenu();">
           <span class="nav-item-icon">👥</span>
           <span>Usuarios & Permisos</span>
+        </button>
+        <button type="button" class="drawer-nav-item drawer-item-admin" id="drawer-tab-config-empresa" onclick="abrirModalConfigEmpresa(); cerrarDrawerMenu();">
+          <span class="nav-item-icon">🏢</span>
+          <span>Perfil & Logo de Empresa</span>
         </button>
       </div>
 
@@ -1866,9 +1870,61 @@
     </div>
   </div>
 
+  <!-- MODAL: CONFIGURACIÓN DE EMPRESA Y LOGOTIPO -->
+  <div id="modal-config-empresa" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🏢 Configuración de Empresa & Logotipo</h3>
+        <button class="modal-close" onclick="cerrarModalConfigEmpresa()">✕</button>
+      </div>
+      <form id="form-config-empresa" onsubmit="guardarConfiguracionEmpresa(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="cfg-nombre-empresa">Nombre de tu Empresa / Negocio *</label>
+            <input type="text" id="cfg-nombre-empresa" class="form-control" required placeholder="Ej. Inversiones & Créditos El Dorado" maxlength="60">
+          </div>
+
+          <div class="form-group">
+            <label>Logotipo de la Empresa</label>
+            <div style="display: flex; gap: 14px; align-items: center; margin-top: 6px; margin-bottom: 8px;">
+              <div id="cfg-logo-preview-box" style="width: 76px; height: 76px; border-radius: 10px; border: 2px dashed var(--border); display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.03); overflow: hidden;">
+                <span id="cfg-logo-placeholder" style="font-size: 2rem;">🏢</span>
+                <img id="cfg-logo-preview" class="hidden" src="" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
+              </div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+                <label for="cfg-logo-file" class="btn-secondary" style="display: inline-block; cursor: pointer; padding: 9px 14px; font-size: 0.85rem; border-radius: 8px; font-weight: 700; text-align: center; border: 1.5px solid var(--accent); color: var(--accent);">
+                  📁 Seleccionar Logo (PNG / JPG / SVG)
+                </label>
+                <input type="file" id="cfg-logo-file" accept="image/png, image/jpeg, image/webp, image/svg+xml" class="hidden" onchange="procesarArchivoLogo(event)">
+                <button type="button" id="btn-eliminar-logo" onclick="quitarLogoEmpresa()" style="display: none; background: none; border: none; color: #ef4444; font-size: 0.82rem; font-weight: 700; cursor: pointer; text-align: left; padding: 2px 0;">
+                  🗑️ Quitar logo personalizado
+                </button>
+              </div>
+            </div>
+            <input type="hidden" id="cfg-logo-url" value="">
+          </div>
+
+          <div class="form-group">
+            <label for="cfg-moneda">Moneda de Operación</label>
+            <select id="cfg-moneda" class="select-vendedor-admin" style="width: 100%; padding: 10px; border-radius: 8px;">
+              <option value="PEN">🇵🇪 Soles (S/.) — Perú</option>
+              <option value="COP">🇨🇴 Pesos (COP $) — Colombia</option>
+              <option value="MXN">🇲🇽 Pesos (MXN $) — México</option>
+              <option value="USD">🇺🇸 Dólares (USD $) — Internacional</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="cerrarModalConfigEmpresa()">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btn-guardar-config-empresa">💾 Guardar Empresa</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- TOAST NOTIFICACIONES -->
   <div id="toast" class="toast hidden"></div>
 
-  <script src="/app.js?v=20260928-v39"></script>
+  <script src="/app.js?v=20260928-v40"></script>
 </body>
 </html>

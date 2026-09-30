@@ -52,7 +52,8 @@ export class DashboardService {
       
       // Total colocado a cobrar en créditos activos (Capital + Intereses pactados)
       const totalColocadoActivoDec = creditosActivos.reduce((sum, c) => {
-        const totalCredito = toDecimal(c.valorCuota).times(c.numeroCuotasTotal);
+        const cuotas = c.numeroCuotasTotal ? Number(c.numeroCuotasTotal) : 1;
+        const totalCredito = toDecimal(c.valorCuota).times(cuotas);
         return sum.plus(totalCredito);
       }, new Prisma.Decimal(0));
 

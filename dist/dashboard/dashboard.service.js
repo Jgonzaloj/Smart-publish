@@ -46,7 +46,8 @@ let DashboardService = class DashboardService {
             const creditosActivos = creditos.filter((c) => c.estado === 'ACTIVO' || c.estado === 'EN_MORA');
             const capitalPrestadoActivoDec = creditosActivos.reduce((sum, c) => sum.plus(toDecimal(c.valorPrestamo)), new client_1.Prisma.Decimal(0));
             const totalColocadoActivoDec = creditosActivos.reduce((sum, c) => {
-                const totalCredito = toDecimal(c.valorCuota).times(c.numeroCuotasTotal);
+                const cuotas = c.numeroCuotasTotal ? Number(c.numeroCuotasTotal) : 1;
+                const totalCredito = toDecimal(c.valorCuota).times(cuotas);
                 return sum.plus(totalCredito);
             }, new client_1.Prisma.Decimal(0));
             const interesesActivosDec = totalColocadoActivoDec.minus(capitalPrestadoActivoDec);

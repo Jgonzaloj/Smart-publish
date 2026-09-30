@@ -59,6 +59,7 @@ let AuthService = class AuthService {
             tenant: {
                 id: tenant?.id || cred.tenantId,
                 nombreNegocio: tenant?.nombreNegocio || 'CrediYa',
+                logoUrl: tenant?.logoUrl || null,
                 moneda: tenant?.moneda || 'PEN',
                 pais: tenant?.pais || 'Perú',
             },
@@ -88,6 +89,45 @@ let AuthService = class AuthService {
             },
         });
         return this.login({ email, password });
+    }
+    async obtenerTenant(tenantId) {
+        const tenant = await this.prisma.tenant.findUnique({
+            where: { id: tenantId },
+        });
+        return {
+            id: tenant?.id,
+            nombreNegocio: tenant?.nombreNegocio || 'Mi Empresa',
+            logoUrl: tenant?.logoUrl || null,
+            moneda: tenant?.moneda || 'PEN',
+            pais: tenant?.pais || 'Perú',
+        };
+    }
+    async actualizarPerfilTenant(tenantId, data) {
+        const updateData = {};
+        if (data.nombreNegocio && data.nombreNegocio.trim()) {
+            updateData.nombreNegocio = data.nombreNegocio.trim();
+        }
+        if (data.logoUrl !== undefined) {
+            updateData.logoUrl = data.logoUrl;
+        }
+        if (data.moneda) {
+            updateData.moneda = data.moneda;
+            updateData.pais = data.moneda === 'PEN' ? 'Perú' : data.moneda === 'COP' ? 'Colombia' : data.moneda === 'MXN' ? 'México' : 'Internacional';
+        }
+        const tenantActualizado = await this.prisma.tenant.update({
+            where: { id: tenantId },
+            data: updateData,
+        });
+        return {
+            mensaje: 'Perfil de empresa actualizado exitosamente',
+            tenant: {
+                id: tenantActualizado.id,
+                nombreNegocio: tenantActualizado.nombreNegocio,
+                logoUrl: tenantActualizado?.logoUrl || null,
+                moneda: tenantActualizado?.moneda || 'PEN',
+                pais: tenantActualizado?.pais || 'Perú',
+            },
+        };
     }
     async actualizarMonedaTenant(tenantId, moneda) {
         const pais = moneda === 'PEN' ? 'Perú' : moneda === 'COP' ? 'Colombia' : moneda === 'MXN' ? 'México' : 'Internacional';

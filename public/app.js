@@ -417,6 +417,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const tokenGuardado = localStorage.getItem('crediya_token');
   const usuarioGuardado = localStorage.getItem('crediya_user');
   const rolGuardado = localStorage.getItem('crediya_role');
+  const tenantGuardado = localStorage.getItem('crediya_tenant');
+
+  if (tenantGuardado) {
+    try {
+      state.tenant = JSON.parse(tenantGuardado);
+    } catch {}
+  }
 
   if (tokenGuardado && usuarioGuardado) {
     try {
@@ -442,9 +449,24 @@ function mostrarPortadaIngreso() {
   document.getElementById('app-main-layout')?.classList.add('hidden');
 }
 
-function mostrarInterfazPrincipal() {
+async function mostrarInterfazPrincipal() {
   document.getElementById('landing-login-portal')?.classList.add('hidden');
   document.getElementById('app-main-layout')?.classList.remove('hidden');
+
+  // Si no tenemos la información del tenant en memoria, obtenerla de la API
+  if (state.token && (!state.tenant || !state.tenant.nombreNegocio)) {
+    try {
+      const tenantInfo = await api('/auth/tenant');
+      if (tenantInfo) {
+        state.tenant = tenantInfo;
+        localStorage.setItem('crediya_tenant', JSON.stringify(tenantInfo));
+      }
+    } catch (e) {
+      console.warn('No se pudo refrescar info del tenant:', e);
+    }
+  }
+
+  renderizarBrandingEmpresa();
 
   // Sincronizar selector de moneda con la configuración de la empresa o local
   const selMoneda = document.getElementById('selector-moneda-global');
@@ -465,6 +487,199 @@ function mostrarInterfazPrincipal() {
   cargarRutaHoy();
   cargarClientesParaRenovacion();
   cargarCuadreCaja();
+}
+
+// RENDERIZAR BRANDING DINÁMICO (LOGO Y NOMBRE DE CADA EMPRESA)
+function renderizarBrandingEmpresa() {
+  const t = state.tenant;
+  const nombre = (t && t.nombreNegocio) ? t.nombreNegocio : 'Mi Empresa';
+  const logo = t && t.logoUrl ? t.logoUrl : null;
+
+  // 1. Header Brand Badge
+  const headerBadge = document.getElementById('header-brand-badge');
+  if (headerBadge) {
+    if (logo) {
+      headerBadge.innerHTML = `<img src="${logo}" alt="${escapeHtml(nombre)}" class="tenant-logo-img">`;
+      headerBadge.style.background = 'transparent';
+      headerBadge.style.padding = '0';
+      headerBadge.style.boxShadow = 'none';
+      headerBadge.style.border = 'none';
+    } else {
+      headerBadge.innerHTML = `⚡ ${escapeHtml(nombre.toUpperCase().slice(0, 14))}`;
+      headerBadge.style.background = '';
+      headerBadge.style.padding = '';
+      headerBadge.style.boxShadow = '';
+      headerBadge.style.border = '';
+    }
+  }
+
+  // 2. Header Tenant Name
+  const tenantBadge = document.getElementById('tenant-name');
+  if (tenantBadge) {
+    tenantBadge.innerText = nombre;
+  }
+
+  // 3. Drawer Brand Badge
+  const drawerBadge = document.getElementById('drawer-brand-badge');
+  if (drawerBadge) {
+    if (logo) {
+      drawerBadge.innerHTML = `<img src="${logo}" alt="${escapeHtml(nombre)}" class="drawer-logo-img">`;
+      drawerBadge.style.background = 'transparent';
+      drawerBadge.style.padding = '0';
+      drawerBadge.style.boxShadow = 'none';
+      drawerBadge.style.border = 'none';
+    } else {
+      drawerBadge.innerHTML = `⚡ ${escapeHtml(nombre.toUpperCase().slice(0, 14))}`;
+      drawerBadge.style.background = '';
+      drawerBadge.style.padding = '';
+      drawerBadge.style.boxShadow = '';
+      drawerBadge.style.border = '';
+    }
+  }
+
+  const drawerTenantEl = document.getElementById('drawer-tenant-name');
+  if (drawerTenantEl) {
+    drawerTenantEl.innerText = nombre;
+  }
+
+  // 4. Título de Pestaña del Navegador
+  document.title = `${nombre} — Sistema de Créditos & Cobranza`;
+}
+
+// MODAL CONFIGURACIÓN DE EMPRESA Y LOGOTIPO
+function abrirModalConfigEmpresa() {
+  if (state.role !== 'admin') {
+    showToast('Solo el Administrador puede cambiar la configuración de la empresa', 'warning');
+    return;
+  }
+  const modal = document.getElementById('modal-config-empresa');
+  if (!modal) return;
+
+  const t = state.tenant || {};
+  const inNombre = document.getElementById('cfg-nombre-empresa');
+  if (inNombre) inNombre.value = t.nombreNegocio || '';
+
+  const inMoneda = document.getElementById('cfg-moneda');
+  if (inMoneda) inMoneda.value = t.moneda || 'PEN';
+
+  const inLogoUrl = document.getElementById('cfg-logo-url');
+  const imgPreview = document.getElementById('cfg-logo-preview');
+  const phPreview = document.getElementById('cfg-logo-placeholder');
+  const btnQuitar = document.getElementById('btn-eliminar-logo');
+
+  if (inLogoUrl) inLogoUrl.value = t.logoUrl || '';
+
+  if (t.logoUrl) {
+    if (imgPreview) {
+      imgPreview.src = t.logoUrl;
+      imgPreview.classList.remove('hidden');
+    }
+    if (phPreview) phPreview.classList.add('hidden');
+    if (btnQuitar) btnQuitar.style.display = 'block';
+  } else {
+    if (imgPreview) {
+      imgPreview.src = '';
+      imgPreview.classList.add('hidden');
+    }
+    if (phPreview) phPreview.classList.remove('hidden');
+    if (btnQuitar) btnQuitar.style.display = 'none';
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function cerrarModalConfigEmpresa() {
+  const modal = document.getElementById('modal-config-empresa');
+  if (modal) modal.classList.add('hidden');
+}
+
+function procesarArchivoLogo(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  if (file.size > 2 * 1024 * 1024) {
+    showToast('La imagen es demasiado pesada (máximo 2MB)', 'danger');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const base64 = e.target.result;
+    const inLogoUrl = document.getElementById('cfg-logo-url');
+    const imgPreview = document.getElementById('cfg-logo-preview');
+    const phPreview = document.getElementById('cfg-logo-placeholder');
+    const btnQuitar = document.getElementById('btn-eliminar-logo');
+
+    if (inLogoUrl) inLogoUrl.value = base64;
+    if (imgPreview) {
+      imgPreview.src = base64;
+      imgPreview.classList.remove('hidden');
+    }
+    if (phPreview) phPreview.classList.add('hidden');
+    if (btnQuitar) btnQuitar.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function quitarLogoEmpresa() {
+  const inLogoUrl = document.getElementById('cfg-logo-url');
+  const imgPreview = document.getElementById('cfg-logo-preview');
+  const phPreview = document.getElementById('cfg-logo-placeholder');
+  const btnQuitar = document.getElementById('btn-eliminar-logo');
+  const fileInput = document.getElementById('cfg-logo-file');
+
+  if (inLogoUrl) inLogoUrl.value = '';
+  if (fileInput) fileInput.value = '';
+  if (imgPreview) {
+    imgPreview.src = '';
+    imgPreview.classList.add('hidden');
+  }
+  if (phPreview) phPreview.classList.remove('hidden');
+  if (btnQuitar) btnQuitar.style.display = 'none';
+}
+
+async function guardarConfiguracionEmpresa(event) {
+  event.preventDefault();
+  const btn = document.getElementById('btn-guardar-config-empresa');
+  const nombre = document.getElementById('cfg-nombre-empresa').value.trim();
+  const logoUrl = document.getElementById('cfg-logo-url').value;
+  const moneda = document.getElementById('cfg-moneda').value;
+
+  if (!nombre) {
+    showToast('El nombre de la empresa es obligatorio', 'warning');
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = 'Guardando...';
+  }
+
+  try {
+    const res = await api('/auth/tenant/perfil', {
+      method: 'PATCH',
+      body: { nombreNegocio: nombre, logoUrl: logoUrl || '', moneda },
+    });
+
+    state.tenant = res.tenant;
+    localStorage.setItem('crediya_tenant', JSON.stringify(res.tenant));
+    localStorage.setItem('crediya_moneda', res.tenant.moneda);
+
+    const sel = document.getElementById('selector-moneda-global');
+    if (sel) sel.value = res.tenant.moneda;
+
+    renderizarBrandingEmpresa();
+    actualizarLabelsMoneda();
+    cerrarModalConfigEmpresa();
+    showToast('✅ ¡Nombre y logotipo de empresa actualizados con éxito!', 'success');
+  } catch (err) {
+    showToast(`Error al actualizar empresa: ${err.message}`, 'danger');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = '💾 Guardar Empresa';
+    }
+  }
 }
 
 // PORTADA: CAMBIAR ENTRE LOGIN Y REGISTRO
@@ -575,20 +790,18 @@ async function manejarPortalLogin(e) {
         const sel = document.getElementById('selector-moneda-global');
         if (sel) sel.value = res.tenant.moneda;
       }
-      const tenantBadge = document.getElementById('tenant-name');
-      if (tenantBadge && res.tenant.nombreNegocio) {
-        tenantBadge.innerText = res.tenant.nombreNegocio;
-      }
     }
 
     if (recordar) {
       localStorage.setItem('crediya_token', state.token);
       localStorage.setItem('crediya_user', JSON.stringify(state.user));
       localStorage.setItem('crediya_role', state.role);
+      if (res.tenant) localStorage.setItem('crediya_tenant', JSON.stringify(res.tenant));
     } else {
       localStorage.removeItem('crediya_token');
       localStorage.removeItem('crediya_user');
       localStorage.removeItem('crediya_role');
+      localStorage.removeItem('crediya_tenant');
     }
 
     showToast(`¡Bienvenido, ${res.usuario.nombre}!`, 'success');
@@ -813,8 +1026,8 @@ function actualizarInfoUsuarioDrawer() {
       avatarEl.className = `user-avatar ${state.role === 'admin' ? 'avatar-admin' : ''}`;
     }
   }
-  if (state.tenant && tenantEl) {
-    tenantEl.innerText = state.tenant.nombreNegocio || 'CrediYa Microfinanzas';
+  if (state.tenant) {
+    renderizarBrandingEmpresa();
   }
 }
 
@@ -1574,10 +1787,11 @@ async function compartirWhatsAppRecibo() {
 
     // 2. Si el navegador soporta Web Share API con archivos (Chrome Android, iOS Safari, PWA instalada)
     const file = new File([blob], fileName, { type: 'image/png' });
+    const nomEmpresa = (state.tenant && state.tenant.nombreNegocio) ? state.tenant.nombreNegocio : 'Empresa';
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
         files: [file],
-        title: 'Comprobante de Abono - CrediYa',
+        title: `Comprobante de Abono - ${nomEmpresa}`,
         text: `Comprobante de abono de ${r.cliente}`,
       });
       if (btn) {
@@ -1711,10 +1925,11 @@ function generarImagenReciboCanvas(recibo) {
     let y = 58;
 
     // Encabezado
+    const nomEmpresa = (state.tenant && state.tenant.nombreNegocio) ? state.tenant.nombreNegocio.toUpperCase() : 'COMPROBANTE';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#0D5C3A';
-    ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
-    ctx.fillText('🧾 CREDIYA', w / 2, y);
+    ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
+    ctx.fillText(`🧾 ${nomEmpresa}`, w / 2, y);
 
     y += 24;
     ctx.fillStyle = '#64748B';
@@ -1827,7 +2042,8 @@ function generarImagenReciboCanvas(recibo) {
     y += 20;
     ctx.fillStyle = '#94A3B8';
     ctx.font = '400 11px system-ui, -apple-system, sans-serif';
-    ctx.fillText(`CrediYa • Sistema de Cobro y Créditos`, w / 2, y);
+    const pieEmpresa = (state.tenant && state.tenant.nombreNegocio) ? state.tenant.nombreNegocio : 'Sistema de Cobro';
+    ctx.fillText(`${pieEmpresa} • Sistema de Cobro y Créditos`, w / 2, y);
 
     canvas.toBlob((blob) => {
       resolve({ blob, dataUrl: canvas.toDataURL('image/png') });
@@ -3207,7 +3423,8 @@ async function cargarDashboardEjecutivo() {
     const capitalPrestado = fin.capitalPrestadoActivo !== undefined ? fin.capitalPrestadoActivo : fin.totalPrestadoHistorico;
     const totalColocado = fin.totalColocadoActivo !== undefined ? fin.totalColocadoActivo : (fin.carteraActivaTotal + fin.totalRecuperadoHistorico);
     const carteraActiva = fin.carteraActivaTotal || 0;
-    const totalRecuperado = fin.totalRecuperadoHistorico || 0;
+    const cobradoActivo = fin.recuperadoActivo !== undefined ? fin.recuperadoActivo : Math.max(0, totalColocado - carteraActiva);
+    const totalRecuperadoHistorico = fin.totalRecuperadoHistorico || 0;
 
     const elPrestado = document.getElementById('dash-prestado');
     if (elPrestado) elPrestado.innerText = fmtMoneda(capitalPrestado);
@@ -3216,10 +3433,10 @@ async function cargarDashboardEjecutivo() {
     if (elPrestadoSub) elPrestadoSub.innerText = `${fin.creditosActivosTotal} créditos activos (${fin.clientesTotal} clientes)`;
 
     const elRecuperado = document.getElementById('dash-recuperado');
-    if (elRecuperado) elRecuperado.innerText = fmtMoneda(totalRecuperado);
+    if (elRecuperado) elRecuperado.innerText = fmtMoneda(cobradoActivo);
 
     const elRecuperadoSub = document.getElementById('dash-recuperado-sub');
-    if (elRecuperadoSub) elRecuperadoSub.innerText = 'Total abonos cobrados';
+    if (elRecuperadoSub) elRecuperadoSub.innerText = `Histórico total: ${fmtMoneda(totalRecuperadoHistorico)}`;
 
     const elCartera = document.getElementById('dash-cartera-activa');
     if (elCartera) elCartera.innerText = fmtMoneda(carteraActiva);
@@ -3234,12 +3451,12 @@ async function cargarDashboardEjecutivo() {
     if (elCumplimiento) elCumplimiento.innerText =
       `Meta hoy: ${fmtMoneda(fin.totalEsperadoHoy)} (${fin.porcentajeCumplimientoHoy}%)`;
 
-    // Conciliación Financiera Cuadrada
+    // Conciliación Financiera Cuadrada (Cartera Activa)
     const elTotCol = document.getElementById('dash-total-colocado');
     if (elTotCol) elTotCol.innerText = fmtMoneda(totalColocado);
 
     const elBalCob = document.getElementById('dash-balance-cobrado');
-    if (elBalCob) elBalCob.innerText = fmtMoneda(totalRecuperado);
+    if (elBalCob) elBalCob.innerText = fmtMoneda(cobradoActivo);
 
     const elBalCal = document.getElementById('dash-balance-calle');
     if (elBalCal) elBalCal.innerText = fmtMoneda(carteraActiva);
@@ -3464,7 +3681,8 @@ function compartirExtractoWhatsApp() {
   }
 
   texto += `━━━━━━━━━━━━━━━━━━━━━━\n`;
-  texto += `_Comprobante emitido por el sistema oficial de cobranza CrediYa._\n`;
+  const nombreFirma = (state.tenant && state.tenant.nombreNegocio) ? state.tenant.nombreNegocio : 'Sistema Oficial de Cobranza';
+  texto += `_Comprobante emitido por el sistema oficial de cobranza ${nombreFirma}._\n`;
 
   let movil = (cli.movil || '').replace(/\D/g, '');
   if (m.codigo === 'PEN' && movil.length === 9 && !movil.startsWith('51')) {

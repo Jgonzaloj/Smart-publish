@@ -59,6 +59,7 @@ export class AuthService {
       tenant: {
         id: tenant?.id || cred.tenantId,
         nombreNegocio: tenant?.nombreNegocio || 'CrediYa',
+        logoUrl: (tenant as any)?.logoUrl || null,
         moneda: (tenant as any)?.moneda || 'PEN',
         pais: (tenant as any)?.pais || 'Perú',
       },
@@ -119,6 +120,58 @@ export class AuthService {
     });
 
     return this.login({ email: emailNormalizado, password });
+  }
+
+  /**
+   * Obtiene la información pública del tenant / empresa
+   */
+  async obtenerTenant(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+    return {
+      id: tenant?.id,
+      nombreNegocio: tenant?.nombreNegocio || 'Mi Empresa',
+      logoUrl: (tenant as any)?.logoUrl || null,
+      moneda: (tenant as any)?.moneda || 'PEN',
+      pais: (tenant as any)?.pais || 'Perú',
+    };
+  }
+
+  /**
+   * Actualiza el perfil de la empresa (Nombre de negocio, Logo, Moneda y País).
+   */
+  async actualizarPerfilTenant(
+    tenantId: string,
+    data: { nombreNegocio?: string; logoUrl?: string; moneda?: string },
+  ) {
+    const updateData: any = {};
+    if (data.nombreNegocio && data.nombreNegocio.trim()) {
+      updateData.nombreNegocio = data.nombreNegocio.trim();
+    }
+    if (data.logoUrl !== undefined) {
+      updateData.logoUrl = data.logoUrl;
+    }
+    if (data.moneda) {
+      updateData.moneda = data.moneda;
+      updateData.pais = data.moneda === 'PEN' ? 'Perú' : data.moneda === 'COP' ? 'Colombia' : data.moneda === 'MXN' ? 'México' : 'Internacional';
+    }
+
+    const tenantActualizado = await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: updateData,
+    });
+
+    return {
+      mensaje: 'Perfil de empresa actualizado exitosamente',
+      tenant: {
+        id: tenantActualizado.id,
+        nombreNegocio: tenantActualizado.nombreNegocio,
+        logoUrl: (tenantActualizado as any)?.logoUrl || null,
+        moneda: (tenantActualizado as any)?.moneda || 'PEN',
+        pais: (tenantActualizado as any)?.pais || 'Perú',
+      },
+    };
   }
 
   /**

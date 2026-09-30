@@ -28,6 +28,12 @@ let AuthController = class AuthController {
     registrarNegocio(body) {
         return this.authService.registrarNegocio(body.nombreNegocio, body.adminNombre, body.email, body.password, body.moneda, body.pais);
     }
+    obtenerTenant(user) {
+        return this.authService.obtenerTenant(user.tenantId);
+    }
+    actualizarPerfilTenant(body, user) {
+        return this.authService.actualizarPerfilTenant(user.tenantId, body);
+    }
     actualizarMoneda(moneda, user) {
         return this.authService.actualizarMonedaTenant(user.tenantId, moneda);
     }
@@ -53,6 +59,23 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "registrarNegocio", null);
+__decorate([
+    (0, common_1.Get)('tenant'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "obtenerTenant", null);
+__decorate([
+    (0, common_1.Patch)('tenant/perfil'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "actualizarPerfilTenant", null);
 __decorate([
     (0, common_1.Patch)('tenant/moneda'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

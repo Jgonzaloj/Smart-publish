@@ -1,4 +1,4 @@
-import { Body, Controller, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -34,6 +34,21 @@ export class AuthController {
       body.moneda,
       body.pais,
     );
+  }
+
+  @Get('tenant')
+  @UseGuards(JwtAuthGuard)
+  obtenerTenant(@CurrentUser() user: JwtPayload) {
+    return this.authService.obtenerTenant(user.tenantId);
+  }
+
+  @Patch('tenant/perfil')
+  @UseGuards(JwtAuthGuard)
+  actualizarPerfilTenant(
+    @Body() body: { nombreNegocio?: string; logoUrl?: string; moneda?: string },
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.authService.actualizarPerfilTenant(user.tenantId, body);
   }
 
   @Patch('tenant/moneda')
